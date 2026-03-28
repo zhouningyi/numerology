@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}命理学统计研究{% endblock %}</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --text-muted: #8b949e; --accent: #58a6ff;
+    --wood: #3fb950; --fire: #f85149; --earth: #d29922;
+    --metal: #c9d1d9; --water: #58a6ff;
+    --yang: #f0883e; --yin: #a371f7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.6;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  nav {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 12px 0; margin-bottom: 24px;
+  }
+  nav .container { display: flex; align-items: center; gap: 24px; }
+  nav .logo { font-size: 18px; font-weight: 600; color: var(--text); }
+  nav a { color: var(--text-muted); font-size: 14px; }
+  nav a:hover { color: var(--text); text-decoration: none; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
+
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+  .stat-num { font-size: 32px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 13px; color: var(--text-muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 8px 12px; color: var(--text-muted);
+       border-bottom: 1px solid var(--border); font-weight: 500; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:hover { background: rgba(88,166,255,0.04); }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 12px; font-weight: 500;
+  }
+  .badge-wood { background: rgba(63,185,80,0.15); color: var(--wood); }
+  .badge-fire { background: rgba(248,81,73,0.15); color: var(--fire); }
+  .badge-earth { background: rgba(210,153,34,0.15); color: var(--earth); }
+  .badge-metal { background: rgba(201,209,217,0.15); color: var(--metal); }
+  .badge-water { background: rgba(88,166,255,0.15); color: var(--water); }
+  .badge-yang { background: rgba(240,136,62,0.15); color: var(--yang); }
+  .badge-yin { background: rgba(163,113,247,0.15); color: var(--yin); }
+  .badge-aa { background: rgba(63,185,80,0.15); color: var(--wood); }
+  .badge-a { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .badge-b { background: rgba(210,153,34,0.15); color: var(--earth); }
+  .badge-c { background: rgba(248,81,73,0.15); color: var(--fire); }
+  .badge-dd { background: rgba(201,209,217,0.1); color: var(--text-muted); }
+
+  .pillar-box {
+    display: inline-flex; flex-direction: column; align-items: center;
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 14px; margin: 4px; min-width: 60px; background: var(--surface);
+  }
+  .pillar-box .gan { font-size: 22px; font-weight: 600; }
+  .pillar-box .zhi { font-size: 22px; font-weight: 600; }
+  .pillar-box .label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  .bar { height: 20px; border-radius: 4px; display: inline-block; min-width: 4px; }
+  .bar-wood { background: var(--wood); }
+  .bar-fire { background: var(--fire); }
+  .bar-earth { background: var(--earth); }
+  .bar-metal { background: var(--metal); }
+  .bar-water { background: var(--water); }
+
+  input, select {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 10px; border-radius: 6px; font-size: 14px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  button {
+    background: var(--accent); color: #fff; border: none;
+    padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;
+  }
+  button:hover { opacity: 0.9; }
+
+  .pagination { display: flex; gap: 8px; margin-top: 16px; justify-content: center; }
+  .pagination a, .pagination span {
+    padding: 6px 12px; border-radius: 6px; font-size: 14px;
+    border: 1px solid var(--border);
+  }
+  .pagination .active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .filter-bar {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+<nav>
+  <div class="container">
+    <span class="logo">命理统计</span>
+    <a href="/">概览</a>
+    <a href="/persons">人物列表</a>
+  </div>
+</nav>
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}命理统计 - 概览{% endblock %}
+{% block content %}
+<h1 style="margin-bottom:20px">数据概览</h1>
+
+<div class="grid grid-4">
+  <div class="card" style="text-align:center">
+    <div class="stat-num">{{ stats.total }}</div>
+    <div class="stat-label">总人数</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div class="stat-num">{{ stats.adb }}</div>
+    <div class="stat-label">Astro-Databank</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div class="stat-num">{{ stats.wikidata }}</div>
+    <div class="stat-label">Wikidata</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div class="stat-num">{{ stats.with_time }}</div>
+    <div class="stat-label">有完整四柱</div>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>日主五行分布</h2>
+    <table>
+      <tr><th>五行</th><th>人数</th><th>占比</th><th></th></tr>
+      {% for r in element_dist %}
+      {% set pct = (r.cnt / stats.total * 100) if stats.total > 0 else 0 %}
+      <tr>
+        <td><span class="badge badge-{{ {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}.get(r.elem, '') }}">{{ r.elem }}</span></td>
+        <td>{{ r.cnt }}</td>
+        <td>{{ "%.1f"|format(pct) }}%</td>
+        <td><span class="bar bar-{{ {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}.get(r.elem, '') }}" style="width:{{ pct * 3 }}px"></span></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>日主天干分布</h2>
+    <table>
+      <tr><th>天干</th><th>五行</th><th>阴阳</th><th>人数</th><th>占比</th></tr>
+      {% for r in stem_dist %}
+      {% set elem_map = {'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土','己':'土','庚':'金','辛':'金','壬':'水','癸':'水'} %}
+      {% set yy_map = {'甲':'阳','乙':'阴','丙':'阳','丁':'阴','戊':'阳','己':'阴','庚':'阳','辛':'阴','壬':'阳','癸':'阴'} %}
+      {% set elem = elem_map.get(r.stem, '') %}
+      {% set yy = yy_map.get(r.stem, '') %}
+      {% set pct = (r.cnt / stats.total * 100) if stats.total > 0 else 0 %}
+      <tr>
+        <td style="font-size:18px;font-weight:600">{{ r.stem }}</td>
+        <td><span class="badge badge-{{ {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}.get(elem, '') }}">{{ elem }}</span></td>
+        <td><span class="badge badge-{{ 'yang' if yy == '阳' else 'yin' }}">{{ yy }}</span></td>
+        <td>{{ r.cnt }}</td>
+        <td>{{ "%.1f"|format(pct) }}%</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Rodden 评级分布</h2>
+    <table>
+      <tr><th>评级</th><th>含义</th><th>人数</th></tr>
+      {% set rating_desc = {'AA':'出生证明','A':'本人记忆','B':'传记','C':'需谨慎','DD':'脏数据','X':'无时间','XX':'无日期'} %}
+      {% for r in rodden_dist %}
+      <tr>
+        <td><span class="badge badge-{{ r.rating|lower if r.rating in ['AA','A','B','C','DD'] else '' }}">{{ r.rating }}</span></td>
+        <td style="color:var(--text-muted)">{{ rating_desc.get(r.rating, '') }}</td>
+        <td>{{ r.cnt }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>性别分布</h2>
+    <table>
+      <tr><th>性别</th><th>人数</th><th>占比</th></tr>
+      {% for r in gender_dist %}
+      {% set pct = (r.cnt / stats.total * 100) if stats.total > 0 else 0 %}
+      <tr>
+        <td>{{ {'M':'男','F':'女'}.get(r.g, r.g) }}</td>
+        <td>{{ r.cnt }}</td>
+        <td>{{ "%.1f"|format(pct) }}%</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

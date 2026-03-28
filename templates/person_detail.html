@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}{{ person.name }} - 命理统计{% endblock %}
+{% block content %}
+
+{% macro elem_badge(elem) %}
+{% set cls = {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}.get(elem, '') %}
+<span class="badge badge-{{ cls }}">{{ elem }}</span>
+{% endmacro %}
+
+{% macro yy_badge(yy) %}
+<span class="badge badge-{{ 'yang' if yy == '阳' else 'yin' }}">{{ yy }}</span>
+{% endmacro %}
+
+{% set elem_map = {'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土','己':'土','庚':'金','辛':'金','壬':'水','癸':'水'} %}
+{% set elem_color = {'木':'var(--wood)','火':'var(--fire)','土':'var(--earth)','金':'var(--metal)','水':'var(--water)'} %}
+
+<div style="margin-bottom:8px">
+  <a href="/persons" style="font-size:13px;color:var(--text-muted)">← 返回列表</a>
+</div>
+
+<h1 style="margin-bottom:4px">{{ person.name }}</h1>
+<p style="color:var(--text-muted);margin-bottom:20px">
+  {{ person.birth_date or '' }}
+  {{ person.birth_time or '' }}
+  {% if person.birth_place %}· {{ person.birth_place }}{% endif %}
+  {% if person.birth_country %}，{{ person.birth_country }}{% endif %}
+  {% if person.rodden_rating %}
+  · <span class="badge badge-{{ person.rodden_rating|lower if person.rodden_rating in ['AA','A','B','C','DD'] else '' }}">Rodden {{ person.rodden_rating }}</span>
+  {% endif %}
+  {% if person.gender %}
+  · {{ '男' if person.gender == 'M' else '女' if person.gender == 'F' else person.gender }}
+  {% endif %}
+</p>
+
+{% if bazi %}
+<!-- 四柱 -->
+<div class="card">
+  <h2>四柱八字</h2>
+  <div style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap">
+    {% set pillars = [
+      ('年柱', bazi.year_pillar, bazi.year_shishen_gan),
+      ('月柱', bazi.month_pillar, bazi.month_shishen_gan),
+      ('日柱', bazi.day_pillar, '日主'),
+      ('时柱', bazi.time_pillar, bazi.time_shishen_gan),
+    ] %}
+    {% for label, pillar, shishen in pillars %}
+    <div class="pillar-box" {% if label == '日柱' %}style="border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)"{% endif %}>
+      <div class="label">{{ label }}</div>
+      {% if pillar %}
+        {% set gan = pillar[0] %}
+        {% set zhi = pillar[1] %}
+        {% set gan_elem = elem_map.get(gan, '') %}
+        <div class="gan" style="color:{{ elem_color.get(gan_elem, 'var(--text)') }}">{{ gan }}</div>
+        <div class="zhi" style="color:{{ elem_color.get(elem_map.get(zhi[:1], ''), 'var(--text)') }}">{{ zhi }}</div>
+      {% else %}
+        <div class="gan" style="color:var(--text-muted)">?</div>
+        <div class="zhi" style="color:var(--text-muted)">?</div>
+      {% endif %}
+      <div class="label">{{ shishen or '' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:12px">
+    <strong>日主：</strong>
+    <span style="font-size:20px;font-weight:600">{{ bazi.day_master }}</span>
+    {{ elem_badge(bazi.day_master_element) }}
+    {{ yy_badge(bazi.day_master_yinyang) }}
+  </div>
+</div>
+
+<!-- 五行 -->
+<div class="card">
+  <h2>五行分布 (天干+地支藏干)</h2>
+  {% set max_count = [bazi.wood_count, bazi.fire_count, bazi.earth_count, bazi.metal_count, bazi.water_count] | max %}
+  {% set elements = [
+    ('木', bazi.wood_count, 'wood'),
+    ('火', bazi.fire_count, 'fire'),
+    ('土', bazi.earth_count, 'earth'),
+    ('金', bazi.metal_count, 'metal'),
+    ('水', bazi.water_count, 'water'),
+  ] %}
+  <div style="margin-top:12px">
+  {% for name, count, cls in elements %}
+  <div style="display:flex;align-items:center;gap:8px;margin:6px 0">
+    <span style="width:24px;text-align:center;font-weight:600">{{ name }}</span>
+    <span class="bar bar-{{ cls }}" style="width:{{ (count / max_count * 200) if max_count > 0 else 0 }}px;height:22px"></span>
+    <span style="font-size:14px;color:var(--text-muted)">{{ count }}</span>
+    {% if count == 0 %}<span style="font-size:12px;color:var(--fire)">缺</span>{% endif %}
+  </div>
+  {% endfor %}
+  </div>
+</div>
+
+<!-- 纳音 -->
+<div class="card">
+  <h2>纳音</h2>
+  <table>
+    <tr><th>年柱</th><th>月柱</th><th>日柱</th><th>时柱</th></tr>
+    <tr>
+      <td>{{ bazi.year_nayin or '—' }}</td>
+      <td>{{ bazi.month_nayin or '—' }}</td>
+      <td>{{ bazi.day_nayin or '—' }}</td>
+      <td>{{ bazi.time_nayin or '—' }}</td>
+    </tr>
+  </table>
+</div>
+
+<!-- 大运 -->
+{% if dayun %}
+<div class="card">
+  <h2>大运 {% if bazi.dayun_start_age %}({{ bazi.dayun_start_age }}岁起运){% endif %}</h2>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+    {% for dy in dayun %}
+    <div class="pillar-box" style="min-width:50px">
+      <div class="label">{{ dy.start_age }}-{{ dy.end_age }}岁</div>
+      {% set gan = dy.ganzhi[0] if dy.ganzhi else '' %}
+      {% set zhi = dy.ganzhi[1] if dy.ganzhi and dy.ganzhi|length > 1 else '' %}
+      <div class="gan" style="font-size:18px;color:{{ elem_color.get(elem_map.get(gan, ''), 'var(--text)') }}">{{ gan }}</div>
+      <div class="zhi" style="font-size:18px;color:{{ elem_color.get(elem_map.get(zhi, ''), 'var(--text)') }}">{{ zhi }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="card">
+  <p style="color:var(--text-muted)">无八字数据</p>
+</div>
+{% endif %}
+
+<!-- 分类 -->
+{% if categories %}
+<div class="card">
+  <h2>分类标签</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+    {% for cat in categories %}
+    <span class="badge" style="background:rgba(88,166,255,0.08);color:var(--text-muted)">{{ cat.category }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- 其他信息 -->
+<div class="card">
+  <h2>出生信息详情</h2>
+  <table>
+    <tr><td style="color:var(--text-muted);width:120px">出生日期</td><td>{{ person.birth_date or '—' }}</td></tr>
+    <tr><td style="color:var(--text-muted)">出生时间</td><td>{{ person.birth_time or '未知' }}</td></tr>
+    <tr><td style="color:var(--text-muted)">出生地</td><td>{{ person.birth_place or '—' }}{% if person.birth_country %}, {{ person.birth_country }}{% endif %}</td></tr>
+    <tr><td style="color:var(--text-muted)">经纬度</td><td>{% if person.birth_lat %}{{ "%.4f"|format(person.birth_lat) }}, {{ "%.4f"|format(person.birth_lon) }}{% else %}—{% endif %}</td></tr>
+    <tr><td style="color:var(--text-muted)">Rodden评级</td><td>{{ person.rodden_rating or '—' }}</td></tr>
+    <tr><td style="color:var(--text-muted)">数据来源</td><td>{{ person.source }}</td></tr>
+    {% if person.death_date %}
+    <tr><td style="color:var(--text-muted)">死亡日期</td><td>{{ person.death_date }}</td></tr>
+    {% endif %}
+    {% if person.cause_of_death %}
+    <tr><td style="color:var(--text-muted)">死亡原因</td><td>{{ person.cause_of_death }}</td></tr>
+    {% endif %}
+  </table>
+</div>
+
+{% endblock %}
