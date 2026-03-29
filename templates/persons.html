@@ -5,6 +5,11 @@
 
 <form class="filter-bar" method="get" action="/persons">
   <input type="text" name="q" placeholder="搜索姓名..." value="{{ search }}" style="width:200px">
+  <select name="entry_type">
+    <option value="person" {{ 'selected' if entry_type == 'person' }}>人物</option>
+    <option value="event" {{ 'selected' if entry_type == 'event' }}>事件</option>
+    <option value="" {{ 'selected' if not entry_type }}>全部</option>
+  </select>
   <select name="element">
     <option value="">五行</option>
     {% for e in ['木','火','土','金','水'] %}
@@ -23,7 +28,7 @@
     <option value="F" {{ 'selected' if gender == 'F' }}>女</option>
   </select>
   <button type="submit">筛选</button>
-  {% if search or element or rodden or gender %}
+  {% if search or element or rodden or gender or entry_type != 'person' %}
   <a href="/persons" style="font-size:13px">清除</a>
   {% endif %}
 </form>
@@ -73,19 +78,21 @@
 {% if total_pages > 1 %}
 <div class="pagination">
   {% if page > 1 %}
-  <a href="?page={{ page-1 }}&q={{ search }}&element={{ element }}&rodden={{ rodden }}&gender={{ gender }}">上一页</a>
+  {% set qs = "q=" ~ search ~ "&element=" ~ element ~ "&rodden=" ~ rodden ~ "&gender=" ~ gender ~ "&entry_type=" ~ entry_type %}
+  <a href="?page={{ page-1 }}&{{ qs }}">上一页</a>
   {% endif %}
+  {% set qs = "q=" ~ search ~ "&element=" ~ element ~ "&rodden=" ~ rodden ~ "&gender=" ~ gender ~ "&entry_type=" ~ entry_type %}
   {% for p in range(1, total_pages+1) %}
     {% if p == page %}
       <span class="active">{{ p }}</span>
     {% elif p <= 3 or p >= total_pages-2 or (p >= page-2 and p <= page+2) %}
-      <a href="?page={{ p }}&q={{ search }}&element={{ element }}&rodden={{ rodden }}&gender={{ gender }}">{{ p }}</a>
+      <a href="?page={{ p }}&{{ qs }}">{{ p }}</a>
     {% elif p == 4 or p == total_pages-3 %}
       <span style="color:var(--text-muted)">…</span>
     {% endif %}
   {% endfor %}
   {% if page < total_pages %}
-  <a href="?page={{ page+1 }}&q={{ search }}&element={{ element }}&rodden={{ rodden }}&gender={{ gender }}">下一页</a>
+  <a href="?page={{ page+1 }}&{{ qs }}">下一页</a>
   {% endif %}
 </div>
 {% endif %}
