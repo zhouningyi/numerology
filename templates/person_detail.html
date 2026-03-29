@@ -130,6 +130,14 @@
 </div>
 {% endif %}
 
+<!-- 传记 -->
+{% if person.biography %}
+<div class="card">
+  <h2>传记 Biography</h2>
+  <div style="margin-top:8px;line-height:1.75;color:var(--text);white-space:pre-wrap;font-size:14px">{{ person.biography }}</div>
+</div>
+{% endif %}
+
 <!-- 分类 -->
 {% if categories %}
 <div class="card">

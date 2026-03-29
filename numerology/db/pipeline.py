@@ -68,8 +68,8 @@ def insert_adb_person(conn: sqlite3.Connection, person: AdbPerson) -> Optional[i
                (source, source_id, name, gender, birth_date, birth_time,
                 birth_year, birth_month, birth_day, birth_hour, birth_minute,
                 birth_place, birth_country, birth_lat, birth_lon,
-                rodden_rating)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                rodden_rating, biography)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 "adb",
                 str(person.page_id),
@@ -87,6 +87,7 @@ def insert_adb_person(conn: sqlite3.Connection, person: AdbPerson) -> Optional[i
                 lat,
                 lon,
                 person.rodden_rating,
+                person.biography,
             ),
         )
         if cur.rowcount == 0:

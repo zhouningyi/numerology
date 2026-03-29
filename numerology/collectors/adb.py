@@ -41,6 +41,7 @@ class AdbPerson:
     moon_sign: str
     asc_sign: str
     categories: list[str]
+    biography: Optional[str] = None  # 传记文本（从 ==Biography== 段落提取）
 
 
 def _parse_coord(coord_str: str) -> Optional[float]:
@@ -80,6 +81,39 @@ def _parse_template(wikitext: str) -> Optional[dict]:
 def _parse_categories(wikitext: str) -> list[str]:
     """Extract [[Category:...]] from wikitext."""
     return re.findall(r"\[\[Category:(.+?)\]\]", wikitext)
+
+
+def _parse_biography(wikitext: str) -> Optional[str]:
+    """提取 ==Biography== 段落的纯文本内容。
+
+    去除 wikitext 标记（链接、模板、HTML 标签等），返回干净的文本。
+    """
+    # 匹配 ==Biography== 到下一个 == 段落之间的内容
+    match = re.search(r"==\s*Biography\s*==\s*\n(.*?)(?=\n==|\Z)", wikitext, re.DOTALL)
+    if not match:
+        return None
+
+    text = match.group(1).strip()
+    if not text:
+        return None
+
+    # 清理 wikitext 标记
+    # 移除 {{...}} 模板（可能嵌套，简单处理：去掉单层）
+    text = re.sub(r"\{\{[^{}]*\}\}", "", text)
+    # 移除残余的 {{ 和 }}
+    text = re.sub(r"\{\{|\}\}", "", text)
+    # [[Link|Display]] -> Display; [[Link]] -> Link
+    text = re.sub(r"\[\[[^]]*\|([^\]]+)\]\]", r"\1", text)
+    text = re.sub(r"\[\[([^\]]+)\]\]", r"\1", text)
+    # 移除外部链接 [url text] -> text
+    text = re.sub(r"\[https?://\S+\s+([^\]]+)\]", r"\1", text)
+    text = re.sub(r"\[https?://\S+\]", "", text)
+    # 移除 HTML 标签
+    text = re.sub(r"<[^>]+>", "", text)
+    # 移除多余空行
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    return text.strip() or None
 
 
 class AdbCollector:
@@ -159,6 +193,7 @@ class AdbCollector:
             return None
 
         categories = _parse_categories(wikitext)
+        biography = _parse_biography(wikitext)
 
         return AdbPerson(
             page_id=page_id,
@@ -177,6 +212,7 @@ class AdbCollector:
             moon_sign=fields.get("moon_sign", ""),
             asc_sign=fields.get("asc_sign", ""),
             categories=categories,
+            biography=biography,
         )
 
     def collect(self, limit: Optional[int] = None) -> Iterator[AdbPerson]:
