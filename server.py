@@ -80,10 +80,14 @@ def persons_list():
     element = request.args.get("element", "")
     rodden = request.args.get("rodden", "")
     gender = request.args.get("gender", "")
+    entry_type = request.args.get("entry_type", "person")  # 默认只看人物
 
     where = ["1=1"]
     params = []
 
+    if entry_type:
+        where.append("p.entry_type = ?")
+        params.append(entry_type)
     if search:
         where.append("p.name LIKE ?")
         params.append(f"%{search}%")
@@ -132,6 +136,7 @@ def persons_list():
         element=element,
         rodden=rodden,
         gender=gender,
+        entry_type=entry_type,
     )
 
 

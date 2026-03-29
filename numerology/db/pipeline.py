@@ -65,15 +65,19 @@ def insert_adb_person(conn: sqlite3.Connection, person: AdbPerson) -> Optional[i
     try:
         cur = conn.execute(
             """INSERT OR IGNORE INTO persons
-               (source, source_id, name, gender, birth_date, birth_time,
+               (source, source_id, entry_type, name, last_name, first_name,
+                gender, birth_date, birth_time,
                 birth_year, birth_month, birth_day, birth_hour, birth_minute,
                 birth_place, birth_country, birth_lat, birth_lon,
                 rodden_rating, biography)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 "adb",
                 str(person.page_id),
+                person.entry_type,
                 person.name,
+                person.last_name,
+                person.first_name,
                 gender_code,
                 iso_date,
                 person.birth_time,

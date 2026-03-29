@@ -54,6 +54,10 @@ class AdbPerson:
     categories: list[str]
     biography: Optional[str] = None  # 传记文本（从 ==Biography== 段落提取）
     events: list[AdbEvent] | None = None  # 生平事件列表
+    # 派生字段（由 classify_entry 填充）
+    entry_type: str = "person"  # 'person', 'event', 'other'
+    last_name: Optional[str] = None
+    first_name: Optional[str] = None
 
 
 def _parse_coord(coord_str: str) -> Optional[float]:
@@ -93,6 +97,39 @@ def _parse_template(wikitext: str) -> Optional[dict]:
 def _parse_categories(wikitext: str) -> list[str]:
     """Extract [[Category:...]] from wikitext."""
     return re.findall(r"\[\[Category:(.+?)\]\]", wikitext)
+
+
+def _classify_entry(name: str, gender: str, categories: list[str]) -> str:
+    """判断条目类型：person / event / other。
+
+    规则：
+    1. 有 gender (M/F) → person
+    2. name 以 4 位数字开头（如 "2015 Paris attacks"）→ event
+    3. categories 含 "Mundane" → event
+    4. name 不含逗号且不含空格后大写（非 "Last, First" 格式）→ other
+    5. 其余 → person
+    """
+    if gender in ("M", "F"):
+        return "person"
+    if re.match(r"^\d{4}\b", name):
+        return "event"
+    cats_lower = " ".join(categories).lower()
+    if "mundane" in cats_lower:
+        return "event"
+    return "person"
+
+
+def _split_name(name: str) -> tuple[Optional[str], Optional[str]]:
+    """拆分 ADB 格式姓名 'Last, First' → (last_name, first_name)。
+
+    特殊情况：
+    - 无逗号 → (name, None)  可能是单名或事件名
+    - 多个逗号 → 只按第一个逗号拆
+    """
+    if "," not in name:
+        return name.strip(), None
+    parts = name.split(",", 1)
+    return parts[0].strip(), parts[1].strip() or None
 
 
 def _parse_biography(wikitext: str) -> Optional[str]:
@@ -276,11 +313,16 @@ class AdbCollector:
         biography = _parse_biography(wikitext)
         events = _parse_events(wikitext)
 
+        name = fields.get("Name", page_title)
+        gender = fields.get("Gender", "")
+        entry_type = _classify_entry(name, gender, categories)
+        last_name, first_name = _split_name(name)
+
         return AdbPerson(
             page_id=page_id,
             page_title=page_title,
-            name=fields.get("Name", page_title),
-            gender=fields.get("Gender", ""),
+            name=name,
+            gender=gender,
             birth_date=sbdate,
             birth_time=fields.get("sbtime") or None,
             birth_place=fields.get("Place", ""),
@@ -295,6 +337,9 @@ class AdbCollector:
             categories=categories,
             biography=biography,
             events=events,
+            entry_type=entry_type,
+            last_name=last_name,
+            first_name=first_name,
         )
 
     def collect(

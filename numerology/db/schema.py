@@ -11,7 +11,10 @@ CREATE TABLE IF NOT EXISTS persons (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     source          TEXT NOT NULL,          -- 'adb' or 'wikidata'
     source_id       TEXT,                   -- ADB page_id or Wikidata Q-id
-    name            TEXT,
+    entry_type      TEXT DEFAULT 'person',  -- 'person', 'event', 'other'
+    name            TEXT,                   -- 原始全名（ADB: "Last, First"）
+    last_name       TEXT,                   -- 姓
+    first_name      TEXT,                   -- 名
     gender          TEXT,                   -- 'M', 'F', or NULL
     -- 出生信息
     birth_date      TEXT,                   -- ISO format: YYYY-MM-DD
@@ -110,6 +113,7 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_person ON events(person_id);
 CREATE INDEX IF NOT EXISTS idx_events_code ON events(event_code);
 CREATE INDEX IF NOT EXISTS idx_persons_source ON persons(source);
+CREATE INDEX IF NOT EXISTS idx_persons_entry_type ON persons(entry_type);
 CREATE INDEX IF NOT EXISTS idx_persons_birth_year ON persons(birth_year);
 CREATE INDEX IF NOT EXISTS idx_persons_rodden ON persons(rodden_rating);
 CREATE INDEX IF NOT EXISTS idx_persons_gender ON persons(gender);
