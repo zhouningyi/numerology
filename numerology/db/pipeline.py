@@ -7,7 +7,7 @@ import re
 import sqlite3
 from typing import Optional
 
-from ..collectors.adb import AdbPerson, _parse_coord
+from ..collectors.adb import AdbEvent, AdbPerson, _parse_coord
 from ..collectors.wikidata import WikidataPerson
 from ..engines.bazi import calculate_bazi
 
@@ -106,6 +106,10 @@ def insert_adb_person(conn: sqlite3.Connection, person: AdbPerson) -> Optional[i
                 "INSERT OR IGNORE INTO categories (person_id, category, cat_type) VALUES (?, ?, ?)",
                 (person_id, cat, _classify_category(cat)),
             )
+
+        # Insert events
+        if person.events:
+            _insert_events(conn, person_id, person.events)
 
         # Calculate and store bazi
         _insert_bazi(
@@ -252,5 +256,28 @@ def _insert_bazi(
                 dy.ganzhi,
                 dy.gan_element,
                 dy.zhi_element,
+            ),
+        )
+
+
+def _format_event_date(adb_date: str) -> str:
+    """将 ADB 日期 'YYYY/MM/DD' 转为 'YYYY-MM-DD'，保留 00。"""
+    return adb_date.replace("/", "-") if adb_date else ""
+
+
+def _insert_events(conn: sqlite3.Connection, person_id: int, events: list[AdbEvent]):
+    """将事件列表写入 events 表。"""
+    for ev in events:
+        conn.execute(
+            """INSERT OR IGNORE INTO events
+               (person_id, event_code, event_date, event_time, event_notes, event_place)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                person_id,
+                ev.event_code,
+                _format_event_date(ev.event_date),
+                ev.event_time,
+                ev.event_notes,
+                ev.event_place,
             ),
         )

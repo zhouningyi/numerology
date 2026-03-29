@@ -22,6 +22,17 @@ CRAWL_DELAY = 2.0  # seconds, as per robots.txt
 
 
 @dataclass
+class AdbEvent:
+    """ADB 生平事件（从 ==Events== 的 ASTRODATABANK_evn 模板解析）。"""
+
+    event_code: str  # 如 "Relationship : Marriage"
+    event_date: str  # YYYY/MM/DD（可能含 00）
+    event_time: Optional[str]  # HH:MM or None
+    event_notes: str  # 简要描述
+    event_place: Optional[str]  # 地点
+
+
+@dataclass
 class AdbPerson:
     """Parsed person record from Astro-Databank."""
 
@@ -42,6 +53,7 @@ class AdbPerson:
     asc_sign: str
     categories: list[str]
     biography: Optional[str] = None  # 传记文本（从 ==Biography== 段落提取）
+    events: list[AdbEvent] | None = None  # 生平事件列表
 
 
 def _parse_coord(coord_str: str) -> Optional[float]:
@@ -114,6 +126,45 @@ def _parse_biography(wikitext: str) -> Optional[str]:
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip() or None
+
+
+def _parse_events(wikitext: str) -> list[AdbEvent]:
+    """提取 ==Events== 段落中所有 ASTRODATABANK_evn 模板，返回事件列表。"""
+    # 找到 Events 段落
+    section = re.search(r"==\s*Events\s*==(.*?)(?=\n==|\Z)", wikitext, re.DOTALL)
+    if not section:
+        return []
+
+    events = []
+    # 匹配每个 {{ASTRODATABANK_evn ... }}
+    for m in re.finditer(
+        r"\{\{ASTRODATABANK_evn(.*?)\}\}", section.group(1), re.DOTALL
+    ):
+        fields = {}
+        for line in m.group(1).split("\n"):
+            line = line.strip()
+            if line.startswith("|") and "=" in line:
+                key, _, val = line[1:].partition("=")
+                fields[key.strip()] = val.strip()
+
+        event_code = fields.get("sevcode", "")
+        event_date = fields.get("sevdate", "")
+        if not event_code or not event_date:
+            continue
+
+        events.append(
+            AdbEvent(
+                event_code=event_code,
+                event_date=event_date,
+                event_time=fields.get("sevtime") or None,
+                event_notes=fields.get("EventNotes", ""),
+                event_place=(fields.get("Place") or "").strip() or None,
+            )
+        )
+
+    # 按日期排序
+    events.sort(key=lambda e: e.event_date)
+    return events
 
 
 class AdbCollector:
@@ -223,6 +274,7 @@ class AdbCollector:
 
         categories = _parse_categories(wikitext)
         biography = _parse_biography(wikitext)
+        events = _parse_events(wikitext)
 
         return AdbPerson(
             page_id=page_id,
@@ -242,6 +294,7 @@ class AdbCollector:
             asc_sign=fields.get("asc_sign", ""),
             categories=categories,
             biography=biography,
+            events=events,
         )
 
     def collect(

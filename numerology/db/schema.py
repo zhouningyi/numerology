@@ -94,7 +94,21 @@ CREATE TABLE IF NOT EXISTS dayun (
     UNIQUE(person_id, start_age)
 );
 
+-- 生平事件表
+CREATE TABLE IF NOT EXISTS events (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_id   INTEGER NOT NULL REFERENCES persons(id),
+    event_code  TEXT NOT NULL,              -- 事件类型代码，如 'Relationship : Marriage'
+    event_date  TEXT,                       -- YYYY-MM-DD（日/月可能为00表示未知）
+    event_time  TEXT,                       -- HH:MM or NULL
+    event_notes TEXT,                       -- 事件描述
+    event_place TEXT,                       -- 事件发生地
+    UNIQUE(person_id, event_code, event_date, event_notes)
+);
+
 -- 索引
+CREATE INDEX IF NOT EXISTS idx_events_person ON events(person_id);
+CREATE INDEX IF NOT EXISTS idx_events_code ON events(event_code);
 CREATE INDEX IF NOT EXISTS idx_persons_source ON persons(source);
 CREATE INDEX IF NOT EXISTS idx_persons_birth_year ON persons(birth_year);
 CREATE INDEX IF NOT EXISTS idx_persons_rodden ON persons(rodden_rating);

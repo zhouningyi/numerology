@@ -156,6 +156,11 @@ def person_detail(person_id):
         (person_id,),
     ).fetchall()
 
+    events = db.execute(
+        "SELECT * FROM events WHERE person_id = ? ORDER BY event_date",
+        (person_id,),
+    ).fetchall()
+
     db.close()
     return render_template(
         "person_detail.html",
@@ -163,6 +168,7 @@ def person_detail(person_id):
         bazi=bazi,
         dayun=dayun,
         categories=categories,
+        events=events,
     )
 
 

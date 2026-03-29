@@ -130,6 +130,43 @@
 </div>
 {% endif %}
 
+<!-- 生平事件 -->
+{% if events %}
+<div class="card">
+  <h2>生平事件</h2>
+  <div style="margin-top:12px;position:relative;padding-left:20px;border-left:2px solid var(--border)">
+    {% for ev in events %}
+    {% set evtype = ev.event_code.split(' : ')[0] if ' : ' in ev.event_code else ev.event_code %}
+    {% set evdetail = ev.event_code.split(' : ')[1] if ' : ' in ev.event_code else '' %}
+    {% set type_colors = {
+      'Relationship': '#e06c75',
+      'Social': '#e5c07b',
+      'Death': '#7f848e',
+      'Health': '#56b6c2',
+      'Crime': '#be5046',
+      'Financial': '#98c379',
+      'Work': '#61afef',
+      'Family': '#c678dd',
+    } %}
+    {% set dot_color = type_colors.get(evtype, 'var(--accent)') %}
+    <div style="margin-bottom:16px;position:relative">
+      <div style="position:absolute;left:-26px;top:3px;width:10px;height:10px;border-radius:50%;background:{{ dot_color }}"></div>
+      <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+        <span style="font-family:monospace;font-size:13px;color:var(--text-muted);min-width:90px">{{ ev.event_date }}</span>
+        <span class="badge" style="background:{{ dot_color }}22;color:{{ dot_color }};font-size:11px">{{ evdetail or evtype }}</span>
+        {% if ev.event_notes %}
+        <span style="font-size:14px;color:var(--text)">{{ ev.event_notes }}</span>
+        {% endif %}
+        {% if ev.event_place %}
+        <span style="font-size:12px;color:var(--text-muted)">📍 {{ ev.event_place }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- 传记 -->
 {% if person.biography %}
 <div class="card">
