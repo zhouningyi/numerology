@@ -132,22 +132,51 @@ class AdbCollector:
             time.sleep(self.crawl_delay - elapsed)
         self._last_request_time = time.time()
 
-    def _api_get(self, params: dict) -> dict:
-        """Make a GET request to the MediaWiki API."""
-        self._throttle()
+    def _api_get(self, params: dict, max_retries: int = 5) -> dict:
+        """Make a GET request to the MediaWiki API (with exponential backoff retry)."""
         params["format"] = "json"
-        resp = self.session.get(API_URL, params=params, timeout=30)
-        resp.raise_for_status()
-        return resp.json()
+        for attempt in range(max_retries):
+            self._throttle()
+            try:
+                resp = self.session.get(API_URL, params=params, timeout=30)
+                resp.raise_for_status()
+                return resp.json()
+            except (
+                requests.ConnectionError,
+                requests.Timeout,
+                requests.HTTPError,
+            ) as e:
+                wait = min(2 ** (attempt + 1), 60)  # 2, 4, 8, 16, 32s（上限60s）
+                logger.warning(
+                    f"API request failed (attempt {attempt + 1}/{max_retries}): {e}. "
+                    f"Retrying in {wait}s..."
+                )
+                if attempt == max_retries - 1:
+                    raise
+                time.sleep(wait)
+                # 重建 session 防止连接池损坏
+                self.session.close()
+                self.session = requests.Session()
+                self.session.headers.update({"User-Agent": USER_AGENT})
+        return {}  # unreachable
 
-    def list_all_pages(self) -> Iterator[tuple[int, str]]:
-        """Yield (page_id, page_title) for all pages."""
+    def list_all_pages(
+        self, start_from: Optional[str] = None
+    ) -> Iterator[tuple[int, str]]:
+        """Yield (page_id, page_title) for all pages.
+
+        Args:
+            start_from: 从指定 title 开始枚举（用于断点续采）
+        """
         params = {
             "action": "query",
             "list": "allpages",
             "aplimit": "500",
             "apnamespace": "0",
         }
+        if start_from:
+            params["apfrom"] = start_from
+            logger.info(f"Resuming page listing from: {start_from}")
         while True:
             data = self._api_get(params)
             for page in data.get("query", {}).get("allpages", []):
@@ -215,16 +244,19 @@ class AdbCollector:
             biography=biography,
         )
 
-    def collect(self, limit: Optional[int] = None) -> Iterator[AdbPerson]:
+    def collect(
+        self, limit: Optional[int] = None, start_from: Optional[str] = None
+    ) -> Iterator[AdbPerson]:
         """Main collection loop: list pages, fetch content, parse.
 
         Args:
             limit: Maximum number of persons to collect (None=all)
+            start_from: 从指定 title 开始（用于断点续采）
         """
         collected = 0
         page_buffer = []
 
-        for page_id, title in self.list_all_pages():
+        for page_id, title in self.list_all_pages(start_from=start_from):
             page_buffer.append((page_id, title))
 
             if len(page_buffer) >= 50:
