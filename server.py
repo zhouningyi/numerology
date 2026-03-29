@@ -109,7 +109,8 @@ def persons_list():
     ).fetchone()[0]
 
     rows = db.execute(
-        f"""SELECT p.id, p.name, p.gender, p.birth_date, p.birth_time,
+        f"""SELECT p.id, p.name, p.first_name, p.last_name, p.gender,
+                   p.birth_date, p.birth_time,
                    p.rodden_rating, p.birth_country,
                    b.year_pillar, b.month_pillar, b.day_pillar, b.time_pillar,
                    b.day_master, b.day_master_element, b.day_master_yinyang,

@@ -50,7 +50,7 @@
   {% for p in persons %}
   {% set elem_class = {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}.get(p.day_master_element, '') %}
   <tr>
-    <td><a href="/person/{{ p.id }}">{{ p.name }}</a></td>
+    <td><a href="/person/{{ p.id }}">{% if p.first_name %}{{ p.first_name }} {{ p.last_name }}{% else %}{{ p.name }}{% endif %}</a></td>
     <td style="font-family:monospace">{{ p.birth_date or '' }}</td>
     <td style="font-family:monospace">{{ p.birth_time or '—' }}</td>
     <td style="font-family:monospace;letter-spacing:1px">
