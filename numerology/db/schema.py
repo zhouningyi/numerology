@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS persons (
     death_year      INTEGER,
     cause_of_death  TEXT,
     -- 传记/生平
-    biography       TEXT,                  -- 传记文本 (ADB Biography section)
+    biography       TEXT,                  -- 传记原文 (ADB Biography section, English)
+    biography_zh    TEXT,                  -- 传记中文翻译 (GPT-4o-mini)
     -- 元数据
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(source, source_id)

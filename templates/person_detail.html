@@ -168,10 +168,23 @@
 {% endif %}
 
 <!-- 传记 -->
-{% if person.biography %}
+{% if person.biography or person.biography_zh %}
 <div class="card">
-  <h2>传记 Biography</h2>
-  <div style="margin-top:8px;line-height:1.75;color:var(--text);white-space:pre-wrap;font-size:14px">{{ person.biography }}</div>
+  <h2>传记 Biography
+    {% if person.biography and person.biography_zh %}
+    <span style="font-size:13px;font-weight:400;margin-left:12px">
+      <a href="javascript:void(0)" onclick="document.getElementById('bio-zh').style.display='block';document.getElementById('bio-en').style.display='none';this.style.fontWeight='bold';this.nextElementSibling.style.fontWeight='normal'" style="font-weight:bold">中文</a>
+      <span style="color:var(--text-muted);margin:0 4px">|</span>
+      <a href="javascript:void(0)" onclick="document.getElementById('bio-en').style.display='block';document.getElementById('bio-zh').style.display='none';this.style.fontWeight='bold';this.previousElementSibling.previousElementSibling.style.fontWeight='normal'">English</a>
+    </span>
+    {% endif %}
+  </h2>
+  {% if person.biography_zh %}
+  <div id="bio-zh" style="margin-top:8px;line-height:1.75;color:var(--text);white-space:pre-wrap;font-size:14px">{{ person.biography_zh }}</div>
+  {% endif %}
+  {% if person.biography %}
+  <div id="bio-en" style="margin-top:8px;line-height:1.75;color:var(--text);white-space:pre-wrap;font-size:14px;{% if person.biography_zh %}display:none{% endif %}">{{ person.biography }}</div>
+  {% endif %}
 </div>
 {% endif %}
 
