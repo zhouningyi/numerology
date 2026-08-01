@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}预测域 - 命理统计{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:4px">标准化预测域</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  预测域是统计终点，不是命理结论。这里只统计已有来源证据；没有记录不会自动生成“阴性”。
+</p>
+<div class="card" style="padding:0;overflow-x:auto">
+  <table>
+    <tr><th>预测域</th><th>统计终点</th><th>观察人物</th><th>事件证据</th><th>有日期</th><th>缺失语义</th><th>规则</th><th>说明</th></tr>
+    {% for row in domains %}
+    <tr>
+      <td><strong>{{ row.name }}</strong><br><span class="muted" style="font-size:11px">{{ row.code }}</span></td>
+      <td>{{ target_type_labels.get(row.target_type, row.target_type) }}</td>
+      <td>{{ row.person_count }}</td>
+      <td>{{ row.evidence_count }}</td>
+      <td>{{ row.dated_count }}</td>
+      <td>{{ '删失' if row.absence_policy == 'censored' else '未知' }}</td>
+      <td>{{ rule_counts.get(row.code, 0) }}</td>
+      <td class="muted" style="min-width:300px">{{ row.description }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted">还没有生成预测域结果，请运行 <code>python3 standardize_prediction_domains.py</code></td></tr>
+    {% endfor %}
+  </table>
+</div>
+<div class="card" style="font-size:13px">
+  <strong>解释：</strong>“观察人物”是至少命中一条规则的人数；“事件证据”是命中事实条数；“有日期”是可以用于时间终点分析的证据数。
+  这三个数字不能直接当作发生率分母。
+</div>
+{% endblock %}

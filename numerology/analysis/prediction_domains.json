@@ -1,0 +1,168 @@
+{
+  "rule_version": "domain-v1",
+  "domains": [
+    {
+      "code": "longevity",
+      "name": "寿命/死亡",
+      "description": "死亡发生时间或死亡相关事件。无死亡记录只能作为删失或未知，不能视为长寿或预测失败。",
+      "target_type": "time_to_event",
+      "event_unit": "person",
+      "min_date_precision": 9,
+      "absence_policy": "censored",
+      "source_scope": "ADB/CBDB",
+      "status": "candidate"
+    },
+    {
+      "code": "marriage",
+      "name": "婚姻/伴侣",
+      "description": "首次婚姻及婚姻相关事件；婚姻结束另作为关系变化终点。",
+      "target_type": "time_to_event",
+      "event_unit": "person",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB",
+      "status": "candidate"
+    },
+    {
+      "code": "relationship_change",
+      "name": "关系变化",
+      "description": "恋爱开始/结束、离婚、婚外关系等关系状态变化。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB",
+      "status": "candidate"
+    },
+    {
+      "code": "career",
+      "name": "职业/工作",
+      "description": "新工作、职业转型、晋升/社会地位、退休、辞职或失业等职业轨迹事件。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB/CBDB",
+      "status": "candidate"
+    },
+    {
+      "code": "education_examination",
+      "name": "教育/科举",
+      "description": "教育经历、毕业/考试和 CBDB 科举入仕等教育或考试结果。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB/CBDB",
+      "status": "candidate"
+    },
+    {
+      "code": "health",
+      "name": "健康/疾病/医疗",
+      "description": "疾病、诊断、医疗操作、事故和康复等可观察健康事件。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB",
+      "status": "candidate"
+    },
+    {
+      "code": "migration_residence",
+      "name": "迁移/居住",
+      "description": "迁居、移民、旅行和居住地变化；CBDB 籍贯属于背景地点，不自动当作迁移事件。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB/CBDB",
+      "status": "candidate"
+    },
+    {
+      "code": "wealth_finance",
+      "name": "财富/财务",
+      "description": "获得/损失金钱、财产、投资、破产等财富和财务事件。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB",
+      "status": "candidate"
+    },
+    {
+      "code": "legal_crime",
+      "name": "法律/犯罪",
+      "description": "逮捕、审判、犯罪实施/受害、监禁和法律制裁等事件。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB",
+      "status": "candidate"
+    },
+    {
+      "code": "recognition_achievement",
+      "name": "成就/声望",
+      "description": "奖项、公开曝光、发表、重大成就和社会地位提升等结果。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB/CBDB",
+      "status": "candidate"
+    },
+    {
+      "code": "family",
+      "name": "家庭/亲属",
+      "description": "家庭责任变化、生育/子女、亲属死亡和 CBDB 亲属关系事实。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB/CBDB",
+      "status": "candidate"
+    },
+    {
+      "code": "social_institution",
+      "name": "社会组织/机构",
+      "description": "加入/退出组织、住院、监禁和机构化等社会机构状态变化。",
+      "target_type": "recurrent",
+      "event_unit": "event",
+      "min_date_precision": 9,
+      "absence_policy": "unknown",
+      "source_scope": "ADB",
+      "status": "candidate"
+    },
+    {
+      "code": "religion_identity",
+      "name": "宗教/身份",
+      "description": "宗教身份、出家/还俗及 CBDB 身份分类等身份事实。",
+      "target_type": "binary",
+      "event_unit": "person",
+      "min_date_precision": null,
+      "absence_policy": "unknown",
+      "source_scope": "ADB/CBDB",
+      "status": "candidate"
+    }
+  ],
+  "rules": [
+    {"domain_code": "longevity", "source": "adb", "fact_type": "event", "event_type_regex": "^Death", "description": "ADB 死亡事件"},
+    {"domain_code": "marriage", "source": "adb", "fact_type": "event", "event_type_regex": "^Relationship$", "event_subtype_regex": "^Marriage$", "description": "婚姻"},
+    {"domain_code": "relationship_change", "source": "adb", "fact_type": "event", "event_type_regex": "^Relationship$", "description": "关系状态事件"},
+    {"domain_code": "career", "source": "adb", "fact_type": "event", "event_type_regex": "^Work$", "description": "职业事件"},
+    {"domain_code": "career", "source": "cbdb", "fact_type": "status", "fact_subtype_regex": "官|職|仕|文|武", "description": "CBDB 官职/身份事实"},
+    {"domain_code": "education_examination", "source": "adb", "fact_type": "event", "event_type_regex": "^Education$", "description": "教育事件"},
+    {"domain_code": "education_examination", "source": "cbdb", "fact_type": "entry", "fact_subtype_regex": "科舉|進士|举人|舉人|生員|贡生|貢生|監生|明經|制科", "description": "CBDB 科举入仕事实"},
+    {"domain_code": "health", "source": "adb", "fact_type": "event", "event_type_regex": "^(Health|Medical)$", "description": "健康和医疗事件"},
+    {"domain_code": "health", "source": "adb", "fact_type": "event", "event_type_regex": "^Death by Disease$", "description": "疾病死亡事件"},
+    {"domain_code": "migration_residence", "source": "adb", "fact_type": "event", "event_type_regex": "^(Travel|Family)$", "event_subtype_regex": "迁|居|住|旅行|residen|move|travel", "description": "迁移/居住变化"},
+    {"domain_code": "wealth_finance", "source": "adb", "fact_type": "event", "event_type_regex": "^(Financial|Other Financial|Money|Finance|Property)$", "description": "财富财务事件"},
+    {"domain_code": "legal_crime", "source": "adb", "fact_type": "event", "event_type_regex": "^(Crime|Arrest|Trial|Execution|Financial Crime)$", "description": "法律犯罪事件"},
+    {"domain_code": "recognition_achievement", "source": "adb", "fact_type": "event", "event_type_regex": "^Work$", "event_subtype_regex": "奖|成就|发表|出版|公开|社会地位|Prize|Achievement|Published|Publicity|status", "description": "成就声望事件"},
+    {"domain_code": "family", "source": "adb", "fact_type": "event", "event_type_regex": "^(Family|Death of) |^Family$", "description": "家庭和亲属事件"},
+    {"domain_code": "family", "source": "cbdb", "fact_type": "relation", "fact_subtype_regex": "父|母|子|女|妻|夫|兄|弟|姐|妹|祖|孙|姊|妾|岳", "description": "CBDB 亲属关系"},
+    {"domain_code": "social_institution", "source": "adb", "fact_type": "event", "event_type_regex": "^(Social|Institutionalized|Arrest)$", "description": "组织和机构事件"},
+    {"domain_code": "religion_identity", "source": "adb", "fact_type": "category", "fact_subtype_regex": "宗教|Religion|僧|牧师|神职", "description": "ADB 宗教分类"},
+    {"domain_code": "religion_identity", "source": "cbdb", "fact_type": "status", "fact_subtype_regex": "僧|道|寺|宗教", "description": "CBDB 宗教身份"}
+  ]
+}
