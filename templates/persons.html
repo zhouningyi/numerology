@@ -27,8 +27,20 @@
     <option value="M" {{ 'selected' if gender == 'M' }}>男</option>
     <option value="F" {{ 'selected' if gender == 'F' }}>女</option>
   </select>
+  <select name="source">
+    <option value="">数据源</option>
+    {% for code, label in source_labels.items() %}
+    <option value="{{ code }}" {{ 'selected' if source == code }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="analysis_tier">
+    <option value="">分析资格</option>
+    {% for code, label in analysis_tier_labels.items() %}
+    <option value="{{ code }}" {{ 'selected' if analysis_tier == code }}>{{ label }}</option>
+    {% endfor %}
+  </select>
   <button type="submit">筛选</button>
-  {% if search or element or rodden or gender or entry_type != 'person' %}
+  {% if search or element or rodden or gender or source or analysis_tier or entry_type != 'person' %}
   <a href="/persons" style="font-size:13px">清除</a>
   {% endif %}
 </form>
@@ -38,6 +50,8 @@
   <thead>
   <tr>
     <th>姓名</th>
+    <th>数据源</th>
+    <th>分析资格</th>
     <th>出生日期</th>
     <th>时间</th>
     <th>四柱</th>
@@ -51,6 +65,8 @@
   {% set elem_class = {'木':'wood','火':'fire','土':'earth','金':'metal','水':'water'}.get(p.day_master_element, '') %}
   <tr>
     <td><a href="/person/{{ p.id }}">{% if p.first_name %}{{ p.first_name }} {{ p.last_name }}{% else %}{{ p.name }}{% endif %}</a></td>
+    <td><span class="badge" title="{{ source_labels.get(p.source, p.source) }}">{{ source_short_labels.get(p.source, p.source) }}</span></td>
+    <td><span class="badge" title="{{ p.analysis_tier }}">{{ analysis_tier_labels.get(p.analysis_tier, '未生成') }}</span></td>
     <td style="font-family:monospace">{{ p.birth_date or '' }}</td>
     <td style="font-family:monospace">{{ p.birth_time or '—' }}</td>
     <td style="font-family:monospace;letter-spacing:1px">
@@ -78,10 +94,10 @@
 {% if total_pages > 1 %}
 <div class="pagination">
   {% if page > 1 %}
-  {% set qs = "q=" ~ search ~ "&element=" ~ element ~ "&rodden=" ~ rodden ~ "&gender=" ~ gender ~ "&entry_type=" ~ entry_type %}
+  {% set qs = "q=" ~ search ~ "&element=" ~ element ~ "&rodden=" ~ rodden ~ "&gender=" ~ gender ~ "&source=" ~ source ~ "&analysis_tier=" ~ analysis_tier ~ "&entry_type=" ~ entry_type %}
   <a href="?page={{ page-1 }}&{{ qs }}">上一页</a>
   {% endif %}
-  {% set qs = "q=" ~ search ~ "&element=" ~ element ~ "&rodden=" ~ rodden ~ "&gender=" ~ gender ~ "&entry_type=" ~ entry_type %}
+  {% set qs = "q=" ~ search ~ "&element=" ~ element ~ "&rodden=" ~ rodden ~ "&gender=" ~ gender ~ "&source=" ~ source ~ "&analysis_tier=" ~ analysis_tier ~ "&entry_type=" ~ entry_type %}
   {% for p in range(1, total_pages+1) %}
     {% if p == page %}
       <span class="active">{{ p }}</span>

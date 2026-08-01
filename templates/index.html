@@ -13,14 +13,30 @@
     <div class="stat-label">Astro-Databank</div>
   </div>
   <div class="card" style="text-align:center">
-    <div class="stat-num">{{ stats.wikidata }}</div>
-    <div class="stat-label">Wikidata</div>
+    <div class="stat-num">{{ stats.cbdb }}</div>
+    <div class="stat-label">CBDB</div>
   </div>
   <div class="card" style="text-align:center">
     <div class="stat-num">{{ stats.with_time }}</div>
     <div class="stat-label">有完整四柱</div>
   </div>
 </div>
+
+{% if quality_run %}
+<div class="card">
+  <h2>最近质量审计</h2>
+  <p class="muted" style="margin-bottom:10px">
+    运行 #{{ quality_run.id }} · 规则 {{ quality_run.rule_version }} · {{ quality_run.checked_at }} ·
+    <a href="/quality">查看逐条结果</a>
+  </p>
+  <div style="display:flex;gap:20px;flex-wrap:wrap">
+    {% for row in quality_counts %}
+    <span><span class="badge badge-{{ row.severity }}">{{ severity_labels.get(row.severity, row.severity) }}</span> {{ row.cnt }}</span>
+    {% endfor %}
+    <span class="muted">共 {{ quality_run.flag_count }} 条标签</span>
+  </div>
+</div>
+{% endif %}
 
 <div class="grid grid-2">
   <div class="card">

@@ -32,6 +32,104 @@
   {% endif %}
 </p>
 
+{% if not bazi and not life_facts and not events and not categories and not person.biography and not birth_facts and not death_facts %}
+<div class="card" style="border-color:var(--earth)">
+  <h2>该人物目前没有可用生平资料</h2>
+  <p class="muted">
+    这是一条 {{ source_labels.get(person.source, person.source) }} 记录（来源 ID：{{ person.source_id }}）。
+    当前来源只提供了姓名{% if person.gender %}和性别{% endif %}，没有出生年/月/日、出生时刻、死亡事实、传记或事件。
+  </p>
+  <p class="muted" style="margin-top:6px">
+    因此不能计算三柱或四柱。后续补充来源数据后，页面会自动显示相应事实。
+  </p>
+</div>
+{% endif %}
+
+{% if quality_flags %}
+<div class="card">
+  <h2>最近质量审计标签</h2>
+  <p class="muted" style="font-size:13px;margin-bottom:10px">
+    运行 #{{ quality_run.id }} · 规则 {{ quality_run.rule_version }}
+    · <a href="/quality">查看全部结果</a>
+  </p>
+  <table>
+    <tr><th>级别</th><th>规则</th><th>实体</th><th>详情</th></tr>
+    {% for flag in quality_flags %}
+    <tr>
+      <td><span class="badge badge-{{ flag.severity }}">{{ severity_labels[flag.severity] }}</span></td>
+      <td title="{{ flag.flag_code }}">{{ quality_labels.get(flag.flag_code, flag.flag_code) }}</td>
+      <td>{{ entity_labels.get(flag.entity_type, flag.entity_type) }}{% if flag.event_date %} · {{ flag.event_date }}{% endif %}</td>
+      <td class="quality-details" title="{{ flag.details_text }}">{{ flag.details_text }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% if life_facts %}
+<div class="card">
+  <h2>结构化生平事实 <span class="muted" style="font-size:12px;font-weight:400">（已导入前 {{ life_facts|length }} 条）</span></h2>
+  <table>
+    <tr><th>日期区间</th><th>类型</th><th>内容</th><th>来源</th><th>状态</th></tr>
+    {% for fact in life_facts %}
+    <tr>
+      <td style="white-space:nowrap;font-family:monospace">{% if fact.date_start %}{{ fact.date_start }}{% if fact.date_end and fact.date_end != fact.date_start %} — {{ fact.date_end }}{% endif %}{% else %}—{% endif %}</td>
+      <td>{{ fact_type_labels.get(fact.fact_type, fact.fact_type) }}{% if fact.fact_subtype %} · {{ fact.fact_subtype }}{% endif %}</td>
+      <td>{{ fact.value_text }}</td>
+      <td class="muted">{{ fact_source_labels.get(fact.source_table, fact.source_table) }}</td>
+      <td class="muted">{{ '待审核' if fact.review_status == 'pending' else '已接受' if fact.review_status == 'accepted' else '已拒绝' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% if prediction_outcomes %}
+<div class="card">
+  <h2>预测域观察结果</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">这是来源事实的标准化汇总，不是模型预测；未显示的域表示目前没有可用阳性证据。</p>
+  <table>
+    <tr><th>预测域</th><th>结果</th><th>首次日期</th><th>证据条数</th><th>来源数</th></tr>
+    {% for outcome in prediction_outcomes %}
+    <tr>
+      <td>{{ outcome.domain_name }}</td>
+      <td>{{ outcome_status_labels.get(outcome.outcome_status, outcome.outcome_status) }}</td>
+      <td>{{ outcome.first_date_start or '无日期' }}{% if outcome.first_date_end and outcome.first_date_end != outcome.first_date_start %} — {{ outcome.first_date_end }}{% endif %}</td>
+      <td>{{ outcome.evidence_count }}</td>
+      <td>{{ outcome.source_count }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% if birth_facts or death_facts %}
+<div class="card">
+  <h2>来源日期事实</h2>
+  <table>
+    <tr><th>事实</th><th>日期区间</th><th>精度</th><th>原始字段</th><th>年龄</th></tr>
+    {% for fact in birth_facts %}
+    <tr>
+      <td>出生</td>
+      <td>{{ fact.date_start or '—' }}{% if fact.date_end and fact.date_end != fact.date_start %} — {{ fact.date_end }}{% endif %}</td>
+      <td>{{ {9:'年',10:'月',11:'日'}.get(fact.date_precision, '未知') }}</td>
+      <td>{{ fact.raw_year or '—' }}{% if fact.raw_month %}-{{ '%02d'|format(fact.raw_month) }}{% endif %}{% if fact.raw_day %}-{{ '%02d'|format(fact.raw_day) }}{% endif %}</td>
+      <td>—</td>
+    </tr>
+    {% endfor %}
+    {% for fact in death_facts %}
+    <tr>
+      <td>死亡</td>
+      <td>{{ fact.date_start or '—' }}{% if fact.date_end and fact.date_end != fact.date_start %} — {{ fact.date_end }}{% endif %}</td>
+      <td>{{ {9:'年',10:'月',11:'日'}.get(fact.date_precision, '未知') }}</td>
+      <td>{{ fact.raw_year or '—' }}{% if fact.raw_month %}-{{ '%02d'|format(fact.raw_month) }}{% endif %}{% if fact.raw_day %}-{{ '%02d'|format(fact.raw_day) }}{% endif %}</td>
+      <td>{{ fact.death_age or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
 {% if bazi %}
 <!-- 四柱 -->
 <div class="card">
@@ -209,7 +307,10 @@
     <tr><td style="color:var(--text-muted)">出生地</td><td>{{ person.birth_place or '—' }}{% if person.birth_country %}, {{ person.birth_country }}{% endif %}</td></tr>
     <tr><td style="color:var(--text-muted)">经纬度</td><td>{% if person.birth_lat %}{{ "%.4f"|format(person.birth_lat) }}, {{ "%.4f"|format(person.birth_lon) }}{% else %}—{% endif %}</td></tr>
     <tr><td style="color:var(--text-muted)">Rodden评级</td><td>{{ person.rodden_rating or '—' }}</td></tr>
-    <tr><td style="color:var(--text-muted)">数据来源</td><td>{{ person.source }}</td></tr>
+    <tr><td style="color:var(--text-muted)">数据来源</td><td><span class="badge" title="{{ person.source }}">{{ source_labels.get(person.source, person.source) }}</span></td></tr>
+    {% if quality_profile %}
+    <tr><td style="color:var(--text-muted)">统一分析层级</td><td><span class="badge">{{ analysis_tier_labels.get(quality_profile.analysis_tier, quality_profile.analysis_tier) }}</span></td></tr>
+    {% endif %}
     {% if person.death_date %}
     <tr><td style="color:var(--text-muted)">死亡日期</td><td>{{ person.death_date }}</td></tr>
     {% endif %}
