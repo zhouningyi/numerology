@@ -7,7 +7,7 @@ import re
 import sqlite3
 from typing import Optional
 
-from ..collectors.adb import AdbEvent, AdbPerson, _parse_coord
+from ..collectors.adb import AdbEvent, AdbPerson, _normalize_longitude, _parse_coord
 from ..collectors.wikidata import WikidataPerson
 from ..engines.bazi import calculate_bazi
 
@@ -57,7 +57,7 @@ def insert_adb_person(conn: sqlite3.Connection, person: AdbPerson) -> Optional[i
 
     hour, minute = _parse_adb_time(person.birth_time)
     lat = _parse_coord(person.latitude) if person.latitude else None
-    lon = _parse_coord(person.longitude) if person.longitude else None
+    lon = _normalize_longitude(_parse_coord(person.longitude)) if person.longitude else None
 
     iso_date = f"{year:04d}-{month:02d}-{day:02d}"
     gender_code = person.gender if person.gender in ("M", "F") else None
@@ -69,8 +69,14 @@ def insert_adb_person(conn: sqlite3.Connection, person: AdbPerson) -> Optional[i
                 gender, birth_date, birth_time,
                 birth_year, birth_month, birth_day, birth_hour, birth_minute,
                 birth_place, birth_country, birth_lat, birth_lon,
+                birth_lat_raw, birth_lon_raw, tz_meridian, tz_abbr, time_type,
+                time_accuracy, time_unknown, sun_degmin, moon_degmin, asc_degmin,
                 rodden_rating, biography)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (
+                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+               )""",
             (
                 "adb",
                 str(person.page_id),
@@ -90,6 +96,16 @@ def insert_adb_person(conn: sqlite3.Connection, person: AdbPerson) -> Optional[i
                 person.birth_country,
                 lat,
                 lon,
+                person.latitude,
+                person.longitude,
+                person.tz_meridian,
+                person.tz_abbr,
+                person.time_type,
+                person.time_accuracy,
+                person.time_unknown,
+                person.sun_degmin,
+                person.moon_degmin,
+                person.asc_degmin,
                 person.rodden_rating,
                 person.biography,
             ),

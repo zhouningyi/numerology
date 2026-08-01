@@ -54,6 +54,17 @@ class AdbPerson:
     categories: list[str]
     biography: Optional[str] = None  # 传记文本（从 ==Biography== 段落提取）
     events: list[AdbEvent] | None = None  # 生平事件列表
+    # 时区信息（真太阳时校正所需）
+    tz_meridian: Optional[str] = None  # 原始 stmerid，如 'h5w' / 'm10e0'
+    tz_abbr: Optional[str] = None  # 时区缩写，如 'EST' / 'LMT' / 'GDT'
+    time_type: Optional[str] = None  # 'standard time' / 'local mean time' / ...
+    # 出生时间精度（决定时柱插补的不确定性宽度）
+    time_accuracy: Optional[str] = None  # 如 'Fifteen minutes' / '2 hours'
+    time_unknown: int = 0  # 1 = ADB 明确标注时间未知
+    # 西洋占星星座（作为统计分析的对照组）
+    sun_degmin: Optional[str] = None
+    moon_degmin: Optional[str] = None
+    asc_degmin: Optional[str] = None
     # 派生字段（由 classify_entry 填充）
     entry_type: str = "person"  # 'person', 'event', 'other'
     last_name: Optional[str] = None
@@ -61,22 +72,82 @@ class AdbPerson:
 
 
 def _parse_coord(coord_str: str) -> Optional[float]:
-    """Parse ADB coordinate format (e.g. '48n24' -> 48.4, '10e0' -> 10.0).
+    """Parse ADB coordinate format into decimal degrees.
 
-    Format: degrees + direction(n/s/e/w) + minutes
+    ADB 用方向字母分隔度与「分秒」，分秒部分位数决定含义：
+        '10e0'      -> 10°00'      -> 10.0
+        '48n24'     -> 48°24'      -> 48.4
+        '112e2830'  -> 112°28'30"  -> 112.475   (度分秒)
+        '71w07'     -> -71°07'     -> -71.1167
+
+    注意：早期实现把 4 位的分秒串整个当作「分」，
+    112e2830 被算成 112 + 2830/60 = 159.17°（偏差 47 度）。
     """
     if not coord_str:
         return None
     m = re.match(r"(\d+)([nsew])(\d*)", coord_str.strip().lower())
     if not m:
         return None
+
     degrees = int(m.group(1))
     direction = m.group(2)
-    minutes = int(m.group(3)) if m.group(3) else 0
-    result = degrees + minutes / 60.0
+    rest = m.group(3)
+
+    # 分秒串：≤2 位为「分」，≥3 位为「分(2) + 秒(余下)」
+    if not rest:
+        minutes = seconds = 0
+    elif len(rest) <= 2:
+        minutes, seconds = int(rest), 0
+    else:
+        minutes, seconds = int(rest[:2]), int(rest[2:4].ljust(2, "0"))
+
+    result = degrees + minutes / 60.0 + seconds / 3600.0
     if direction in ("s", "w"):
         result = -result
     return round(result, 4)
+
+
+def _parse_meridian(merid_str: str) -> Optional[float]:
+    """Parse ADB 时区中央经线字段 (stmerid) 为十进制经度。
+
+    两种格式：
+        'm10e0'     地方平时 (LMT)，中央经线即出生地经度 -> 校正量为 0
+        'm112e2830' 同上（度分秒）
+        'h5w'       标准时区 UTC-5  -> 中央经线 -75°
+        'h1e'       标准时区 UTC+1  -> 中央经线 +15°
+        'h5e30'     半小时时区 UTC+5:30 -> 中央经线 +82.5°
+
+    ADB 的 stmerid 已包含夏令时偏移（如英国夏令时记为 h1e），
+    因此无需另行处理 DST。
+    """
+    if not merid_str:
+        return None
+    s = merid_str.strip().lower()
+
+    if s.startswith("m"):
+        # 地方平时：中央经线就是出生地经度
+        return _parse_coord(s[1:])
+
+    m = re.match(r"h(\d+)([ew])(\d*)", s)
+    if not m:
+        return None
+    hours = int(m.group(1))
+    minutes = int(m.group(3)) if m.group(3) else 0
+    offset_hours = hours + minutes / 60.0
+    if m.group(2) == "w":
+        offset_hours = -offset_hours
+    return round(offset_hours * 15.0, 4)
+
+
+def _normalize_longitude(longitude: Optional[float]) -> Optional[float]:
+    """将跨越日期变更线的经度归一化到 [-180, 180]。"""
+    if longitude is None:
+        return None
+    while longitude > 180:
+        longitude -= 360
+    while longitude < -180:
+        longitude += 360
+    return round(longitude, 4)
 
 
 def _parse_template(wikitext: str) -> Optional[dict]:
@@ -296,6 +367,31 @@ class AdbCollector:
                     result[pdata["title"]] = revs[0].get("*", "")
         return result
 
+    def fetch_pages_content_by_ids(self, page_ids: list[int]) -> dict[int, tuple[str, str]]:
+        """按 page_id 批量获取页面，返回 ``page_id -> (title, wikitext)``。"""
+        result: dict[int, tuple[str, str]] = {}
+        for i in range(0, len(page_ids), 50):
+            batch = page_ids[i : i + 50]
+            data = self._api_get(
+                {
+                    "action": "query",
+                    "pageids": "|".join(str(page_id) for page_id in batch),
+                    "prop": "revisions",
+                    "rvprop": "content",
+                }
+            )
+            pages = data.get("query", {}).get("pages", {})
+            for page_id, page in pages.items():
+                if int(page_id) < 0:
+                    continue
+                revisions = page.get("revisions", [])
+                if revisions:
+                    result[int(page_id)] = (
+                        page.get("title", ""),
+                        revisions[0].get("*", ""),
+                    )
+        return result
+
     def parse_person(
         self, page_id: int, page_title: str, wikitext: str
     ) -> Optional[AdbPerson]:
@@ -337,6 +433,14 @@ class AdbCollector:
             categories=categories,
             biography=biography,
             events=events,
+            tz_meridian=fields.get("stmerid") or None,
+            tz_abbr=fields.get("TmZnAbbr") or None,
+            time_type=fields.get("stimetype") or None,
+            time_accuracy=fields.get("stimeacc") or None,
+            time_unknown=1 if fields.get("t_unknown") else 0,
+            sun_degmin=fields.get("sun_degmin") or None,
+            moon_degmin=fields.get("moon_degmin") or None,
+            asc_degmin=fields.get("asc_degmin") or None,
             entry_type=entry_type,
             last_name=last_name,
             first_name=first_name,

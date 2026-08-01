@@ -5,7 +5,9 @@ Wraps lunar_python to provide a clean batch-processing API.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from typing import Optional
 
 from lunar_python import Solar
@@ -38,7 +40,7 @@ YINYANG_MAP = {
     "癸": "阴",
 }
 
-# 地支藏干
+# 地支藏干（列表顺序即 本气 → 中气 → 余气）
 BRANCH_HIDDEN_STEMS = {
     "子": ["癸"],
     "丑": ["己", "癸", "辛"],
@@ -53,6 +55,52 @@ BRANCH_HIDDEN_STEMS = {
     "戌": ["戊", "辛", "丁"],
     "亥": ["壬", "甲"],
 }
+
+# 藏干权重方案：按 [本气, 中气, 余气] 顺序取权重
+# - equal:   全部等权，与早期实现一致，保留作为对照基线
+# - classic: 本气为主、中余气递减，古籍通行的简化比例
+CANGGAN_WEIGHT_SCHEMES: dict[str, list[float]] = {
+    "equal": [1.0, 1.0, 1.0],
+    "classic": [1.0, 0.5, 0.2],
+}
+
+# 天干在五行统计中的权重（天干透出，恒为 1）
+STEM_WEIGHT = 1.0
+
+
+def equation_of_time(dt: datetime) -> float:
+    """均时差（分钟）：真太阳时与平太阳时之差。
+
+    使用通行的近似公式，精度约 ±30 秒 —— 相对于时柱 2 小时的跨度可忽略。
+    """
+    n = dt.timetuple().tm_yday
+    b = 2 * math.pi * (n - 81) / 364.0
+    return 9.87 * math.sin(2 * b) - 7.53 * math.cos(b) - 1.5 * math.sin(b)
+
+
+def solar_time_correction(dt: datetime, lon: float, meridian_lon: float) -> float:
+    """真太阳时校正量（分钟）= 经度差校正 + 均时差。
+
+    Args:
+        dt: 当地钟表时间
+        lon: 出生地经度（东经为正）
+        meridian_lon: 记录时间所依据的时区中央经线
+
+    地球每 15° 经度对应 1 小时，即每 1° 对应 4 分钟。
+    """
+    return (lon - meridian_lon) * 4.0 + equation_of_time(dt)
+
+
+def to_true_solar_time(
+    dt: datetime, lon: float, meridian_lon: float
+) -> tuple[datetime, float]:
+    """将当地钟表时间换算为真太阳时。
+
+    Returns:
+        (校正后的时间, 校正量分钟)。校正可能跨日，从而改变日柱。
+    """
+    correction = solar_time_correction(dt, lon, meridian_lon)
+    return dt + timedelta(minutes=correction), correction
 
 
 @dataclass
@@ -86,12 +134,12 @@ class BaZiResult:
     month_shishen_gan: str
     time_shishen_gan: Optional[str]
 
-    # 五行统计 (天干+地支藏干)
-    wood_count: int = 0
-    fire_count: int = 0
-    earth_count: int = 0
-    metal_count: int = 0
-    water_count: int = 0
+    # 五行统计 (天干+地支藏干)，equal 方案下为整数值
+    wood_count: float = 0.0
+    fire_count: float = 0.0
+    earth_count: float = 0.0
+    metal_count: float = 0.0
+    water_count: float = 0.0
 
     # 纳音
     year_nayin: str = ""
@@ -106,10 +154,32 @@ class BaZiResult:
     # 是否有时柱
     has_time_pillar: bool = False
 
+    # 排盘配置与校正记录（用于流派对比和结果复现）
+    sect: int = 2  # 1=晚子时归次日, 2=晚子时归当日
+    canggan_weights: str = "equal"
+    solar_correction_min: Optional[float] = None  # 真太阳时校正量（分钟）
+    corrected_datetime: Optional[str] = None  # 校正后的时刻，跨日时与原始日期不同
 
-def _count_elements(pillars: list[str]) -> dict[str, int]:
-    """统计四柱中的五行数量 (天干 + 地支藏干)。"""
-    counts = {"木": 0, "火": 0, "土": 0, "金": 0, "水": 0}
+
+def _count_elements(
+    pillars: list[str], weights: str = "equal"
+) -> dict[str, float]:
+    """统计四柱中的五行力量 (天干 + 地支藏干)。
+
+    Args:
+        pillars: 干支柱列表
+        weights: 藏干权重方案名，见 CANGGAN_WEIGHT_SCHEMES
+
+    equal 方案下每个藏干等权计 1，结果与整数计数一致。
+    """
+    scheme = CANGGAN_WEIGHT_SCHEMES.get(weights)
+    if scheme is None:
+        raise ValueError(
+            f"未知的藏干权重方案 {weights!r}，"
+            f"可选：{sorted(CANGGAN_WEIGHT_SCHEMES)}"
+        )
+
+    counts = {"木": 0.0, "火": 0.0, "土": 0.0, "金": 0.0, "水": 0.0}
     for pillar in pillars:
         if not pillar:
             continue
@@ -118,13 +188,13 @@ def _count_elements(pillars: list[str]) -> dict[str, int]:
         # 天干
         elem = ELEMENT_MAP.get(gan)
         if elem:
-            counts[elem] += 1
-        # 地支藏干
-        for hidden in BRANCH_HIDDEN_STEMS.get(zhi, []):
+            counts[elem] += STEM_WEIGHT
+        # 地支藏干：按 本气/中气/余气 的位置取权重
+        for idx, hidden in enumerate(BRANCH_HIDDEN_STEMS.get(zhi, [])):
             elem = ELEMENT_MAP.get(hidden)
             if elem:
-                counts[elem] += 1
-    return counts
+                counts[elem] += scheme[min(idx, len(scheme) - 1)]
+    return {k: round(v, 4) for k, v in counts.items()}
 
 
 def calculate_bazi(
@@ -134,6 +204,12 @@ def calculate_bazi(
     hour: Optional[int] = None,
     minute: int = 0,
     gender: int = 1,  # 1=male, 0=female
+    *,
+    lon: Optional[float] = None,
+    tz_meridian_lon: Optional[float] = None,
+    true_solar_time: bool = False,
+    sect: int = 2,
+    canggan_weights: str = "equal",
 ) -> BaZiResult:
     """计算八字。
 
@@ -144,6 +220,15 @@ def calculate_bazi(
         hour: 公历时 (0-23), None表示不知道出生时间
         minute: 公历分 (0-59)
         gender: 性别, 1=男, 0=女
+        lon: 出生地经度（东经为正），真太阳时校正所需
+        tz_meridian_lon: 记录时间所依据的时区中央经线
+        true_solar_time: 是否换算为真太阳时。需同时提供 lon 与 tz_meridian_lon
+        sect: 子时流派。1=晚子时(23:00-24:00)归次日，2=归当日。
+            影响日柱即日主，是各家分歧最大的排盘参数之一
+        canggan_weights: 藏干权重方案，见 CANGGAN_WEIGHT_SCHEMES
+
+    默认参数保持与早期实现一致的行为（不校正真太阳时、sect=2、藏干等权），
+    以便同一批数据可做修正前后的对照。
 
     Returns:
         BaZiResult 包含完整的八字信息
@@ -153,9 +238,22 @@ def calculate_bazi(
     h = hour if hour is not None else 12
     m = minute
 
+    # 真太阳时校正：可能跨日，进而改变日柱
+    correction_min = None
+    corrected_str = None
+    if true_solar_time and lon is not None and tz_meridian_lon is not None:
+        corrected, correction_min = to_true_solar_time(
+            datetime(year, month, day, h, m), lon, tz_meridian_lon
+        )
+        corrected_str = corrected.strftime("%Y-%m-%d %H:%M")
+        year, month, day = corrected.year, corrected.month, corrected.day
+        h, m = corrected.hour, corrected.minute
+        correction_min = round(correction_min, 2)
+
     solar = Solar(year, month, day, h, m, 0)
     lunar = solar.getLunar()
     eight_char = lunar.getEightChar()
+    eight_char.setSect(sect)
 
     year_p = eight_char.getYear()
     month_p = eight_char.getMonth()
@@ -175,7 +273,7 @@ def calculate_bazi(
     pillars = [year_p, month_p, day_p]
     if time_p:
         pillars.append(time_p)
-    elem_counts = _count_elements(pillars)
+    elem_counts = _count_elements(pillars, weights=canggan_weights)
 
     # 纳音
     year_ny = eight_char.getYearNaYin()
@@ -235,4 +333,8 @@ def calculate_bazi(
         dayun_start_age=dayun_start_age,
         dayun_list=dayun_list,
         has_time_pillar=hour is not None,
+        sect=sect,
+        canggan_weights=canggan_weights,
+        solar_correction_min=correction_min,
+        corrected_datetime=corrected_str,
     )
