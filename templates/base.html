@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
 <title>{% block title %}命理学统计研究{% endblock %}</title>
 <style>
   :root {
@@ -21,11 +22,11 @@
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
 
-  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+  .container { max-width: 1320px; margin: 0 auto; padding: 0 14px; }
 
   nav {
     background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 12px 0; margin-bottom: 24px;
+    padding: 8px 0; margin-bottom: 14px;
   }
   nav .container { display: flex; align-items: center; gap: 24px; }
   nav .logo { font-size: 18px; font-weight: 600; color: var(--text); }
@@ -34,9 +35,9 @@
 
   .card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 20px; margin-bottom: 16px;
+    border-radius: 7px; padding: 14px; margin-bottom: 10px;
   }
-  .card h2 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
+  .card h2 { font-size: 15px; margin-bottom: 8px; color: var(--text); }
 
   .grid { display: grid; gap: 16px; }
   .grid-2 { grid-template-columns: 1fr 1fr; }
@@ -47,10 +48,10 @@
   .stat-num { font-size: 32px; font-weight: 700; color: var(--accent); }
   .stat-label { font-size: 13px; color: var(--text-muted); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; padding: 8px 12px; color: var(--text-muted);
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 6px 8px; color: var(--text-muted);
        border-bottom: 1px solid var(--border); font-weight: 500; }
-  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
   tr:hover { background: rgba(88,166,255,0.04); }
 
   .badge {
@@ -69,6 +70,28 @@
   .badge-b { background: rgba(210,153,34,0.15); color: var(--earth); }
   .badge-c { background: rgba(248,81,73,0.15); color: var(--fire); }
   .badge-dd { background: rgba(201,209,217,0.1); color: var(--text-muted); }
+  .badge-error { background: rgba(248,81,73,0.16); color: var(--fire); }
+  .badge-warning { background: rgba(210,153,34,0.16); color: var(--earth); }
+  .badge-info { background: rgba(88,166,255,0.16); color: var(--accent); }
+  .muted { color: var(--text-muted); }
+  .quality-details { max-width: 300px; overflow: hidden; text-overflow: ellipsis;
+                     white-space: nowrap; color: var(--text-muted);
+                     font: 11px/1.3 ui-monospace, SFMono-Regular, monospace; }
+  .quality-page h1 { font-size: 22px; margin-bottom: 2px !important; }
+  .quality-page .quality-meta { font-size: 12px; margin-bottom: 10px !important; }
+  .quality-page .card { padding: 10px; }
+  .quality-page .grid { gap: 10px; }
+  .quality-page .filter-bar { gap: 7px; margin-bottom: 0; }
+  .quality-page .filter-bar select, .quality-page .filter-bar button { padding: 4px 7px; font-size: 12px; }
+  .quality-page .quality-summary { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+  .quality-page .quality-summary table { font-size: 12px; }
+  .quality-page .quality-table { font-size: 12px; }
+  .quality-page .quality-table th, .quality-page .quality-table td { padding: 4px 6px; }
+  .quality-page .quality-table th:nth-child(1) { width: 58px; }
+  .quality-page .quality-table th:nth-child(2) { width: 180px; }
+  .quality-page .quality-table th:nth-child(3) { width: 105px; }
+  .quality-page .quality-table th:nth-child(5) { width: 300px; }
+  @media (max-width: 900px) { .quality-page .quality-summary { grid-template-columns: 1fr; } }
 
   .pillar-box {
     display: inline-flex; flex-direction: column; align-items: center;
@@ -116,6 +139,10 @@
     <span class="logo">命理统计</span>
     <a href="/">概览</a>
     <a href="/persons">人物列表</a>
+    <a href="/domains">预测域</a>
+    <a href="/quality">质量审计</a>
+    <a href="/canon">古籍语料</a>
+    <a href="/docs">研究文档</a>
   </div>
 </nav>
 <div class="container">

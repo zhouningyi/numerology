@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}古籍语料与规则研究{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:2px">古籍语料与规则研究</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  流水线：扫描 PDF / 网页快照 → processed 文本 → 逐段分层标注（candidate）→ 人工校勘（verified）→ 规则 YAML → 预注册。
+  分层说明见 <a href="/docs/古籍逻辑提取初稿">古籍逻辑提取初稿</a> 与 <a href="/docs/古籍OCR与规则校勘规范">OCR 与校勘规范</a>。
+</p>
+
+<div class="card">
+  <h2>四本书分层标注进度</h2>
+  <table>
+    <tr>
+      <th>书名</th><th>章节</th><th>总段数</th>
+      {% for key, label in layer_labels.items() %}<th>{{ key }}</th>{% endfor %}
+      <th>待人工校勘（low）</th><th>文本大小</th>
+    </tr>
+    {% for b in books %}
+    <tr>
+      <td><a href="/canon/{{ b.key }}">{{ b.title }}</a>
+        {% if b.markers %}<span class="muted" style="font-size:11px">（标记：{{ b.markers|join('、') }}）</span>{% endif %}
+      </td>
+      <td>{{ b.stats.chapters }}</td>
+      <td>{{ b.stats.total }}</td>
+      {% for key in layer_labels %}
+      <td>
+        {% set l = b.stats.layers.get(key) %}
+        {% if l %}
+          <span class="badge {{ layer_badges[key] }}">{{ l.high + l.low }}</span>
+          <span class="muted" style="font-size:11px">高{{ l.high }}/低{{ l.low }}</span>
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      {% endfor %}
+      <td>{% if b.stats.low_pending %}<span class="badge badge-warning">{{ b.stats.low_pending }}</span>{% else %}<span class="badge badge-aa">0</span>{% endif %}</td>
+      <td class="muted">{{ '%.1f'|format(b.text_size / 1024) }} KB</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="muted" style="font-size:12px;margin-top:8px">
+    置信度含义：<b>高</b>＝段落带显式标记（【徐注】/【原注】/【任氏曰】/【眉批】）或位于白话译文区块；
+    <b>低</b>＝按网页区块推断，网页“原文”标签不区分原著与评注（徐注五用神段即被其误标），
+    低置信段落须人工校勘后方可用于规则提取。
+  </p>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>扫描底本（raw，只读）</h2>
+    <table>
+      <tr><th>文件</th><th>大小</th></tr>
+      {% for s in scans %}
+      <tr><td>{{ s.name }}</td><td class="muted">{{ '%.1f'|format(s.size_mb) }} MB</td></tr>
+      {% else %}
+      <tr><td colspan="2" class="muted">暂无扫描件</td></tr>
+      {% endfor %}
+    </table>
+    <p class="muted" style="font-size:12px;margin-top:8px">
+      扫描图像是版本核验的第一证据；OCR 文本与网页录入本都只是辅助比对材料。
+    </p>
+  </div>
+  <div class="card">
+    <h2>OCR 进度</h2>
+    <table>
+      <tr><th>版本</th><th>已渲染页面</th><th>已识别页</th><th>状态</th></tr>
+      {% for e in editions %}
+      <tr>
+        <td><a href="/canon/ocr/{{ e.source_id }}">{{ e.source_id }}</a></td>
+        <td>{{ e.page_count }}</td>
+        <td>{{ e.ocr_count }}</td>
+        <td>
+          {% for status, cnt in e.status_counts.items() %}
+            <span class="badge badge-info">{{ status }}: {{ cnt }}</span>
+          {% else %}<span class="muted">未运行 OCR</span>{% endfor %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">暂无 OCR 输出</td></tr>
+      {% endfor %}
+    </table>
+    <p class="muted" style="font-size:12px;margin-top:8px">
+      入口脚本：<code>ocr_canon.py</code>（PaddleOCR，逐页保存原始结果与页面 PNG）。
+    </p>
+  </div>
+</div>
+{% endblock %}

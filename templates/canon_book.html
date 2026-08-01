@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · 分层标注{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:2px">{{ title }} · 分层标注浏览</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  <a href="/canon">← 返回古籍总览</a> ·
+  共 {{ stats.total }} 段，{{ stats.chapters }} 章，待人工校勘 {{ stats.low_pending }} 段
+</p>
+
+<form class="filter-bar" method="get">
+  <select name="chapter">
+    <option value="">全部章节</option>
+    {% for c in chapters %}
+    <option value="{{ c }}" {% if chapter == c %}selected{% endif %}>第 {{ c }} 章</option>
+    {% endfor %}
+  </select>
+  <select name="layer">
+    <option value="">全部层级</option>
+    {% for key, label in layer_labels.items() %}
+    <option value="{{ key }}" {% if layer == key %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="confidence">
+    <option value="">全部置信度</option>
+    <option value="high" {% if confidence == 'high' %}selected{% endif %}>高（显式标记）</option>
+    <option value="low" {% if confidence == 'low' %}selected{% endif %}>低（待人工校勘）</option>
+  </select>
+  <button type="submit">筛选</button>
+  <span class="muted" style="font-size:13px">命中 {{ total }} 段</span>
+</form>
+
+{% for s in segments %}
+<div class="card" style="padding:10px 14px">
+  <div style="margin-bottom:6px">
+    <span class="badge {{ layer_badges[s.layer] }}">{{ s.layer }}</span>
+    {% if s.marker %}<span class="badge badge-info">【{{ s.marker }}】</span>{% endif %}
+    {% if s.confidence == 'low' %}<span class="badge badge-warning">低置信 · 待校勘</span>{% endif %}
+    <span class="muted" style="font-size:12px">
+      第 {{ s.chapter if s.chapter is not none else '?' }} 章 · 段 {{ s.segment_index }}
+    </span>
+  </div>
+  <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ s.text }}</div>
+</div>
+{% else %}
+<div class="card muted">没有符合条件的段落。</div>
+{% endfor %}
+
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% set base = '/canon/' ~ book ~ '?layer=' ~ layer ~ '&confidence=' ~ confidence ~ (('&chapter=' ~ chapter) if chapter is not none else '') %}
+  {% if page > 1 %}<a href="{{ base }}&page={{ page - 1 }}">上一页</a>{% endif %}
+  <span class="active">{{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="{{ base }}&page={{ page + 1 }}">下一页</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

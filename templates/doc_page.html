@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ name }}{% endblock %}
+{% block content %}
+<p class="muted" style="font-size:13px;margin:6px 0"><a href="/docs">← 全部文档</a></p>
+<div class="card doc-body">
+  {{ body|safe }}
+</div>
+<style>
+  .doc-body { padding: 20px 26px; max-width: 980px; }
+  .doc-body h1 { font-size: 24px; margin: 8px 0 12px; }
+  .doc-body h2 { font-size: 19px; margin: 20px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .doc-body h3 { font-size: 16px; margin: 16px 0 6px; }
+  .doc-body p, .doc-body li { font-size: 14px; }
+  .doc-body ul, .doc-body ol { padding-left: 24px; margin: 8px 0; }
+  .doc-body table { margin: 10px 0; }
+  .doc-body blockquote { border-left: 3px solid var(--accent); padding: 4px 12px;
+    color: var(--text-muted); margin: 10px 0; background: rgba(88,166,255,0.05); }
+  .doc-body pre { background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px; overflow-x: auto; font-size: 12.5px; margin: 10px 0; }
+  .doc-body code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12.5px; }
+  .doc-body p code, .doc-body li code, .doc-body td code {
+    background: rgba(110,118,129,0.2); padding: 1px 5px; border-radius: 4px; }
+</style>
+{% endblock %}

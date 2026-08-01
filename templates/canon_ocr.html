@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}OCR · {{ source_id }}{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:2px">OCR 结果 · {{ source_id }}</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  <a href="/canon">← 返回古籍总览</a> ·
+  扫描图像是版本核验的第一证据，OCR 文本为原始识别结果（未人工修改）。
+</p>
+
+{% for p in pages %}
+<div class="card">
+  <h2>PDF 第 {{ p.number }} 页
+    <span class="badge {% if p.status == 'reviewed' %}badge-aa{% elif p.status == 'raw' %}badge-info{% else %}badge-dd{% endif %}">{{ p.status }}</span>
+  </h2>
+  <div class="grid grid-2">
+    <div>
+      <img src="/canon/ocr/{{ source_id }}/pages/{{ p.image }}"
+           style="max-width:100%;border:1px solid var(--border);border-radius:6px"
+           alt="第 {{ p.number }} 页扫描图">
+    </div>
+    <div>
+      {% if p.text %}
+      <div style="white-space:pre-wrap;font-size:13px;line-height:1.8">{{ p.text }}</div>
+      {% else %}
+      <p class="muted">该页尚未运行 OCR。运行：<code>python3 ocr_canon.py --pages {{ p.number }} …</code></p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card muted">该版本还没有渲染页面。</div>
+{% endfor %}
+{% endblock %}

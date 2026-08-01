@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}研究文档与经验总结{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:2px">研究文档与经验总结</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  仓库 docs/ 目录的全部文档：研究设计、数据审计、古籍提取规范与实施经验。
+</p>
+<div class="card">
+  <table>
+    <tr><th>文档</th><th>大小</th></tr>
+    {% for d in docs %}
+    <tr>
+      <td><a href="/docs/{{ d.name }}">{{ d.title }}</a></td>
+      <td class="muted">{{ '%.1f'|format(d.size_kb) }} KB</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
