@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}质量审计 - 命理统计{% endblock %}
+{% block content %}
+<div class="quality-page">
+<h1 style="margin-bottom:6px">数据质量审计</h1>
+{% if not run %}
+<div class="card">
+  <p>还没有持久化审计结果。先运行：</p>
+  <pre style="margin-top:10px;color:var(--text-muted)">python3 audit_data.py --persist</pre>
+</div>
+{% else %}
+<p class="muted quality-meta" style="margin-bottom:20px">
+  运行 #{{ run.id }} · 规则 {{ run.rule_version }} · {{ run.checked_at }} ·
+  共 {{ run.flag_count }} 条标签
+</p>
+
+<div class="card">
+  <form class="filter-bar" method="get" action="/quality">
+    <label class="muted">审计版本
+      <select name="run_id" onchange="this.form.submit()">
+        {% for r in runs %}
+        <option value="{{ r.id }}" {{ 'selected' if r.id == run.id }}>
+          #{{ r.id }} · {{ r.rule_version }} · {{ r.checked_at }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <select name="severity">
+      <option value="">全部级别</option>
+      <option value="error" {{ 'selected' if severity == 'error' }}>错误</option>
+      <option value="warning" {{ 'selected' if severity == 'warning' }}>警告</option>
+      <option value="info" {{ 'selected' if severity == 'info' }}>提示</option>
+    </select>
+    <select name="entity_type">
+      <option value="">全部实体</option>
+      {% for e in ['person', 'event', 'source_record', 'birth_fact'] %}
+      <option value="{{ e }}" {{ 'selected' if entity_type == e }}>{{ entity_labels[e] }}</option>
+      {% endfor %}
+    </select>
+    <select name="flag_code">
+      <option value="">全部规则</option>
+      {% for code in flag_codes %}
+      <option value="{{ code.flag_code }}" {{ 'selected' if flag_code == code.flag_code }}>{{ quality_labels.get(code.flag_code, code.flag_code) }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">筛选</button>
+    {% if severity or entity_type or flag_code %}<a href="/quality?run_id={{ run.id }}">清除</a>{% endif %}
+  </form>
+</div>
+
+<div class="quality-summary">
+  <div class="card">
+    <h2>按规则统计</h2>
+    <table>
+      <tr><th>级别</th><th>规则</th><th>实体</th><th>数量</th></tr>
+      {% for row in counts %}
+      <tr>
+        <td><span class="badge badge-{{ row.severity }}">{{ severity_labels[row.severity] }}</span></td>
+        <td title="{{ row.flag_code }}">{{ quality_labels.get(row.flag_code, row.flag_code) }}</td>
+        <td>{{ entity_labels.get(row.entity_type, row.entity_type) }}</td><td>{{ row.cnt }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>当前筛选</h2>
+    <div class="stat-num">{{ total }}</div>
+    <div class="stat-label">条逐条标签</div>
+  <p class="muted" style="margin-top:8px;font-size:12px">错误：进入正式分析前修复或排除；警告：保留并用于分层或敏感性分析。</p>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow-x:auto">
+  <table class="quality-table">
+    <tr><th>级别</th><th>规则</th><th>实体</th><th>人物/事件</th><th>回查详情</th></tr>
+    {% for flag in flags %}
+    <tr>
+      <td><span class="badge badge-{{ flag.severity }}">{{ severity_labels[flag.severity] }}</span></td>
+      <td title="{{ flag.flag_code }}">{{ quality_labels.get(flag.flag_code, flag.flag_code) }}</td>
+      <td>{{ entity_labels.get(flag.entity_type, flag.entity_type) }} #{{ flag.entity_id }}</td>
+      <td>
+        {% if flag.person_id %}<a href="/person/{{ flag.person_id }}">{{ flag.person_name }}</a>
+        {% elif flag.event_person_id %}<a href="/person/{{ flag.event_person_id }}">{{ flag.event_person_name }}</a>
+        {% else %}—{% endif %}
+        {% if flag.event_date %}<span class="muted"> · {{ flag.event_date }}</span>{% endif %}
+      </td>
+      <td class="quality-details" title="{{ flag.details_text }}">{{ flag.details_text }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">当前筛选没有结果</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}<a href="?run_id={{ run.id }}&severity={{ severity }}&entity_type={{ entity_type }}&flag_code={{ flag_code }}&page={{ page-1 }}">上一页</a>{% endif %}
+  <span class="active">第 {{ page }} / {{ total_pages }} 页</span>
+  {% if page < total_pages %}<a href="?run_id={{ run.id }}&severity={{ severity }}&entity_type={{ entity_type }}&flag_code={{ flag_code }}&page={{ page+1 }}">下一页</a>{% endif %}
+</div>
+{% endif %}
+{% endif %}
+</div>
+{% endblock %}
