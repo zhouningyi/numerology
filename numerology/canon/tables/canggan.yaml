@@ -1,0 +1,17 @@
+# 地支藏干表（通行本气/中气/余气结构）
+# 来源：《渊海子平》《三命通会》通行藏干歌诀；各家权重方案由排盘配置
+# （bazi_configs.canggan_weights）选择，本表只记录结构不定权重数值。
+source: 渊海子平/三命通会通行藏干；权重方案见 bazi_configs
+hidden_stems:
+  子: [{gan: 癸, role: 本气}]
+  丑: [{gan: 己, role: 本气}, {gan: 癸, role: 中气}, {gan: 辛, role: 余气}]
+  寅: [{gan: 甲, role: 本气}, {gan: 丙, role: 中气}, {gan: 戊, role: 余气}]
+  卯: [{gan: 乙, role: 本气}]
+  辰: [{gan: 戊, role: 本气}, {gan: 乙, role: 中气}, {gan: 癸, role: 余气}]
+  巳: [{gan: 丙, role: 本气}, {gan: 庚, role: 中气}, {gan: 戊, role: 余气}]
+  午: [{gan: 丁, role: 本气}, {gan: 己, role: 中气}]
+  未: [{gan: 己, role: 本气}, {gan: 丁, role: 中气}, {gan: 乙, role: 余气}]
+  申: [{gan: 庚, role: 本气}, {gan: 壬, role: 中气}, {gan: 戊, role: 余气}]
+  酉: [{gan: 辛, role: 本气}]
+  戌: [{gan: 戊, role: 本气}, {gan: 辛, role: 中气}, {gan: 丁, role: 余气}]
+  亥: [{gan: 壬, role: 本气}, {gan: 甲, role: 中气}]
