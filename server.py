@@ -967,7 +967,19 @@ def canon_book(book):
     ]
     inline_by_original = [[] for _ in original_segments]
     unmatched_inline = []
-    if inline_items and len(inline_items) == len(original_segments):
+    # 周易等结构化语料优先按保守的 section_key 对齐；无键时才使用等长顺序对齐。
+    keyed_original = {s.get("section_key"): i for i, s in enumerate(original_segments) if s.get("section_key")}
+    keyed_items = [s for s in inline_items if s.get("section_key")]
+    if keyed_items and len(keyed_items) == len(inline_items) and keyed_original:
+        used = set()
+        for item in inline_items:
+            index = keyed_original.get(item.get("section_key"))
+            if index is None or index in used:
+                unmatched_inline.append(item)
+            else:
+                inline_by_original[index].append(item)
+                used.add(index)
+    elif inline_items and len(inline_items) == len(original_segments):
         for index, item in enumerate(inline_items):
             inline_by_original[index].append(item)
     else:

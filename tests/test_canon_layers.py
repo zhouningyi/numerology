@@ -1,6 +1,6 @@
 """古籍分层标注的状态机测试。"""
 
-from process_canon_layers import merge_segments, tag_lines
+from process_canon_layers import merge_segments, split_yijing_segments, tag_lines
 
 
 def _segments(lines, markers=("徐注",)):
@@ -116,3 +116,21 @@ def test_boilerplate_lines_are_dropped():
     segs = _segments(lines)
     assert len(segs) == 1
     assert segs[0]["text"] == "正文内容。"
+
+
+def test_yijing_structural_sections_align_with_translation():
+    segments = [
+        {"book": "yijing", "chapter": 1, "layer": "原文", "confidence": "low", "marker": None,
+         "text": "乾：元亨利贞。\n初九：潜龙勿用。\n彖曰：大哉乾元。\n象曰：天行健。\n文言曰：元者，善之长也。"},
+        {"book": "yijing", "chapter": 1, "layer": "现代白话", "confidence": "high", "marker": None,
+         "text": "卦辞：卦辞译文。\n六爻：六爻译文。\n彖传：彖传译文。\n象传：象传译文。\n文言传：文言传译文。"},
+    ]
+    result = split_yijing_segments(segments)
+    assert [s["layer"] for s in result] == ["原文"] * 5 + ["现代白话"] * 5
+    assert [s["text"] for s in result[:5]] == [
+        "乾：元亨利贞。",
+        "初九：潜龙勿用。",
+        "彖曰：大哉乾元。",
+        "象曰：天行健。",
+        "文言曰：元者，善之长也。",
+    ]

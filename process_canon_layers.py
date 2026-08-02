@@ -80,6 +80,13 @@ SECTION_BAIHUA = "baihua"    # 网站白话译文
 SECTION_SITE = "site"        # 关键词/现代启示等网站生成内容
 
 MARKER_RE = re.compile(r"^\*{0,2}【(徐注|原注|任氏曰|眉批)】")
+YIJING_TRANSMISSION_RE = re.compile(r"(?=(?:彖曰|象曰|文言曰)\s*[：:])")
+YIJING_YAO_RE = re.compile(
+    r"(?=(?:初九|九二|九三|九四|九五|上九|初六|六二|六三|六四|六五|上六|用九|用六)\s*[：:曰])"
+)
+YIJING_MODERN_HEADER_RE = re.compile(
+    r"^(?:卦辞|六爻|彖传|象传|文言传)(?:（[^）]+）)?\s*[：:]"
+)
 PAGE_RE = re.compile(r"^第\s*[一二三四五六七八九十百零〇0-9\s]+页$")
 CHAPTER_RE = re.compile(r"^(?:《[^》]+》)?第\s*(\d+)\s*章(?:\s+(\S.*))?$")
 # 原书自带的篇章号，如“《滴天髓阐微》上篇第30章 燥湿”；与站点目录编号（含目录/序/简介）不同
@@ -216,6 +223,104 @@ def merge_segments(book: str, tagged) -> list[dict]:
     return segments
 
 
+def split_yijing_segments(segments: list[dict]) -> list[dict]:
+    """把《周易》网页中一整卦的换行整理成可对照的结构段。
+
+    原网页通常把卦辞、六爻、彖传、象传和文言传放在同一正文区块；
+    白话译文则按这五类输出。只在明确的传文标题处切分，不根据语义臆断。
+    """
+    output: list[dict] = []
+    for segment in segments:
+        if segment["layer"] not in {"原文", "现代白话", "现代释译"}:
+            output.append(segment)
+            continue
+        lines = [line.strip() for line in segment["text"].splitlines() if line.strip()]
+        if len(lines) <= 1:
+            item = dict(segment)
+            item["section_key"] = _yijing_section_key(item["text"], item["layer"])
+            output.append(item)
+            continue
+        groups: list[list[str]]
+        if segment["layer"] == "原文":
+            # 标题可能和上一句粘在同一行，先按“彖/象/文言”切开。
+            sections: list[list[str]] = []
+            current: list[str] = []
+            for line in lines:
+                chunks = [chunk.strip() for chunk in YIJING_TRANSMISSION_RE.split(line) if chunk.strip()]
+                for chunk in chunks:
+                    if chunk.startswith(("彖曰", "象曰", "文言曰")):
+                        if current:
+                            sections.append(current)
+                        current = [chunk]
+                    else:
+                        current.append(chunk)
+            if current:
+                sections.append(current)
+            # 第一行是卦辞；其余传文标题前的内容归为六爻。
+            groups = []
+            if sections:
+                if len(sections[0]) > 1:
+                    groups.append([sections[0][0]])
+                    groups.append(sections[0][1:])
+                else:
+                    groups.append(sections[0])
+                groups.extend(sections[1:])
+            # 没有文言传时，象传常与每一爻粘在一起，按爻题拆开。
+            if not any(any(line.startswith("文言曰") for line in group) for group in groups):
+                refined: list[list[str]] = []
+                for group in groups:
+                    joined = "\n".join(group)
+                    parts = [part.strip() for part in YIJING_YAO_RE.split(joined) if part.strip()]
+                    if len(parts) > 1 and group[0].startswith("象曰"):
+                        refined.append([parts[0]])
+                        refined.extend([[part] for part in parts[1:]])
+                    else:
+                        refined.append(group)
+                groups = refined
+        else:
+            # 白话区的五类标题可能在同一合并段中，标题后的解释继续归入该类。
+            groups = []
+            current = []
+            for line in lines:
+                if current and YIJING_MODERN_HEADER_RE.match(line):
+                    groups.append(current)
+                    current = []
+                current.append(line)
+            if current:
+                groups.append(current)
+        for group_index, group in enumerate(groups):
+            item = dict(segment)
+            item["text"] = "\n".join(group)
+            item["section_key"] = _yijing_section_key(item["text"], item["layer"])
+            if (
+                segment["layer"] == "原文"
+                and group_index == 1
+                and len(YIJING_YAO_RE.findall(item["text"])) >= 2
+            ):
+                item["section_key"] = "六爻"
+            output.append(item)
+    for index, segment in enumerate(output):
+        segment["segment_index"] = index
+    return output
+
+
+def _yijing_section_key(text: str, layer: str) -> str | None:
+    """返回可用于原文—译文对照的保守结构键。"""
+    first = text.strip().splitlines()[0].strip() if text.strip() else ""
+    if layer in {"现代白话", "现代释译"}:
+        match = YIJING_MODERN_HEADER_RE.match(first)
+        if match:
+            return re.split(r"[：:]", first, maxsplit=1)[0].strip()
+    for key, prefix in (("彖传", "彖曰"), ("象传", "象曰"), ("文言传", "文言曰")):
+        if first.startswith(prefix):
+            return key
+    if re.match(r"^(?:初九|九二|九三|九四|九五|上九|初六|六二|六三|六四|六五|上六|用九|用六)\s*[：:曰]", first):
+        return re.split(r"[：:曰]", first, maxsplit=1)[0].strip()
+    if layer == "原文":
+        return "卦辞" if not first.startswith(("彖曰", "象曰", "文言曰")) else None
+    return None
+
+
 def build_txt_from_jsonl(book: str) -> Path | None:
     """raw JSONL → processed 文本，保留章节标题与区块标签供分层复用。
 
@@ -269,6 +374,8 @@ def process_book(book: str, config: dict) -> tuple[Path, Counter]:
             skip_prelude=True, chapter_titles=chapter_titles,
         ),
     )
+    if book == "yijing":
+        segments = split_yijing_segments(segments)
     for segment in segments:
         segment["chapter_title"] = chapter_titles.get(segment["chapter"])
         segment["book_chapter_label"] = book_labels.get(segment["chapter"])
