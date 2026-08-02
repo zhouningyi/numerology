@@ -29,6 +29,35 @@ def test_candidate_stems_excludes_day_stem_and_dedups():
     assert candidate_stems(line, "甲") == ["丙", "癸"]
 
 
+def test_priority_hints_extracts_order_phrases():
+    from extract_qiongtong_rules import priority_hints
+
+    line = "五六月甲木,木性虚焦，五月先癸后丁，庚金次之。十二月癸水，专用丙火解冻。"
+    hints = priority_hints(line)
+    assert "先癸后丁" in hints
+    assert "庚金次之" in hints
+    assert "专用丙火" in hints
+
+
+def test_merge_review_fields_preserves_human_review(tmp_path):
+    import yaml
+    from extract_qiongtong_rules import merge_review_fields
+
+    existing = tmp_path / "qiongtong.yaml"
+    existing.write_text(yaml.safe_dump({"rules": [{
+        "rule_id": "qiongtong_甲_寅",
+        "rule_status": "verified",
+        "verified_stems": ["丙", "癸"],
+        "review_note": "与扫描本一致",
+    }]}, allow_unicode=True), encoding="utf-8")
+    new_rules = [{"rule_id": "qiongtong_甲_寅", "rule_status": "candidate"},
+                 {"rule_id": "qiongtong_甲_卯", "rule_status": "candidate"}]
+    merge_review_fields(new_rules, existing)
+    assert new_rules[0]["rule_status"] == "verified"
+    assert new_rules[0]["verified_stems"] == ["丙", "癸"]
+    assert new_rules[1]["rule_status"] == "candidate"
+
+
 def test_first_canon_line_skips_commentary():
     segments = [
         {"layer": "原文", "text": "徐乐吾曰：评注内容。\n正月甲木，得丙癸逢。"},

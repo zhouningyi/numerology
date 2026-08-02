@@ -60,6 +60,45 @@ def candidate_stems(first_line: str, day_stem: str) -> list[str]:
     return seen
 
 
+# 注意：十天干在 Unicode 中不连续，不能写 [甲-癸] 区间
+_S = f"[{STEMS}]"
+_HINT_PATTERNS = [
+    re.compile(rf"先[用取]?{_S}[木火土金水]?[，,]?后[用取]?{_S}[木火土金水]?"),
+    re.compile(rf"{_S}[木火土金水]?次之"),
+    re.compile(rf"专用{_S}[木火土金水]?"),
+    re.compile(rf"{_S}[木火土金水]?为(?:主|先|尊|辅|佐|用)"),
+]
+
+
+def priority_hints(first_line: str) -> list[str]:
+    """从条文首句抓取用神先后次序的原文短语，供人工校勘定序。"""
+    hints: list[str] = []
+    for pattern in _HINT_PATTERNS:
+        for match in pattern.findall(first_line):
+            if match not in hints:
+                hints.append(match)
+    return hints
+
+
+# 人工校勘写回的字段：重跑抽取时必须保留，不得被脚本覆盖
+REVIEW_FIELDS = ("rule_status", "verified_stems", "verified_order", "review_note", "reviewed_at")
+
+
+def merge_review_fields(new_rules: list[dict], existing_path: Path) -> None:
+    """把已有 YAML 中的人工校勘字段合并回新生成的规则。"""
+    if not existing_path.exists():
+        return
+    existing = yaml.safe_load(existing_path.read_text(encoding="utf-8")) or {}
+    by_id = {r["rule_id"]: r for r in existing.get("rules", [])}
+    for rule in new_rules:
+        old = by_id.get(rule["rule_id"])
+        if not old:
+            continue
+        for field in REVIEW_FIELDS:
+            if field in old and old.get(field) not in (None, "", []):
+                rule[field] = old[field]
+
+
 def first_canon_line(segments: list[dict]) -> str | None:
     """取章节第一条原文条文（跳过“徐乐吾曰”评注行）。"""
     for seg in segments:
@@ -117,6 +156,7 @@ def main() -> None:
                 "text_layer": "原文",
                 "if": [f"日干 == {day_stem}", f"月支 == {zhi}"],
                 "then": [{"调候用神候选": stems}],
+                "priority_hints": priority_hints(quote),
                 "rule_type": "feature",
                 "candidate_y": [],
                 "operational": True,
@@ -124,6 +164,7 @@ def main() -> None:
                 "needs_human_review": True,
             })
 
+    merge_review_fields(rules, OUTPUT_PATH)
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     header = (
         "# 穷通宝鉴 调候用神候选表（脚本从语料抽取，逐条带原文引文）\n"

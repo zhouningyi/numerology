@@ -44,6 +44,25 @@
   </p>
 </div>
 
+<div class="card">
+  <h2>规则库与校勘</h2>
+  <table>
+    <tr><th>流派</th><th>规则数</th><th>待校勘</th><th>已通过</th><th>已驳回</th><th></th></tr>
+    {% for s in schools %}
+    <tr>
+      <td><a href="/canon/rules/{{ s.name }}">{{ s.name }}</a></td>
+      <td>{{ s.total }}</td>
+      <td>{% if s.counts.get('candidate') %}<span class="badge badge-warning">{{ s.counts.get('candidate') }}</span>{% else %}0{% endif %}</td>
+      <td>{% if s.counts.get('verified') %}<span class="badge badge-aa">{{ s.counts.get('verified') }}</span>{% else %}0{% endif %}</td>
+      <td>{{ s.counts.get('rejected', 0) }}</td>
+      <td><a href="/canon/rules/{{ s.name }}?status=candidate">去校勘</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="muted">尚无规则库。</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
 <div class="grid grid-2">
   <div class="card">
     <h2>扫描底本（raw，只读）</h2>

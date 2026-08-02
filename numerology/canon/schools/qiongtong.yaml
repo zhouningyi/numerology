@@ -18,11 +18,14 @@ rules:
   - 调候用神候选:
     - 丙
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
   rule_status: candidate
   needs_human_review: true
+  review_note: 测试写回
+  reviewed_at: '2026-08-02'
 - rule_id: qiongtong_甲_卯
   school: qiongtong
   source_book: 穷通宝鉴
@@ -37,6 +40,7 @@ rules:
   - 调候用神候选:
     - 庚
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -56,6 +60,7 @@ rules:
   - 调候用神候选:
     - 庚
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -76,6 +81,8 @@ rules:
     - 丙
     - 癸
     - 丁
+  priority_hints:
+  - 先癸后丁
   rule_type: feature
   candidate_y: []
   operational: true
@@ -96,6 +103,10 @@ rules:
     - 癸
     - 丁
     - 庚
+  priority_hints:
+  - 先癸后丁
+  - 先丁后庚
+  - 庚金次之
   rule_type: feature
   candidate_y: []
   operational: true
@@ -113,6 +124,10 @@ rules:
   - 月支 == 未
   then:
   - 调候用神候选: *id001
+  priority_hints:
+  - 先癸后丁
+  - 先丁后庚
+  - 庚金次之
   rule_type: feature
   candidate_y: []
   operational: true
@@ -132,6 +147,7 @@ rules:
   - 调候用神候选:
     - 丁
     - 庚
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -152,6 +168,8 @@ rules:
     - 丁
     - 丙
     - 庚
+  priority_hints:
+  - 丁火为先
   rule_type: feature
   candidate_y: []
   operational: true
@@ -172,6 +190,7 @@ rules:
     - 丁
     - 壬
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -194,6 +213,9 @@ rules:
     - 丙
     - 壬
     - 戊
+  priority_hints:
+  - 丙火次之
+  - 丁为佐
   rule_type: feature
   candidate_y: []
   operational: true
@@ -215,6 +237,7 @@ rules:
     - 庚
     - 丙
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -234,6 +257,8 @@ rules:
   - 调候用神候选:
     - 庚
     - 丁
+  priority_hints:
+  - 丁次之
   rule_type: feature
   candidate_y: []
   operational: true
@@ -253,6 +278,8 @@ rules:
   - 调候用神候选:
     - 丙
     - 癸
+  priority_hints:
+  - 癸次之
   rule_type: feature
   candidate_y: []
   operational: true
@@ -273,6 +300,7 @@ rules:
     - 丙
     - 癸
     - 庚
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -292,6 +320,8 @@ rules:
   - 调候用神候选:
     - 癸
     - 丙
+  priority_hints:
+  - 先癸后丙
   rule_type: feature
   candidate_y: []
   operational: true
@@ -314,6 +344,9 @@ rules:
     - 癸
     - 庚
     - 辛
+  priority_hints:
+  - 专用癸水
+  - 癸水为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -334,6 +367,9 @@ rules:
     - 丁
     - 癸
     - 丙
+  priority_hints:
+  - 丙火为先
+  - 癸水为先
   rule_type: feature
   candidate_y: []
   operational: true
@@ -353,6 +389,8 @@ rules:
   - 调候用神候选:
     - 丙
     - 癸
+  priority_hints:
+  - 丙火为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -375,6 +413,7 @@ rules:
     - 癸
     - 己
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -395,6 +434,9 @@ rules:
     - 癸
     - 丙
     - 甲
+  priority_hints:
+  - 癸水次之
+  - 专用癸水
   rule_type: feature
   candidate_y: []
   operational: true
@@ -414,6 +456,7 @@ rules:
   - 调候用神候选:
     - 癸
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -434,6 +477,8 @@ rules:
     - 丙
     - 壬
     - 戊
+  priority_hints:
+  - 丙为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -453,6 +498,8 @@ rules:
   - 调候用神候选:
     - 丙
     - 癸
+  priority_hints:
+  - 专用丙火
   rule_type: feature
   candidate_y: []
   operational: true
@@ -473,6 +520,7 @@ rules:
     - 丙
     - 癸
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -493,6 +541,9 @@ rules:
     - 壬
     - 庚
     - 甲
+  priority_hints:
+  - 壬为尊
+  - 庚金为佐
   rule_type: feature
   candidate_y: []
   operational: true
@@ -511,6 +562,8 @@ rules:
   then:
   - 调候用神候选:
     - 壬
+  priority_hints:
+  - 专用壬水
   rule_type: feature
   candidate_y: []
   operational: true
@@ -530,6 +583,9 @@ rules:
   - 调候用神候选:
     - 壬
     - 甲
+  priority_hints:
+  - 专用壬水
+  - 甲为辅
   rule_type: feature
   candidate_y: []
   operational: true
@@ -552,6 +608,8 @@ rules:
     - 戊
     - 己
     - 甲
+  priority_hints:
+  - 专用壬水
   rule_type: feature
   candidate_y: []
   operational: true
@@ -574,6 +632,7 @@ rules:
     - 戊
     - 己
     - 丁
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -594,6 +653,8 @@ rules:
     - 己
     - 壬
     - 庚
+  priority_hints:
+  - 壬水为用
   rule_type: feature
   candidate_y: []
   operational: true
@@ -612,6 +673,7 @@ rules:
   then:
   - 调候用神候选:
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -630,6 +692,7 @@ rules:
   then:
   - 调候用神候选:
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -649,6 +712,7 @@ rules:
   - 调候用神候选:
     - 甲
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -669,6 +733,7 @@ rules:
     - 甲
     - 戊
     - 庚
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -688,6 +753,7 @@ rules:
   - 调候用神候选:
     - 壬
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -708,6 +774,8 @@ rules:
     - 壬
     - 己
     - 甲
+  priority_hints:
+  - 壬为用
   rule_type: feature
   candidate_y: []
   operational: true
@@ -728,6 +796,7 @@ rules:
     - 甲
     - 庚
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -748,6 +817,8 @@ rules:
     - 乙
     - 庚
     - 甲
+  priority_hints:
+  - 先庚后甲
   rule_type: feature
   candidate_y: []
   operational: true
@@ -768,6 +839,7 @@ rules:
     - 戊
     - 甲
     - 庚
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -787,6 +859,8 @@ rules:
   - 调候用神候选:
     - 甲
     - 庚
+  priority_hints:
+  - 庚为先
   rule_type: feature
   candidate_y: []
   operational: true
@@ -806,6 +880,7 @@ rules:
   - 调候用神候选:
     - 甲
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -825,6 +900,8 @@ rules:
   - 调候用神候选:
     - 甲
     - 壬
+  priority_hints:
+  - 壬水次之
   rule_type: feature
   candidate_y: []
   operational: true
@@ -849,6 +926,7 @@ rules:
     - 壬
     - 癸
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -870,6 +948,7 @@ rules:
     - 庚
     - 甲
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -887,6 +966,7 @@ rules:
   - 月支 == 戌
   then:
   - 调候用神候选: *id002
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -911,6 +991,7 @@ rules:
     - 癸
     - 壬
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -933,6 +1014,8 @@ rules:
     - 甲
     - 丙
     - 庚
+  priority_hints:
+  - 甲木为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -950,6 +1033,8 @@ rules:
   - 月支 == 丑
   then:
   - 调候用神候选: *id003
+  priority_hints:
+  - 甲木为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -971,6 +1056,7 @@ rules:
     - 甲
     - 癸
     - 辛
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -988,6 +1074,7 @@ rules:
   - 月支 == 卯
   then:
   - 调候用神候选: *id004
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1008,6 +1095,7 @@ rules:
     - 丙
     - 甲
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1028,6 +1116,8 @@ rules:
     - 甲
     - 丙
     - 癸
+  priority_hints:
+  - 癸为佐
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1049,6 +1139,7 @@ rules:
     - 甲
     - 丙
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1069,6 +1160,7 @@ rules:
     - 癸
     - 丙
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1089,6 +1181,9 @@ rules:
     - 丙
     - 癸
     - 甲
+  priority_hints:
+  - 先丙后癸
+  - 甲木次之
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1108,6 +1203,8 @@ rules:
   - 调候用神候选:
     - 丙
     - 癸
+  priority_hints:
+  - 先丙后癸
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1128,6 +1225,9 @@ rules:
     - 丙
     - 甲
     - 癸
+  priority_hints:
+  - 先用癸水，后取丙火
+  - 专用丙火
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1147,6 +1247,7 @@ rules:
   - 调候用神候选:
     - 甲
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1166,6 +1267,9 @@ rules:
   - 调候用神候选: &id005
     - 丙
     - 甲
+  priority_hints:
+  - 丙火为尊
+  - 甲木为佐
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1183,6 +1287,9 @@ rules:
   - 月支 == 丑
   then:
   - 调候用神候选: *id005
+  priority_hints:
+  - 丙火为尊
+  - 甲木为佐
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1203,6 +1310,7 @@ rules:
     - 丙
     - 壬
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1222,6 +1330,7 @@ rules:
   - 调候用神候选:
     - 甲
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1242,6 +1351,8 @@ rules:
     - 丙
     - 癸
     - 甲
+  priority_hints:
+  - 先丙后癸
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1261,6 +1372,7 @@ rules:
   - 调候用神候选: &id006
     - 癸
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1278,6 +1390,7 @@ rules:
   - 月支 == 午
   then:
   - 调候用神候选: *id006
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1295,6 +1408,7 @@ rules:
   - 月支 == 未
   then:
   - 调候用神候选: *id006
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1314,6 +1428,7 @@ rules:
   - 调候用神候选: &id007
     - 丙
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1331,6 +1446,7 @@ rules:
   - 月支 == 酉
   then:
   - 调候用神候选: *id007
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1348,6 +1464,7 @@ rules:
   - 月支 == 戌
   then:
   - 调候用神候选: *id007
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1370,6 +1487,8 @@ rules:
     - 癸
     - 壬
     - 丁
+  priority_hints:
+  - 丙为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1387,6 +1506,8 @@ rules:
   - 月支 == 子
   then:
   - 调候用神候选: *id008
+  priority_hints:
+  - 丙为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1404,6 +1525,8 @@ rules:
   - 月支 == 丑
   then:
   - 调候用神候选: *id008
+  priority_hints:
+  - 丙为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1423,6 +1546,7 @@ rules:
   - 调候用神候选:
     - 丙
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1441,6 +1565,7 @@ rules:
   then:
   - 调候用神候选:
     - 乙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1461,6 +1586,7 @@ rules:
     - 戊
     - 甲
     - 丁
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1481,6 +1607,7 @@ rules:
     - 丙
     - 戊
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1501,6 +1628,8 @@ rules:
     - 丁
     - 壬
     - 癸
+  priority_hints:
+  - 专用壬水
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1520,6 +1649,7 @@ rules:
   - 调候用神候选:
     - 丁
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1540,6 +1670,8 @@ rules:
     - 丁
     - 壬
     - 癸
+  priority_hints:
+  - 专用丁火
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1560,6 +1692,7 @@ rules:
     - 丁
     - 甲
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1581,6 +1714,7 @@ rules:
     - 甲
     - 壬
     - 己
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1600,6 +1734,7 @@ rules:
   - 调候用神候选:
     - 丁
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1620,6 +1755,7 @@ rules:
     - 丁
     - 甲
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1640,6 +1776,7 @@ rules:
     - 丙
     - 丁
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1661,6 +1798,7 @@ rules:
     - 甲
     - 己
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1683,6 +1821,8 @@ rules:
     - 己
     - 甲
     - 庚
+  priority_hints:
+  - 壬水为尊
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1701,6 +1841,7 @@ rules:
   then:
   - 调候用神候选:
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1720,6 +1861,7 @@ rules:
   - 调候用神候选:
     - 丙
     - 壬
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1741,6 +1883,7 @@ rules:
     - 己
     - 壬
     - 癸
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1761,6 +1904,8 @@ rules:
     - 己
     - 壬
     - 庚
+  priority_hints:
+  - 专用壬水
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1781,6 +1926,7 @@ rules:
     - 庚
     - 壬
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1799,6 +1945,8 @@ rules:
   then:
   - 调候用神候选:
     - 壬
+  priority_hints:
+  - 专用壬水
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1819,6 +1967,8 @@ rules:
     - 戊
     - 甲
     - 壬
+  priority_hints:
+  - 先壬后甲
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1838,6 +1988,7 @@ rules:
   - 调候用神候选:
     - 壬
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1857,6 +2008,7 @@ rules:
   - 调候用神候选:
     - 癸
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1876,6 +2028,8 @@ rules:
   - 调候用神候选:
     - 丙
     - 壬
+  priority_hints:
+  - 先丙后壬
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1896,6 +2050,7 @@ rules:
     - 庚
     - 丙
     - 戊
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1917,6 +2072,8 @@ rules:
     - 戊
     - 辛
     - 庚
+  priority_hints:
+  - 庚金次之
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1937,6 +2094,7 @@ rules:
     - 戊
     - 甲
     - 庚
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1957,6 +2115,8 @@ rules:
     - 丙
     - 辛
     - 庚
+  priority_hints:
+  - 庚金为佐
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1977,6 +2137,9 @@ rules:
     - 丁
     - 庚
     - 癸
+  priority_hints:
+  - 庚为用
+  - 癸为佐
   rule_type: feature
   candidate_y: []
   operational: true
@@ -1999,6 +2162,8 @@ rules:
     - 辛
     - 甲
     - 癸
+  priority_hints:
+  - 先辛后甲
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2019,6 +2184,8 @@ rules:
     - 庚
     - 戊
     - 丁
+  priority_hints:
+  - 专用戊土
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2040,6 +2207,7 @@ rules:
     - 戊
     - 己
     - 甲
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2060,6 +2228,7 @@ rules:
     - 甲
     - 戊
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2078,6 +2247,8 @@ rules:
   then:
   - 调候用神候选:
     - 戊
+  priority_hints:
+  - 戊为用
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2097,6 +2268,7 @@ rules:
   - 调候用神候选:
     - 戊
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2119,6 +2291,8 @@ rules:
     - 丙
     - 己
     - 甲
+  priority_hints:
+  - 专用丙火
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2138,6 +2312,7 @@ rules:
   - 调候用神候选:
     - 辛
     - 丙
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2158,6 +2333,10 @@ rules:
     - 乙
     - 庚
     - 辛
+  priority_hints:
+  - 辛金次之
+  - 专用庚金
+  - 庚金为用
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2177,6 +2356,8 @@ rules:
   - 调候用神候选:
     - 丙
     - 辛
+  priority_hints:
+  - 专用丙火
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2196,6 +2377,7 @@ rules:
   - 调候用神候选:
     - 辛
     - 庚
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2216,6 +2398,7 @@ rules:
     - 庚
     - 辛
     - 丁
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2239,6 +2422,8 @@ rules:
     - 己
     - 甲
     - 丁
+  priority_hints:
+  - 专用庚
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2258,6 +2443,8 @@ rules:
   - 调候用神候选:
     - 庚
     - 丁
+  priority_hints:
+  - 丁火为用
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2277,6 +2464,8 @@ rules:
   - 调候用神候选:
     - 辛
     - 丙
+  priority_hints:
+  - 辛金为用
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2297,6 +2486,8 @@ rules:
     - 戊
     - 辛
     - 甲
+  priority_hints:
+  - 专用辛金
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2316,6 +2507,7 @@ rules:
   - 调候用神候选:
     - 庚
     - 辛
+  priority_hints: []
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2336,6 +2528,8 @@ rules:
     - 丙
     - 辛
     - 壬
+  priority_hints:
+  - 专用丙火
   rule_type: feature
   candidate_y: []
   operational: true
@@ -2354,6 +2548,8 @@ rules:
   then:
   - 调候用神候选:
     - 丙
+  priority_hints:
+  - 专用丙火
   rule_type: feature
   candidate_y: []
   operational: true

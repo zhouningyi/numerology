@@ -10,7 +10,11 @@ import sqlite3
 from pathlib import Path
 
 import markdown
-from flask import Flask, abort, render_template, request, jsonify, send_from_directory
+import yaml
+from datetime import datetime, timezone
+from flask import (
+    Flask, abort, redirect, render_template, request, jsonify, send_from_directory,
+)
 
 from process_canon_layers import BOOKS as CANON_BOOKS
 
@@ -884,9 +888,19 @@ def canon_dashboard():
         {"name": pdf.name, "size_mb": pdf.stat().st_size / 1024 / 1024}
         for pdf in sorted(CANON_SCAN_DIR.glob("*.pdf"))
     ] if CANON_SCAN_DIR.exists() else []
+    schools = []
+    if SCHOOLS_DIR.exists():
+        for path in sorted(SCHOOLS_DIR.glob("*.yaml")):
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            rules = data.get("rules", [])
+            counts = {}
+            for rule in rules:
+                key = rule.get("rule_status", "candidate")
+                counts[key] = counts.get(key, 0) + 1
+            schools.append({"name": path.stem, "total": len(rules), "counts": counts})
     return render_template(
         "canon.html", books=books, scans=scans, editions=ocr_editions(),
-        layer_labels=LAYER_LABELS, layer_badges=LAYER_BADGES,
+        schools=schools, layer_labels=LAYER_LABELS, layer_badges=LAYER_BADGES,
     )
 
 
@@ -1036,6 +1050,86 @@ def canon_scan(filename):
     if not re.fullmatch(r"[A-Za-z0-9_.\-]+\.pdf", filename):
         abort(404)
     return send_from_directory(CANON_SCAN_DIR, filename, mimetype="application/pdf")
+
+
+# ── 规则校勘：candidate → verified ─────────────────────────────
+SCHOOLS_DIR = BASE_DIR / "numerology" / "canon" / "schools"
+STEM_CHARS = "甲乙丙丁戊己庚辛壬癸"
+
+
+def _school_path(school: str) -> Path:
+    if not re.fullmatch(r"[a-z_]+", school):
+        abort(404)
+    path = SCHOOLS_DIR / f"{school}.yaml"
+    if not path.exists():
+        abort(404)
+    return path
+
+
+def load_school_rules(school: str) -> tuple[list[str], dict]:
+    """返回（文件头注释行, 规则数据）。"""
+    path = _school_path(school)
+    text = path.read_text(encoding="utf-8")
+    header = [line for line in text.splitlines() if line.startswith("#")]
+    return header, yaml.safe_load(text) or {"rules": []}
+
+
+def save_school_rules(school: str, header: list[str], data: dict) -> None:
+    path = _school_path(school)
+    body = yaml.safe_dump(data, allow_unicode=True, sort_keys=False, width=120)
+    path.write_text("\n".join(header) + "\n" + body, encoding="utf-8")
+
+
+@app.route("/canon/rules/<school>")
+def canon_rules(school):
+    """规则校勘工作台：引文与候选并排，逐条通过/驳回。"""
+    _, data = load_school_rules(school)
+    status = request.args.get("status", "")
+    rules = data.get("rules", [])
+    counts = {}
+    for rule in rules:
+        counts[rule.get("rule_status", "candidate")] = counts.get(
+            rule.get("rule_status", "candidate"), 0
+        ) + 1
+    if status:
+        rules = [r for r in rules if r.get("rule_status", "candidate") == status]
+    return render_template(
+        "canon_rules.html", school=school, rules=rules,
+        counts=counts, status=status, total=len(data.get("rules", [])),
+    )
+
+
+@app.route("/canon/rules/<school>/<rule_id>", methods=["POST"])
+def canon_rule_review(school, rule_id):
+    """写回一条规则的人工校勘结果（verified_stems / 状态 / 备注）。"""
+    header, data = load_school_rules(school)
+    rule = next((r for r in data.get("rules", []) if r["rule_id"] == rule_id), None)
+    if rule is None:
+        abort(404)
+    action = request.form.get("action", "")
+    stems_raw = request.form.get("verified_stems", "")
+    stems = [ch for ch in stems_raw if ch in STEM_CHARS]
+    note = request.form.get("review_note", "").strip()
+    if action == "verify":
+        if not stems:
+            abort(400)  # 通过校勘必须给出核定用神序列
+        rule["verified_stems"] = stems
+        rule["verified_order"] = True  # 输入顺序即优先序
+        rule["rule_status"] = "verified"
+    elif action == "reject":
+        rule["rule_status"] = "rejected"
+    elif action == "reset":
+        rule["rule_status"] = "candidate"
+        rule.pop("verified_stems", None)
+        rule.pop("verified_order", None)
+    else:
+        abort(400)
+    if note:
+        rule["review_note"] = note
+    rule["reviewed_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    save_school_rules(school, header, data)
+    anchor = request.form.get("next_anchor") or rule_id
+    return redirect(f"/canon/rules/{school}?status={request.form.get('back_status','')}#{anchor}")
 
 
 # ── 研究文档与经验总结 ─────────────────────────────────────────
