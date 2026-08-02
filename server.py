@@ -1014,7 +1014,13 @@ def canon_book(book):
         if s.get("segment_index") is not None
     }
     mapped_inline = [s for s in inline_items if s.get("original_segment_index") is not None]
-    if mapped_inline and len(mapped_inline) == len(inline_items) and original_positions:
+    inline_alignment_pending = any(
+        str(item.get("alignment_status", "")).startswith("待")
+        for item in inline_items
+    )
+    if inline_alignment_pending:
+        unmatched_inline = inline_items
+    elif mapped_inline and len(mapped_inline) == len(inline_items) and original_positions:
         for item in inline_items:
             position = original_positions.get(item.get("original_segment_index"))
             if position is None:
@@ -1247,10 +1253,29 @@ def canon_rule_review(school, rule_id):
 
 # ── 濒死探索（第二研究层：NDERF 案例库）──────────────────────
 NDE_EXPERIENCES_PATH = BASE_DIR / "data" / "processed" / "nderf" / "experiences.jsonl"
+NDE_TRANSLATIONS_PATH = BASE_DIR / "data" / "processed" / "nderf" / "translations.jsonl"
+NDE_CONCEPTS_PATH = BASE_DIR / "numerology" / "nde" / "concepts.yaml"
+
+
+def load_nde_concepts() -> dict:
+    return yaml.safe_load(NDE_CONCEPTS_PATH.read_text(encoding="utf-8"))["concepts"]
 
 
 def load_nde_experiences() -> list[dict]:
-    return _load_jsonl_cached(NDE_EXPERIENCES_PATH)
+    """案例记录合并翻译与概念标注（translations.jsonl 独立增量文件）。"""
+    records = _load_jsonl_cached(NDE_EXPERIENCES_PATH)
+    translations = {
+        row["slug"]: row for row in _load_jsonl_cached(NDE_TRANSLATIONS_PATH)
+    }
+    for record in records:
+        extra = translations.get(record["slug"])
+        if extra:
+            record["translations"] = {"中文": extra.get("zh", "")}
+            record["concepts"] = extra.get("concepts", {})
+        else:
+            record.setdefault("translations", {})
+            record.setdefault("concepts", {})
+    return records
 
 
 @app.route("/nde")
@@ -1272,8 +1297,21 @@ def nde_dashboard():
         for key, spec in phenomena.items()
     ]
     categories.sort(key=lambda c: -c["count"])
+    concept_specs = load_nde_concepts()
+    concept_counts = {}
+    for record in experiences:
+        for key in record.get("concepts", {}):
+            concept_counts[key] = concept_counts.get(key, 0) + 1
+    concepts = [
+        {"key": key, "name": spec["name"], "description": spec["description"],
+         "parallel": spec.get("parallel", ""), "count": concept_counts.get(key, 0)}
+        for key, spec in concept_specs.items()
+    ]
+    concepts.sort(key=lambda c: -c["count"])
+    translated = sum(1 for r in experiences if r.get("translations"))
     return render_template(
         "nde.html", total=len(experiences), categories=categories,
+        concepts=concepts, translated=translated,
         classification_counts=sorted(
             classification_counts.items(), key=lambda kv: -kv[1]
         )[:12],
@@ -1299,6 +1337,26 @@ def nde_category(key):
     )
 
 
+@app.route("/nde/concept/<key>")
+def nde_concept(key):
+    """概念标签页：表达某一世界观理解的案例索引（含原文证据句）。"""
+    concepts = load_nde_concepts()
+    if key not in concepts:
+        abort(404)
+    page = max(request.args.get("page", 1, type=int), 1)
+    per_page = 50
+    matched = [
+        r for r in load_nde_experiences() if key in r.get("concepts", {})
+    ]
+    total = len(matched)
+    total_pages = math.ceil(total / per_page) if total else 1
+    rows = matched[(page - 1) * per_page : page * per_page]
+    return render_template(
+        "nde_concept.html", spec=concepts[key], key=key, rows=rows,
+        total=total, page=page, total_pages=total_pages,
+    )
+
+
 @app.route("/nde/experience/<slug>")
 def nde_experience(slug):
     if not re.fullmatch(r"[A-Za-z0-9_\-]+", slug):
@@ -1314,7 +1372,15 @@ def nde_experience(slug):
         for key, evidence in record.get("categories", {}).items()
         if key in phenomena
     ]
-    return render_template("nde_experience.html", r=record, tags=tags)
+    concept_specs = load_nde_concepts()
+    concept_tags = [
+        {"key": key, "name": concept_specs[key]["name"], "evidence": evidence}
+        for key, evidence in record.get("concepts", {}).items()
+        if key in concept_specs
+    ]
+    return render_template(
+        "nde_experience.html", r=record, tags=tags, concept_tags=concept_tags
+    )
 
 
 # ── 研究文档与经验总结 ─────────────────────────────────────────

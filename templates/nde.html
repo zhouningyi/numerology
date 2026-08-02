@@ -25,6 +25,29 @@
 </div>
 
 <div class="card">
+  <h2>概念/理论标签</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:10px">
+    现象分类答"发生了什么"，概念标签答"体验者表达了什么样的世界观理解"（如大小虚幻、时间非线性、一即一切）。
+    由模型阅读叙述标注并保留原文证据句；"对照"仅为概念相似的检索线索，不构成验证主张。
+    已翻译并标注 {{ translated }}/{{ total }} 篇。
+  </p>
+  <div class="grid grid-3">
+    {% for c in concepts %}
+    <a href="/nde/concept/{{ c.key }}" style="text-decoration:none;color:var(--text)">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;height:100%">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <strong style="font-size:14px">{{ c.name }}</strong>
+          <span class="stat-num" style="font-size:20px">{{ c.count }}</span>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:3px">{{ c.description }}</div>
+        {% if c.parallel %}<div class="muted" style="font-size:11px;margin-top:4px">对照：{{ c.parallel }}</div>{% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
   <h2>案例类型分布</h2>
   <table style="max-width:520px">
     <tr><th>NDERF 分类</th><th>篇数</th></tr>

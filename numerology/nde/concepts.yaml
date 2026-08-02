@@ -1,0 +1,54 @@
+# 濒死体验的概念/理论标签体系（第二层标注，区别于问卷现象分类）。
+# 现象分类答"发生了什么"（隧道、白光）；概念标签答"体验者表达了什么样的世界观理解"。
+# 由模型阅读叙述文本标注（translate_nderf.py 顺路完成），每个标签保留原文证据句。
+# parallel 字段是"概念相似"的对照线索（佛教文本/物理学讨论），仅供检索与阅读，
+# 不构成任何验证性主张。
+concepts:
+  scale_illusion:
+    name: 尺度虚幻
+    description: 大与小失去意义——极大与极小可以互换、包含或无别
+    parallel: 华严经"芥子纳须弥、一多相即"；物理学中关于尺度的讨论
+  time_illusion:
+    name: 时间虚幻
+    description: 时间不是线性的——同时看到过去未来、一瞬即永恒、时间不存在
+    parallel: 华严经"一念普观无量劫"；相对论块宇宙（block universe）讨论
+  interpenetration:
+    name: 一即一切
+    description: 每一部分都包含整体、万物互相映现互相含摄
+    parallel: 华严经因陀罗网；全息原理的通俗类比
+  oneness:
+    name: 万物一体
+    description: 自他界限消失，感到与宇宙/所有生命是同一存在
+    parallel: 华严法界缘起；多种神秘体验文献的共同母题
+  consciousness_independent:
+    name: 意识独立于身体
+    description: 明确表达意识/觉知不依赖大脑或身体而存在
+    parallel: 心身问题（mind-body problem）的一手报告材料
+  direct_knowing:
+    name: 直接知识
+    description: 不经语言和推理直接"知道"——整体下载式的理解
+    parallel: 华严"海印三昧"意象；认识论中的直觉知识讨论
+  light_conscious:
+    name: 光即存有
+    description: 光本身有意识、有人格、有爱——不是物理照明
+    parallel: 诸传统的"光明"母题（华严毗卢遮那、净土无量光）
+  multiple_realms:
+    name: 层级世界
+    description: 感知到多重世界/维度/层级的实在结构
+    parallel: 佛教三界/十法界图景；多维空间的通俗表述
+  love_fundamental:
+    name: 爱为基底
+    description: 表达"爱是宇宙的基本构成/终极实在"
+    parallel: 诸宗教传统的核心断言，NDE 文献最高频主题之一
+  more_real:
+    name: 比现实更真实
+    description: 强调体验比日常清醒状态"更真实"而非梦境
+    parallel: 与做梦/缺氧幻觉假说直接相关的自述特征
+  no_judgment:
+    name: 无评判的回顾
+    description: 生命回顾中感到被全然接纳，评判来自自己而非外在审判者
+    parallel: 与传统"审判"叙事的系统性差异，值得单独统计
+  purpose_order:
+    name: 万物有序
+    description: 感到一切事件有意义、有安排、彼此关联成整体
+    parallel: 华严"事事无碍"；目的论直觉
