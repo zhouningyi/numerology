@@ -132,6 +132,10 @@
     margin-bottom: 16px;
   }
 
+  /* 全局 reset 会清掉 dialog 的 margin:auto，这里恢复居中并统一遮罩 */
+  dialog { margin: auto; }
+  dialog::backdrop { background: rgba(1, 4, 9, 0.6); backdrop-filter: blur(2px); }
+
   /* 顶部 Tab 使用局部切换；请求期间保留当前页面，避免点击后出现空白。 */
   body.nav-loading #page-content { opacity: .62; transition: opacity .12s ease; }
   .canon-fold { margin: 7px 0; border: 1px solid var(--border); border-radius: 6px; background: rgba(88,166,255,.03); }

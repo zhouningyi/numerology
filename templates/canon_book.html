@@ -22,7 +22,8 @@
   <button onclick="document.getElementById('overview-modal').showModal()"
           style="margin-top:10px;font-size:13px">展开完整解读</button>
   <dialog id="overview-modal"
-          style="max-width:720px;background:var(--surface);color:var(--text);
+          style="margin:auto;max-width:720px;width:calc(100% - 48px);max-height:80vh;overflow-y:auto;
+                 background:var(--surface);color:var(--text);
                  border:1px solid var(--border);border-radius:10px;padding:26px 30px">
     <h3 style="margin:0 0 4px;font-size:18px">《{{ title }}》· 完整解读</h3>
     <div class="muted" style="font-size:12px;margin-bottom:12px">数学化等级：{{ book_spec.tier }}</div>
@@ -112,8 +113,13 @@
   </p>
   {% endif %}
   <p class="muted" style="font-size:12px;margin-bottom:10px">
-    以下是互联网版本的原文分段，仅作检索底本；规则进入 spec 前仍需回看 PDF 扫描页。可逐段展开下方现代翻译/释译，原注和评注仍单独折叠。
+    以下是本地保存的原文底本分段，仅作阅读与检索底本；规则进入 spec 前仍需回看 PDF 扫描页。可逐段展开下方现代翻译/释译，原注和评注仍单独折叠。
   </p>
+  {% if not auxiliary_by_layer.get('现代白话') and not auxiliary_by_layer.get('现代释译') %}
+  <p class="muted" style="font-size:12px;margin:-2px 0 10px;color:var(--warning,#a66b00)">
+    当前尚未导入现代释译；原文已经按卷、品分段，后续生成项目自有现代释译。
+  </p>
+  {% endif %}
   {% for s in original_segments %}
   <article style="margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
     <div class="muted" style="font-size:11px;margin-bottom:4px">原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}</div>
@@ -151,7 +157,11 @@
 <div class="card">
   <h2>辅助材料 · 点击展开</h2>
   <p class="muted" style="font-size:12px;margin-bottom:8px">
-    白话译文来自互联网版本；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
+    {% if auxiliary_by_layer.get('现代白话') or auxiliary_by_layer.get('现代释译') %}
+    白话译文/现代释译与原著正文分开；原注、评注和站点内容均不自动视为原著规则。
+    {% else %}
+    当前没有现代白话译文；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
+    {% endif %}
   </p>
   {% for auxiliary_layer in ('原注', '评注', '站点内容') %}
   {% set items = auxiliary_by_layer.get(auxiliary_layer, []) %}
