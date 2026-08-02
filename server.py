@@ -1367,6 +1367,7 @@ def get_embedding_index() -> EmbeddingIndex | None:
 def nde_search():
     """语义检索：自然语言查询 NDE 案例与华严经段落。"""
     query = request.args.get("q", "").strip()
+    selected_sources = set(request.args.getlist("src")) & {"nde", "huayan"}
     results, error = [], None
     if query:
         index = get_embedding_index()
@@ -1384,10 +1385,13 @@ def nde_search():
                     model="text-embedding-3-small", input=[query]
                 )
                 vector = np.array(response.data[0].embedding, dtype="float32")
-                results = index.search(vector, k=30)
+                results = index.search(vector, k=30, sources=selected_sources or None)
             except Exception as exc:  # noqa: BLE001 —— 查询失败给出页面提示
                 error = f"查询失败：{exc}"
-    return render_template("nde_search.html", q=query, results=results, error=error)
+    return render_template(
+        "nde_search.html", q=query, results=results, error=error,
+        selected_sources=selected_sources,
+    )
 
 
 @app.route("/nde/concept/<key>")

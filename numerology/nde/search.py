@@ -43,10 +43,25 @@ class EmbeddingIndex:
         with meta_path.open(encoding="utf-8") as handle:
             self.meta = [json.loads(line) for line in handle]
 
-    def search(self, query_vector: np.ndarray, k: int = 20) -> list[dict]:
+    def search(
+        self,
+        query_vector: np.ndarray,
+        k: int = 20,
+        sources: set[str] | None = None,
+    ) -> list[dict]:
+        """可按来源（nde/huayan…）过滤后取 top-k。"""
+        if sources:
+            rows = [i for i, m in enumerate(self.meta) if m.get("source") in sources]
+            if not rows:
+                return []
+            sub_matrix = self.matrix[rows]
+        else:
+            rows = None
+            sub_matrix = self.matrix
         results = []
-        for row, score in top_k(self.matrix, query_vector, k):
-            item = dict(self.meta[row])
+        for row, score in top_k(sub_matrix, query_vector, k):
+            index = rows[row] if rows is not None else row
+            item = dict(self.meta[index])
             item["score"] = round(score, 4)
             results.append(item)
         return results

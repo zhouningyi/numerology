@@ -9,6 +9,14 @@
 
 <form class="filter-bar" method="get" action="/nde/search">
   <input name="q" value="{{ q }}" placeholder="例如：感觉大和小都是虚幻的" style="width:420px">
+  <label style="font-size:13px;display:flex;align-items:center;gap:4px">
+    <input type="checkbox" name="src" value="nde"
+           {% if not selected_sources or 'nde' in selected_sources %}checked{% endif %}> NDERF 案例
+  </label>
+  <label style="font-size:13px;display:flex;align-items:center;gap:4px">
+    <input type="checkbox" name="src" value="huayan"
+           {% if not selected_sources or 'huayan' in selected_sources %}checked{% endif %}> 华严经
+  </label>
   <button type="submit">搜索</button>
 </form>
 
