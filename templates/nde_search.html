@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}语义检索 · 濒死探索{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:2px">语义检索</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  <a href="/nde">← 返回濒死探索</a> ·
+  用自然语言描述一种体验或理解（中英文均可），在 NDE 案例与华严经段落中找相近表达。
+</p>
+
+<form class="filter-bar" method="get" action="/nde/search">
+  <input name="q" value="{{ q }}" placeholder="例如：感觉大和小都是虚幻的" style="width:420px">
+  <button type="submit">搜索</button>
+</form>
+
+{% if error %}<div class="card" style="color:var(--fire)">{{ error }}</div>{% endif %}
+
+{% for r in results %}
+<div class="card" style="padding:12px 16px">
+  <div style="margin-bottom:4px">
+    <span class="badge {% if r.source == 'nde' %}badge-a{% else %}badge-earth{% endif %}">
+      {{ 'NDE 案例' if r.source == 'nde' else '华严经' }}</span>
+    <a href="{{ r.url }}" style="font-size:15px;font-weight:600">{{ r.title }}</a>
+    <span class="muted" style="font-size:12px">相似度 {{ '%.1f'|format(r.score * 100) }}%</span>
+  </div>
+  <div class="muted" style="font-size:13px;line-height:1.7">{{ r.excerpt }}…</div>
+</div>
+{% else %}
+{% if q and not error %}<div class="card muted">没有找到结果。</div>{% endif %}
+{% endfor %}
+{% endblock %}

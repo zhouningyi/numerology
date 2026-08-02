@@ -19,6 +19,10 @@ from flask import (
 
 from process_canon_layers import BOOKS as CANON_BOOKS
 from numerology.nde.parser import load_phenomena
+from numerology.nde.search import EmbeddingIndex, MATRIX_PATH as NDE_MATRIX_PATH
+from translate_nderf import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, template_folder="templates")
 BASE_DIR = Path(__file__).parent
@@ -551,9 +555,12 @@ def _load_jsonl_cached(path: Path, slim=None) -> list[dict]:
 
 def load_canon_layers(book: str) -> list[dict]:
     rows = list(_load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl"))
-    # 现代译文保持独立文件，避免重新处理原文时覆盖个人研究译本。
+    # 对齐完成后优先使用逐段模型结果；没有结果才显示卷/品级现代译文。
+    aligned_path = CANON_LAYERS_DIR / f"{book}_aligned_layers.jsonl"
     modern_path = CANON_LAYERS_DIR / f"{book}_modern_layers.jsonl"
-    if modern_path.exists():
+    if aligned_path.exists() and aligned_path.stat().st_size:
+        rows.extend(_load_jsonl_cached(aligned_path))
+    elif modern_path.exists():
         rows.extend(_load_jsonl_cached(modern_path))
     related_path = CANON_LAYERS_DIR / f"{book}_related_layers.jsonl"
     if related_path.exists():
@@ -1013,7 +1020,10 @@ def canon_book(book):
         for index, s in enumerate(original_segments)
         if s.get("segment_index") is not None
     }
-    mapped_inline = [s for s in inline_items if s.get("original_segment_index") is not None]
+    mapped_inline = [
+        s for s in inline_items
+        if s.get("original_segment_indices") or s.get("original_segment_index") is not None
+    ]
     inline_alignment_pending = any(
         str(item.get("alignment_status", "")).startswith("待")
         for item in inline_items
@@ -1022,11 +1032,14 @@ def canon_book(book):
         unmatched_inline = inline_items
     elif mapped_inline and len(mapped_inline) == len(inline_items) and original_positions:
         for item in inline_items:
-            position = original_positions.get(item.get("original_segment_index"))
-            if position is None:
+            targets = item.get("original_segment_indices") or [item.get("original_segment_index")]
+            positions = [original_positions.get(index) for index in targets]
+            positions = [position for position in positions if position is not None]
+            if not positions or len(positions) != len(targets):
                 unmatched_inline.append(item)
             else:
-                inline_by_original[position].append(item)
+                for position in positions:
+                    inline_by_original[position].append(item)
     # 周易等结构化语料优先按保守的 section_key 对齐；无键时才使用等长顺序对齐。
     elif inline_items:
         keyed_original = {s.get("section_key"): i for i, s in enumerate(original_segments) if s.get("section_key")}
@@ -1335,6 +1348,46 @@ def nde_category(key):
         "nde_category.html", spec=phenomena[key], key=key, rows=rows,
         total=total, page=page, total_pages=total_pages,
     )
+
+
+_EMBED_INDEX: tuple[float, EmbeddingIndex] | None = None
+
+
+def get_embedding_index() -> EmbeddingIndex | None:
+    global _EMBED_INDEX
+    if not NDE_MATRIX_PATH.exists():
+        return None
+    mtime = NDE_MATRIX_PATH.stat().st_mtime
+    if _EMBED_INDEX is None or _EMBED_INDEX[0] != mtime:
+        _EMBED_INDEX = (mtime, EmbeddingIndex())
+    return _EMBED_INDEX[1]
+
+
+@app.route("/nde/search")
+def nde_search():
+    """语义检索：自然语言查询 NDE 案例与华严经段落。"""
+    query = request.args.get("q", "").strip()
+    results, error = [], None
+    if query:
+        index = get_embedding_index()
+        if index is None:
+            error = "向量索引尚未构建，请先运行 build_embeddings.py"
+        elif not os.environ.get("OPENAI_API_KEY"):
+            error = "服务端缺少 OPENAI_API_KEY，无法编码查询"
+        else:
+            try:
+                import numpy as np
+                from openai import OpenAI
+
+                client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+                response = client.embeddings.create(
+                    model="text-embedding-3-small", input=[query]
+                )
+                vector = np.array(response.data[0].embedding, dtype="float32")
+                results = index.search(vector, k=30)
+            except Exception as exc:  # noqa: BLE001 —— 查询失败给出页面提示
+                error = f"查询失败：{exc}"
+    return render_template("nde_search.html", q=query, results=results, error=error)
 
 
 @app.route("/nde/concept/<key>")

@@ -26,6 +26,20 @@ from pathlib import Path
 
 import yaml
 
+
+def load_dotenv(path: Path = Path(".env")) -> None:
+    """轻量 .env 加载：KEY=VALUE，已有环境变量不覆盖。"""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip().strip('"'))
+
+
+load_dotenv()
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
