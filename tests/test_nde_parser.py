@@ -61,5 +61,15 @@ def test_html_to_lines_strips_scripts():
     assert lines == ["keep me"]
 
 
+def test_legacy_format_with_nbsp_colon_marker():
+    html = SAMPLE_HTML.replace(
+        "<div>Experience Description</div>",
+        "<div>Experience Description\xa0:</div>",
+    )
+    record = parse_experience("https://x/legacy_nde.htm", html)
+    assert record is not None
+    assert "floated above" in record["description"]
+
+
 def test_broken_page_returns_none():
     assert parse_experience("https://x/no_desc.htm", "<html><body>nothing</body></html>") is None

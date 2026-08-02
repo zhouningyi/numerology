@@ -27,7 +27,7 @@ def load_phenomena() -> dict:
 def html_to_lines(raw_html: str) -> list[str]:
     text = _TAG_RE.sub("", raw_html)
     text = re.sub(r"<[^>]+>", "\n", text)
-    text = html_lib.unescape(text)
+    text = html_lib.unescape(text).replace("\xa0", " ")
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
@@ -46,9 +46,13 @@ def parse_experience(url: str, raw_html: str) -> dict | None:
             classification = line.removeprefix("Classification ").strip()
             break
 
-    try:
-        desc_start = lines.index("Experience Description") + 1
-    except ValueError:
+    # 新版页面为 "Experience Description"，早年版本是 "Experience Description :"
+    desc_start = None
+    for i, line in enumerate(lines):
+        if line.rstrip(" :").strip() == "Experience Description":
+            desc_start = i + 1
+            break
+    if desc_start is None:
         return None
     desc_end = desc_start
     while desc_end < len(lines) and not lines[desc_end].startswith("Background Information"):
