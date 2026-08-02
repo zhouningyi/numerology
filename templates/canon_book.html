@@ -7,6 +7,23 @@
 </p>
 
 {% if chapter is none %}
+{% if book_spec %}
+<div class="card">
+  <h2>现代规格（spec）
+    <span class="badge {% if 'T1' in (book_spec.tier or '') %}badge-aa{% elif 'T2' in (book_spec.tier or '') %}badge-a{% elif 'T3' in (book_spec.tier or '') %}badge-b{% else %}badge-dd{% endif %}">{{ book_spec.tier }}</span>
+  </h2>
+  <p style="font-size:14px;margin:6px 0">{{ book_spec.spec }}</p>
+  <table style="max-width:760px">
+    <tr><th style="width:90px">输入</th><td>{{ book_spec.input or '—' }}</td></tr>
+    <tr><th>输出</th><td>{{ book_spec.output or '—' }}</td></tr>
+    <tr><th>可验证性</th><td>{{ book_spec.validation or '—' }}</td></tr>
+  </table>
+  <p class="muted" style="font-size:11px;margin-top:6px">
+    spec 是现代语言概括，帮助快速理解；规则编码以原文引文为准，数学化分级定义见
+    <a href="/docs/古籍数学化与计算流程方案">古籍数学化与计算流程方案</a>。
+  </p>
+</div>
+{% endif %}
 <div class="card">
   <h2>《{{ title }}》目录</h2>
   <p class="muted" style="font-size:12px;margin-bottom:10px">

@@ -548,6 +548,16 @@ def load_canon_layers(book: str) -> list[dict]:
     return _load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl")
 
 
+BOOK_SPECS_PATH = BASE_DIR / "numerology" / "canon" / "book_specs.yaml"
+
+
+def load_book_specs() -> dict:
+    """各书现代规格（tier/输入/输出/一句话算法/可验证性）。"""
+    if not BOOK_SPECS_PATH.exists():
+        return {}
+    return yaml.safe_load(BOOK_SPECS_PATH.read_text(encoding="utf-8")).get("specs", {})
+
+
 def canon_layer_stats(segments: list[dict]) -> dict:
     stats = {"total": len(segments), "layers": {}, "low_pending": 0, "chapters": 0}
     chapters = set()
@@ -872,6 +882,7 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
 def canon_dashboard():
     """古籍研究总览：语料、分层标注、扫描件与 OCR 进度。"""
     books = []
+    specs = load_book_specs()
     for book, config in CANON_BOOKS.items():
         segments = load_canon_layers(book)
         text_file = CANON_PROCESSED_DIR / f"{book}_online.txt"
@@ -880,6 +891,7 @@ def canon_dashboard():
             "title": config["title"],
             "system": config.get("system", ""),
             "markers": config["commentary_markers"],
+            "spec": specs.get(book, {}),
             "stats": canon_layer_stats(segments),
             "text_size": text_file.stat().st_size if text_file.exists() else 0,
         })
@@ -957,7 +969,9 @@ def canon_book(book):
         }
     return render_template(
         "canon_book.html",
-        book=book, title=CANON_BOOKS[book]["title"], stats=canon_layer_stats(segments),
+        book=book, title=CANON_BOOKS[book]["title"],
+        book_spec=load_book_specs().get(book, {}),
+        stats=canon_layer_stats(segments),
         chapters=chapters, chapter=chapter, layer=layer,
         confidence=confidence, chapter_directory=chapter_directory,
         chapter_title=chapter_title, book_chapter_label=book_chapter_label,

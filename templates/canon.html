@@ -11,7 +11,7 @@
   <h2>书目分层标注进度</h2>
   <table>
     <tr>
-      <th>体系</th><th>书名</th><th>章节</th><th>总段数</th>
+      <th>体系</th><th>书名</th><th>数学化</th><th>章节</th><th>总段数</th>
       {% for key, label in layer_labels.items() %}<th>{{ key }}</th>{% endfor %}
       <th>待人工校勘（low）</th><th>文本大小</th>
     </tr>
@@ -20,6 +20,9 @@
       <td class="muted">{{ b.system or '—' }}</td>
       <td><a href="/canon/{{ b.key }}">{{ b.title }}</a>
         {% if b.markers %}<span class="muted" style="font-size:11px">（标记：{{ b.markers|join('、') }}）</span>{% endif %}
+      </td>
+      <td title="{{ b.spec.spec or '' }}">
+        <span class="badge {% if 'T1' in (b.spec.tier or '') %}badge-aa{% elif 'T2' in (b.spec.tier or '') %}badge-a{% elif 'T3' in (b.spec.tier or '') %}badge-b{% else %}badge-dd{% endif %}">{{ b.spec.tier or '?' }}</span>
       </td>
       <td>{{ b.stats.chapters }}</td>
       <td>{{ b.stats.total }}</td>

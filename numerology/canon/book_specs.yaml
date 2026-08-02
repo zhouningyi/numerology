@@ -1,0 +1,179 @@
+# 各书现代规格（spec）：用今天的工程语言一句话说清每本书"是什么算法"。
+# 定位是现代概括，帮助快速理解，不是证据；规则编码仍以原文引文为准（P2.5）。
+# tier 含义见 docs/古籍数学化与计算流程方案.md：
+#   T1 查表 / T2 谓词规则 / T3 参数型 / T4 意象型（不可直接数学化）
+specs:
+  ziping_zhenquan:
+    tier: T2
+    input: 四柱（核心：日干×月令）
+    output: 格局类型 + 成/败/救应判定
+    spec: 月令定格的枚举分类器：四吉神顺用、四凶神逆用，成败是布尔条件链，"因成得败/因败得成"是 override 层。
+    validation: 可直接验证（现有出生数据）；原著与徐注是两个不兼容流派，分开编码
+  yuanhai_ziping:
+    tier: T2+T4
+    input: 四柱
+    output: 十神/六亲/疾病等多域断语
+    spec: 子平法奠基文集：十神与六亲的映射规则 + 大量条文和赋体，条文可谓词化，赋体挂起。
+    validation: 条文部分可验证；赋体仅文献层
+  sanming_tonghui:
+    tier: T1+T2+T4
+    input: 四柱、纳音、神煞
+    output: 全领域断语（百科式）
+    spec: 明代规则总汇：纳音/神煞是查表，格局论是谓词规则，内部各模块不保证一致——当规则候选库用，不当单一算法用。
+    validation: 逐模块抽取验证；冲突模块作为不同流派并行
+  ditiansui:
+    tier: T3+T4
+    input: 四柱全局
+    output: 气势/平衡评估 + 应事断语
+    spec: 全局启发式评估器：旺衰、通关、从化看"势"，清浊真假看"质"；概念强但量化权重原文没给，须现代重构并登记参数。
+    validation: 任氏命例可作回归测试集；重构参数须敏感性分析
+  ditiansui_yuanwen:
+    tier: T4
+    input: 四柱
+    output: 纲领性口诀
+    spec: 滴天髓原文口诀本（无任注）：纯纲领陈述，无操作化条件，用于与阐微本对照版本。
+    validation: 仅版本对照，不单独编码
+  qianli_minggao:
+    tier: T2
+    input: 四柱
+    output: 判盘结论 + 带答案命例
+    spec: 民国白话教材：标准判盘流程（定强弱→取用神→断六亲）+ 大量"命盘→作者断语"命例，是现成的引擎回归测试集。
+    validation: 命例转 tests/canon_cases，检验引擎忠实性
+  qiongtong_baojian:
+    tier: T1
+    input: 日干 × 月支
+    output: 调候用神序列（有先后）
+    spec: 120 格纯查表：每格一条"某月某干宜用某某"，是全库唯一可整书数学化的书。已实现为 qiongtong.yaml + 引擎。
+    validation: 已跑通；待 120 条人工校勘定序
+  shenfeng_tongkao:
+    tier: T2
+    input: 四柱
+    output: 病（缺陷）与药（修正）配对
+    spec: 病药模型：先用谓词检测命局缺陷（病），再检查是否存在对应修正项（药），病重药到为贵——一套"缺陷检测+补丁匹配"规则。
+    validation: 可直接验证；张楠自注命例可作测试集
+  mingli_tanyuan:
+    tier: T2
+    input: 四柱
+    output: 体系化判盘规则
+    spec: 袁树珊的体系化教程：把散落各书的规则整编成有条理的判盘手册，表述规整，适合当谓词化的中间参照。
+    validation: 可直接验证
+  lixuzhong_mingshu:
+    tier: T1+T4
+    input: 年柱为主 + 纳音
+    output: 禄命断语
+    spec: 子平法之前的古法：以年柱和纳音为主的查表体系，与日主派是不同范式——作为历史对照流派（gufa）编码。
+    validation: 与子平法对照检验；赋体部分挂起
+  wuxing_dayi:
+    tier: 理论层
+    input: —
+    output: —
+    spec: 隋代五行理论总集：生克、旺相休囚死的公理化整理，不含预测规则——是 tables 层（基础映射表）的文献依据。
+    validation: 不单独验证；为基础表提供出处
+  yuzhao_dingzhenjing:
+    tier: T1+T4
+    input: 纳音 + 神煞
+    output: 六亲、疾厄断语
+    spec: 古法经典：纳音神煞查表断六亲疾厄，条文短小，部分可直接谓词化。
+    validation: 古法流派对照
+  wuxing_jingji:
+    tier: T2+T4
+    input: 四柱、纳音、神煞
+    output: 宋代命理规则集
+    spec: 宋代类书：保存子平法早期形态的规则汇编，是流派演变研究的关键史料，编码价值次于史料价值。
+    validation: 与明清本对照，观察规则演变
+  xingping_huihai:
+    tier: T2（需扩展 X）
+    input: 七政四余星盘 + 四柱
+    output: 星平合参断语
+    spec: 星命与子平合参大全：需要真实天文星盘（行星黄道位置），排盘引擎须扩展天文历算后才能编码。
+    validation: 独立工作包；暂不阻塞八字主线
+  bazi_tiyao:
+    tier: T1+T2
+    input: 日干 × 月令
+    output: 提要式判盘要点
+    spec: 韦千里按日干×月令组织的速查提要，结构接近穷通宝鉴的查表，可作调候表的旁证版本。
+    validation: 与穷通宝鉴交叉校验
+  guigu_yiwen:
+    tier: T4
+    input: 纳音
+    output: 赋体断语
+    spec: 托名鬼谷子的古法赋文：意象化表述为主，少量可抽取条文。
+    validation: 仅文献层为主
+  guagua_ji:
+    tier: 命例集
+    input: 四柱命例
+    output: 作者断语
+    spec: 民国命例集：主要价值是"命盘+断语"配对数据，转为引擎回归测试集。
+    validation: 测试集用途
+  mingli_yueyan:
+    tier: T2
+    input: 四柱
+    output: 条文式规则
+    spec: 陈素庵条文式规则集（论用神、论格局逐条陈述），全库最接近 if-then 的文本，谓词化成本最低。
+    validation: 可直接验证；建议第二个编码
+  zaohua_yuanyue:
+    tier: T1
+    input: 日干 × 月支
+    output: 调候用神（详注版）
+    spec: 徐乐吾对穷通宝鉴的逐条详注：与 qiongtong.yaml 同一张 120 格表的注释层，用于校勘定序时参考。
+    validation: 作为穷通宝鉴校勘的辅助材料
+  ziping_guanjian:
+    tier: T2
+    input: 四柱
+    output: 判盘笔记
+    spec: 清代子平笔记：个人经验式规则，散但可谓词化。
+    validation: 低优先
+  yuding_ziping:
+    tier: T2
+    input: 四柱
+    output: 官修纲要
+    spec: 康熙官修子平纲要；当前站点仅节选（约9页），需另寻全本后再编码。
+    validation: 底本不全，暂缓
+  xingming_zongkuo:
+    tier: T2+T4（需扩展 X）
+    input: 星盘 + 干支
+    output: 星命纲要
+    spec: 辽代星命纲要：需天文星盘，归星命工作包。
+    validation: 独立工作包
+  yuetan_fu:
+    tier: T4
+    input: 四柱
+    output: 赋体口诀
+    spec: 赋体口诀短篇：意象表述，无操作化条件。
+    validation: 仅文献层
+  luoluzi_xiaoxifu:
+    tier: T4
+    input: 干支
+    output: 总纲赋文
+    spec: 珞琭子赋文：禄命法总纲，历代注家依附其上，本体不可直接编码。
+    validation: 仅文献层；注本是真正的规则来源
+  xingming_juegulu:
+    tier: T2+T4（需扩展 X）
+    input: 星盘 + 干支
+    output: 星命考据
+    spec: 星命考据笔记：归星命工作包。
+    validation: 独立工作包
+  lantai_miaoxuan:
+    tier: T1+T4
+    input: 四柱
+    output: 奇格异局命名
+    spec: 格局命名表：一批特殊格局的识别条件与名称，识别条件可查表化，吉凶断语多为赋体。
+    validation: 格局识别可验证，断语层挂起
+  yijing:
+    tier: 符号系统
+    input: 卦象（6 bit）
+    output: 卦爻辞
+    spec: 64 卦符号系统：状态空间数学化平凡（2^6），但"起卦→应验"的验证属 P2 前瞻实验，不是出生档案模型。
+    validation: P2 前瞻实验
+  yizhuan:
+    tier: 理论层
+    input: —
+    output: —
+    spec: 易经的哲学注释层（十翼），无预测规则。
+    validation: 不验证
+  dongpo_yizhuan:
+    tier: 理论层
+    input: —
+    output: —
+    spec: 苏轼的易经义理注释，文史价值为主。
+    validation: 不验证
