@@ -13,10 +13,12 @@ import markdown
 import yaml
 from datetime import datetime, timezone
 from flask import (
-    Flask, abort, redirect, render_template, request, jsonify, send_from_directory,
+    Flask, abort, redirect, render_template, request, jsonify, send_file,
+    send_from_directory,
 )
 
 from process_canon_layers import BOOKS as CANON_BOOKS
+from numerology.nde.parser import load_phenomena
 
 app = Flask(__name__, template_folder="templates")
 BASE_DIR = Path(__file__).parent
@@ -27,6 +29,7 @@ CANON_LAYERS_DIR = CANON_PROCESSED_DIR / "layers"
 CANON_OCR_DIR = CANON_PROCESSED_DIR / "ocr"
 CANON_SCAN_IMAGES_DIR = CANON_PROCESSED_DIR / "scans"
 CANON_SCAN_DIR = BASE_DIR / "data" / "raw" / "canon" / "wikimedia"
+HUAYAN_SCAN_DIR = BASE_DIR / "data" / "raw" / "canon" / "huayan_t0279" / "scans"
 
 LAYER_LABELS = {
     "原文": "原文（原著正文）",
@@ -34,11 +37,12 @@ LAYER_LABELS = {
     "评注": "评注（徐注/任氏曰/眉批）",
     "现代白话": "现代白话（网站译文）",
     "现代释译": "现代释译（项目整理）",
+    "相关著作": "相关著作（跨书聚合）",
     "站点内容": "站点内容（不入统计）",
 }
 LAYER_BADGES = {
     "原文": "badge-water", "原注": "badge-earth", "评注": "badge-yin",
-    "现代白话": "badge-wood", "现代释译": "badge-wood", "站点内容": "badge-dd",
+    "现代白话": "badge-wood", "现代释译": "badge-wood", "相关著作": "badge-dd", "站点内容": "badge-dd",
 }
 
 QUALITY_LABELS = {
@@ -546,7 +550,15 @@ def _load_jsonl_cached(path: Path, slim=None) -> list[dict]:
 
 
 def load_canon_layers(book: str) -> list[dict]:
-    return _load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl")
+    rows = list(_load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl"))
+    # 现代译文保持独立文件，避免重新处理原文时覆盖个人研究译本。
+    modern_path = CANON_LAYERS_DIR / f"{book}_modern_layers.jsonl"
+    if modern_path.exists():
+        rows.extend(_load_jsonl_cached(modern_path))
+    related_path = CANON_LAYERS_DIR / f"{book}_related_layers.jsonl"
+    if related_path.exists():
+        rows.extend(_load_jsonl_cached(related_path))
+    return rows
 
 
 BOOK_SPECS_PATH = BASE_DIR / "numerology" / "canon" / "book_specs.yaml"
@@ -559,13 +571,25 @@ def load_book_specs() -> dict:
     return yaml.safe_load(BOOK_SPECS_PATH.read_text(encoding="utf-8")).get("specs", {})
 
 
+def load_related_sources(book: str) -> list[dict]:
+    """读取跨书聚合来源；无法精确归卦的材料只在全书层展示。"""
+    path = CANON_LAYERS_DIR / f"{book}_related_sources.json"
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    return data.get("sources", []) if isinstance(data, dict) else []
+
+
 def canon_layer_stats(segments: list[dict]) -> dict:
     stats = {"total": len(segments), "layers": {}, "low_pending": 0, "chapters": 0}
     chapters = set()
     for seg in segments:
         layer = stats["layers"].setdefault(seg["layer"], {"high": 0, "low": 0})
         layer[seg["confidence"]] += 1
-        if seg["confidence"] == "low" and seg["layer"] != "站点内容":
+        if seg["confidence"] == "low" and seg["layer"] not in {"站点内容", "相关著作"}:
             stats["low_pending"] += 1
         if seg["chapter"] is not None:
             chapters.add(seg["chapter"])
@@ -575,6 +599,8 @@ def canon_layer_stats(segments: list[dict]) -> dict:
 
 def scan_files_for_book(book: str) -> list[Path]:
     """按文件名把本地扫描底本归入对应著作。"""
+    if book == "huayan_t0279":
+        return sorted(HUAYAN_SCAN_DIR.glob("*.pdf")) if HUAYAN_SCAN_DIR.exists() else []
     prefixes = {
         "ziping_zhenquan": ("ziping_zhenquan",),
         "yuanhai_ziping": ("yuanhai_ziping",),
@@ -585,6 +611,15 @@ def scan_files_for_book(book: str) -> list[Path]:
         pdf for pdf in sorted(CANON_SCAN_DIR.glob("*.pdf"))
         if pdf.stem.startswith(prefixes.get(book, ()))
     ]
+
+
+def canon_scan_path(filename: str) -> Path | None:
+    """在允许的扫描目录中查找文件，避免把任意路径暴露给下载路由。"""
+    for directory in (CANON_SCAN_DIR, HUAYAN_SCAN_DIR):
+        candidate = directory / filename
+        if candidate.is_file() and candidate.parent == directory:
+            return candidate
+    return None
 
 
 def ocr_editions() -> list[dict]:
@@ -754,7 +789,8 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
     """
     selected = [s for s in segments if chapter is None or s["chapter"] == chapter]
     online_text = "\n".join(
-        s["text"] for s in selected if s["layer"] not in {"现代白话", "站点内容"}
+        s["text"] for s in selected
+        if s["layer"] not in {"现代白话", "现代释译", "站点内容"}
     )
     editions = []
     ocr_inputs = set()
@@ -838,7 +874,7 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
             "status": status,
             "ocr_url": f"/canon/ocr/{source_id}",
             "scan_filename": scan_filename or None,
-            "scan_url": f"/canon/scan/{scan_filename}" if scan_filename and (CANON_SCAN_DIR / scan_filename).exists() else None,
+            "scan_url": f"/canon/scan/{scan_filename}" if scan_filename and canon_scan_path(scan_filename) else None,
             "input_sha256": str(manifest.get("input_sha256") or "")[:12] or None,
             "similarity": similarity,
             "diff_counts": diff_counts,
@@ -901,8 +937,10 @@ def canon_dashboard():
     books.sort(key=lambda b: (b["corpus_group"], b["system"], b["key"]))
     scans = [
         {"name": pdf.name, "size_mb": pdf.stat().st_size / 1024 / 1024}
-        for pdf in sorted(CANON_SCAN_DIR.glob("*.pdf"))
-    ] if CANON_SCAN_DIR.exists() else []
+        for directory in (CANON_SCAN_DIR, HUAYAN_SCAN_DIR)
+        for pdf in sorted(directory.glob("*.pdf"))
+        if directory.exists()
+    ]
     schools = []
     if SCHOOLS_DIR.exists():
         for path in sorted(SCHOOLS_DIR.glob("*.yaml")):
@@ -941,6 +979,7 @@ def canon_book(book):
             "translation_count": sum(
                 s["layer"] in {"现代白话", "现代释译"} for s in chapter_segments
             ),
+            "related_count": sum(s["layer"] == "相关著作" for s in chapter_segments),
             "site_count": sum(s["layer"] == "站点内容" for s in chapter_segments),
         })
     chapter_segments = [s for s in segments if chapter is not None and s["chapter"] == chapter]
@@ -967,25 +1006,41 @@ def canon_book(book):
     ]
     inline_by_original = [[] for _ in original_segments]
     unmatched_inline = []
-    # 周易等结构化语料优先按保守的 section_key 对齐；无键时才使用等长顺序对齐。
-    keyed_original = {s.get("section_key"): i for i, s in enumerate(original_segments) if s.get("section_key")}
-    keyed_items = [s for s in inline_items if s.get("section_key")]
-    if keyed_items and len(keyed_items) == len(inline_items) and keyed_original:
-        used = set()
+    # 个人研究译本可能与原文段数不同；若处理层提供了原文全局段号，
+    # 优先使用它展示“一个原文段下挂一个译文组”，空缺段落保持空白。
+    original_positions = {
+        s.get("segment_index"): index
+        for index, s in enumerate(original_segments)
+        if s.get("segment_index") is not None
+    }
+    mapped_inline = [s for s in inline_items if s.get("original_segment_index") is not None]
+    if mapped_inline and len(mapped_inline) == len(inline_items) and original_positions:
         for item in inline_items:
-            index = keyed_original.get(item.get("section_key"))
-            if index is None or index in used:
+            position = original_positions.get(item.get("original_segment_index"))
+            if position is None:
                 unmatched_inline.append(item)
             else:
+                inline_by_original[position].append(item)
+    # 周易等结构化语料优先按保守的 section_key 对齐；无键时才使用等长顺序对齐。
+    elif inline_items:
+        keyed_original = {s.get("section_key"): i for i, s in enumerate(original_segments) if s.get("section_key")}
+        keyed_items = [s for s in inline_items if s.get("section_key")]
+        if keyed_items and len(keyed_items) == len(inline_items) and keyed_original:
+            used = set()
+            for item in inline_items:
+                index = keyed_original.get(item.get("section_key"))
+                if index is None or index in used:
+                    unmatched_inline.append(item)
+                else:
+                    inline_by_original[index].append(item)
+                    used.add(index)
+        elif len(inline_items) == len(original_segments):
+            for index, item in enumerate(inline_items):
                 inline_by_original[index].append(item)
-                used.add(index)
-    elif inline_items and len(inline_items) == len(original_segments):
-        for index, item in enumerate(inline_items):
-            inline_by_original[index].append(item)
-    else:
-        unmatched_inline = inline_items
+        else:
+            unmatched_inline = inline_items
     auxiliary_by_layer = {}
-    for auxiliary_layer in ("原注", "评注", "现代白话", "现代释译", "站点内容"):
+    for auxiliary_layer in ("原注", "评注", "现代白话", "现代释译", "相关著作", "站点内容"):
         auxiliary_by_layer[auxiliary_layer] = [
             s for s in chapter_segments
             if s["layer"] == auxiliary_layer
@@ -1013,6 +1068,11 @@ def canon_book(book):
         corpus_group=CANON_BOOKS[book].get("corpus_group", "命理语料"),
         calculation_scope=CANON_BOOKS[book].get("calculation_scope", "可进入命理研究流程"),
         layer_labels=LAYER_LABELS, layer_badges=LAYER_BADGES, alignment=alignment,
+        related_sources=load_related_sources(book),
+        pending_inline_alignment=any(
+            str(item.get("alignment_status", "")).startswith("待")
+            for item in inline_items
+        ),
     )
 
 
@@ -1097,9 +1157,12 @@ def favicon():
 @app.route("/canon/scan/<filename>")
 def canon_scan(filename):
     """在浏览器中打开本地只读扫描 PDF。"""
-    if not re.fullmatch(r"[A-Za-z0-9_.\-]+\.pdf", filename):
+    if not re.fullmatch(r"[\w.\-]+\.pdf", filename):
         abort(404)
-    return send_from_directory(CANON_SCAN_DIR, filename, mimetype="application/pdf")
+    path = canon_scan_path(filename)
+    if path is None:
+        abort(404)
+    return send_file(path, mimetype="application/pdf", conditional=False, max_age=0)
 
 
 # ── 规则校勘：candidate → verified ─────────────────────────────
@@ -1180,6 +1243,78 @@ def canon_rule_review(school, rule_id):
     save_school_rules(school, header, data)
     anchor = request.form.get("next_anchor") or rule_id
     return redirect(f"/canon/rules/{school}?status={request.form.get('back_status','')}#{anchor}")
+
+
+# ── 濒死探索（第二研究层：NDERF 案例库）──────────────────────
+NDE_EXPERIENCES_PATH = BASE_DIR / "data" / "processed" / "nderf" / "experiences.jsonl"
+
+
+def load_nde_experiences() -> list[dict]:
+    return _load_jsonl_cached(NDE_EXPERIENCES_PATH)
+
+
+@app.route("/nde")
+def nde_dashboard():
+    """濒死探索总览：按现象大类索引全部案例。"""
+    experiences = load_nde_experiences()
+    phenomena = load_phenomena()
+    category_counts = {}
+    for record in experiences:
+        for key in record.get("categories", {}):
+            category_counts[key] = category_counts.get(key, 0) + 1
+    classification_counts = {}
+    for record in experiences:
+        cls = record.get("classification") or "未标注"
+        classification_counts[cls] = classification_counts.get(cls, 0) + 1
+    categories = [
+        {"key": key, "name": spec["name"], "description": spec["description"],
+         "count": category_counts.get(key, 0)}
+        for key, spec in phenomena.items()
+    ]
+    categories.sort(key=lambda c: -c["count"])
+    return render_template(
+        "nde.html", total=len(experiences), categories=categories,
+        classification_counts=sorted(
+            classification_counts.items(), key=lambda kv: -kv[1]
+        )[:12],
+    )
+
+
+@app.route("/nde/category/<key>")
+def nde_category(key):
+    phenomena = load_phenomena()
+    if key not in phenomena:
+        abort(404)
+    page = max(request.args.get("page", 1, type=int), 1)
+    per_page = 50
+    matched = [
+        r for r in load_nde_experiences() if key in r.get("categories", {})
+    ]
+    total = len(matched)
+    total_pages = math.ceil(total / per_page) if total else 1
+    rows = matched[(page - 1) * per_page : page * per_page]
+    return render_template(
+        "nde_category.html", spec=phenomena[key], key=key, rows=rows,
+        total=total, page=page, total_pages=total_pages,
+    )
+
+
+@app.route("/nde/experience/<slug>")
+def nde_experience(slug):
+    if not re.fullmatch(r"[A-Za-z0-9_\-]+", slug):
+        abort(404)
+    record = next(
+        (r for r in load_nde_experiences() if r["slug"] == slug), None
+    )
+    if record is None:
+        abort(404)
+    phenomena = load_phenomena()
+    tags = [
+        {"key": key, "name": phenomena[key]["name"], "evidence": evidence}
+        for key, evidence in record.get("categories", {}).items()
+        if key in phenomena
+    ]
+    return render_template("nde_experience.html", r=record, tags=tags)
 
 
 # ── 研究文档与经验总结 ─────────────────────────────────────────

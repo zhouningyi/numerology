@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ spec.name }} · 濒死探索{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:2px">{{ spec.name }}</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  <a href="/nde">← 返回现象分类</a> · {{ spec.description }} · 共 {{ total }} 篇
+</p>
+
+{% for r in rows %}
+<div class="card" style="padding:12px 16px">
+  <div style="margin-bottom:4px">
+    <a href="/nde/experience/{{ r.slug }}" style="font-size:15px;font-weight:600">{{ r.title }}</a>
+    {% if r.classification %}<span class="badge badge-info">{{ r.classification }}</span>{% endif %}
+  </div>
+  <div style="font-size:13px;margin-bottom:4px">
+    <span class="muted">问卷证据：</span>{{ r.categories[key] }}
+  </div>
+  <div class="muted" style="font-size:13px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ r.description[:300] }}</div>
+</div>
+{% else %}
+<div class="card muted">该类别下暂无案例（抓取或解析进行中）。</div>
+{% endfor %}
+
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}<a href="/nde/category/{{ key }}?page={{ page - 1 }}">上一页</a>{% endif %}
+  <span class="active">{{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a href="/nde/category/{{ key }}?page={{ page + 1 }}">下一页</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

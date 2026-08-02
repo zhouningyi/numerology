@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}濒死探索 · 现象分类{% endblock %}
+{% block content %}
+<h1 style="font-size:22px;margin-bottom:2px">濒死探索 · 现象分类</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  数据来源：NDERF（nderf.org）公开案例的本地研究快照，共 {{ total }} 篇。
+  分类依据每篇案例自带的标准化问卷答案（非对叙述的关键词猜测），每个标签都保留证据答案可回查。
+</p>
+
+<div class="card">
+  <h2>现象大类</h2>
+  <div class="grid grid-3">
+    {% for c in categories %}
+    <a href="/nde/category/{{ c.key }}" style="text-decoration:none;color:var(--text)">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;height:100%">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <strong style="font-size:15px">{{ c.name }}</strong>
+          <span class="stat-num" style="font-size:22px">{{ c.count }}</span>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:4px">{{ c.description }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>案例类型分布</h2>
+  <table style="max-width:520px">
+    <tr><th>NDERF 分类</th><th>篇数</th></tr>
+    {% for cls, cnt in classification_counts %}
+    <tr><td>{{ cls }}</td><td>{{ cnt }}</td></tr>
+    {% endfor %}
+  </table>
+  <p class="muted" style="font-size:12px;margin-top:8px">
+    NDE=判定为濒死体验；Probable/Possible NDE=疑似；其他为相关异常体验。分类为 NDERF 原站标注。
+  </p>
+</div>
+{% endblock %}

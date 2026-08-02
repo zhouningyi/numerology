@@ -1,0 +1,99 @@
+# 濒死体验现象分类体系：大类 → NDERF 标准问卷问题的匹配规则。
+# 分类依据是每篇案例自带的问卷答案（不是对叙述文本的关键词猜测）。
+# question_contains 对问题文本做不区分大小写的包含匹配；
+# 答案以 No/Uncertain/None 开头视为否定，其余视为阳性（answer_contains 可再收紧）。
+categories:
+  obe:
+    name: 灵魂出体
+    description: 感到离开身体、从体外观察（out-of-body experience）
+    match:
+      - question_contains: separated from your body
+        positive_contains: [left my body, out of body, existed outside, "yes"]
+  tunnel:
+    name: 隧道
+    description: 穿过隧道或类似通道
+    match:
+      - question_contains: through a tunnel
+  bright_light:
+    name: 强光/白光
+    description: 看到或被明亮的光包围
+    match:
+      - question_contains: brilliant light
+      - question_contains: unearthly light
+  beings:
+    name: 遇见存有
+    description: 见到其他存有（不限于亲人或宗教形象）
+    match:
+      - question_contains: see any beings
+      - question_contains: aware of any beings
+  deceased:
+    name: 已故亲友
+    description: 遇到已经去世的亲人或朋友
+    match:
+      - question_contains: deceased
+  religious_figure:
+    name: 宗教/神圣形象
+    description: 见到有形象的神、宗教人物、神圣存有或神秘临在
+    match:
+      - question_contains: religious spirits
+      - question_contains: religious figure
+      - question_contains: mystical being or presence
+  god_awareness:
+    name: 关于神的觉知
+    description: 对神/至高存在的存在与否获得直接觉知
+    match:
+      - question_contains: god or a supreme being
+  other_world:
+    name: 另一个世界
+    description: 进入非尘世的环境或世界
+    match:
+      - question_contains: enter another world
+      - question_contains: unearthly world
+  life_review:
+    name: 生命回顾
+    description: 重历或回看自己的人生片段
+    match:
+      - question_contains: review of past events
+      - question_contains: life review
+      - question_contains: scenes from the past
+      - question_contains: scenes from your past
+  boundary:
+    name: 边界/不归点
+    description: 到达边界或"过去就回不来"的临界点
+    match:
+      - question_contains: boundary
+      - question_contains: point of no return
+  time_distortion:
+    name: 时间感改变
+    description: 时间变快、变慢或失去意义
+    match:
+      - question_contains: time seem to speed
+  heightened_senses:
+    name: 感官增强
+    description: 视觉、听觉等比平时清晰得多
+    match:
+      - question_contains: senses more vivid
+  special_knowledge:
+    name: 特殊知识/全知感
+    description: 忽然理解一切或获得宇宙秩序的知识
+    match:
+      - question_contains: special knowledge
+      - question_contains: understand everything
+      - question_contains: purpose or coherence
+  future_scenes:
+    name: 未来景象
+    description: 看到来自未来的场景
+    match:
+      - question_contains: scenes from the future
+  distressing:
+    name: 痛苦/负面体验
+    description: 体验内容包含痛苦、恐惧或地狱式场景
+    match:
+      - question_contains: content of your experience
+        positive_contains: [distressing, frightening, hellish]
+  aftereffects_gifts:
+    name: 后续特殊能力
+    description: 体验后自述出现通灵、预感等特殊能力
+    match:
+      - question_contains: special gifts
+        positive_contains: [": yes", acquire]
