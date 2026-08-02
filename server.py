@@ -33,11 +33,12 @@ LAYER_LABELS = {
     "原注": "原注（刘基）",
     "评注": "评注（徐注/任氏曰/眉批）",
     "现代白话": "现代白话（网站译文）",
+    "现代释译": "现代释译（项目整理）",
     "站点内容": "站点内容（不入统计）",
 }
 LAYER_BADGES = {
     "原文": "badge-water", "原注": "badge-earth", "评注": "badge-yin",
-    "现代白话": "badge-wood", "站点内容": "badge-dd",
+    "现代白话": "badge-wood", "现代释译": "badge-wood", "站点内容": "badge-dd",
 }
 
 QUALITY_LABELS = {
@@ -890,12 +891,14 @@ def canon_dashboard():
             "key": book,
             "title": config["title"],
             "system": config.get("system", ""),
+            "corpus_group": config.get("corpus_group", "命理语料"),
+            "calculation_scope": config.get("calculation_scope", "可进入命理研究流程"),
             "markers": config["commentary_markers"],
             "spec": specs.get(book, {}),
             "stats": canon_layer_stats(segments),
             "text_size": text_file.stat().st_size if text_file.exists() else 0,
         })
-    books.sort(key=lambda b: (b["system"], b["key"]))
+    books.sort(key=lambda b: (b["corpus_group"], b["system"], b["key"]))
     scans = [
         {"name": pdf.name, "size_mb": pdf.stat().st_size / 1024 / 1024}
         for pdf in sorted(CANON_SCAN_DIR.glob("*.pdf"))
@@ -935,7 +938,9 @@ def canon_book(book):
             "book_label": next((s.get("book_chapter_label") for s in chapter_segments if s.get("book_chapter_label")), None),
             "original_count": sum(s["layer"] == "原文" for s in chapter_segments),
             "commentary_count": sum(s["layer"] in {"原注", "评注"} for s in chapter_segments),
-            "translation_count": sum(s["layer"] == "现代白话" for s in chapter_segments),
+            "translation_count": sum(
+                s["layer"] in {"现代白话", "现代释译"} for s in chapter_segments
+            ),
             "site_count": sum(s["layer"] == "站点内容" for s in chapter_segments),
         })
     chapter_segments = [s for s in segments if chapter is not None and s["chapter"] == chapter]
@@ -951,8 +956,24 @@ def canon_book(book):
         s for s in chapter_segments
         if s["layer"] == "原文" and (not confidence or s["confidence"] == confidence)
     ]
+    # 现代译文/释译只有在段落数相同、且顺序可确认时才内嵌到对应原文下方。
+    # 评注本常把整章译成一个大段，不能把它假装对应到每一段原文。
+    inline_layers = {"现代白话", "现代释译"}
+    inline_items = [
+        s for s in chapter_segments
+        if s["layer"] in inline_layers
+        and (not confidence or s["confidence"] == confidence)
+        and (not layer or layer in inline_layers)
+    ]
+    inline_by_original = [[] for _ in original_segments]
+    unmatched_inline = []
+    if inline_items and len(inline_items) == len(original_segments):
+        for index, item in enumerate(inline_items):
+            inline_by_original[index].append(item)
+    else:
+        unmatched_inline = inline_items
     auxiliary_by_layer = {}
-    for auxiliary_layer in ("原注", "评注", "现代白话", "站点内容"):
+    for auxiliary_layer in ("原注", "评注", "现代白话", "现代释译", "站点内容"):
         auxiliary_by_layer[auxiliary_layer] = [
             s for s in chapter_segments
             if s["layer"] == auxiliary_layer
@@ -976,6 +997,9 @@ def canon_book(book):
         confidence=confidence, chapter_directory=chapter_directory,
         chapter_title=chapter_title, book_chapter_label=book_chapter_label,
         original_segments=original_segments, auxiliary_by_layer=auxiliary_by_layer,
+        inline_by_original=inline_by_original, unmatched_inline=unmatched_inline,
+        corpus_group=CANON_BOOKS[book].get("corpus_group", "命理语料"),
+        calculation_scope=CANON_BOOKS[book].get("calculation_scope", "可进入命理研究流程"),
         layer_labels=LAYER_LABELS, layer_badges=LAYER_BADGES, alignment=alignment,
     )
 

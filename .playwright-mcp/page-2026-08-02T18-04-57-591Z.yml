@@ -1,0 +1,819 @@
+- generic [active] [ref=f68e1]:
+  - navigation [ref=f68e2]:
+    - generic [ref=f68e3]:
+      - generic [ref=f68e4]: 命理统计
+      - link "概览" [ref=f68e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f68e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f68e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f68e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f68e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f68e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f68e11]:
+    - heading "古籍语料与规则研究" [level=1] [ref=f68e12]
+    - paragraph [ref=f68e13]:
+      - text: 流水线：扫描 PDF / 网页快照 → processed 文本 → 逐段分层标注（candidate）→ 人工校勘（verified）→ 规则 YAML → 预注册。 分层说明见
+      - link "古籍逻辑提取初稿" [ref=f68e14] [cursor=pointer]:
+        - /url: /docs/古籍逻辑提取初稿
+      - text: 与
+      - link "OCR 与校勘规范" [ref=f68e15] [cursor=pointer]:
+        - /url: /docs/古籍OCR与规则校勘规范
+      - text: 。
+    - generic [ref=f68e16]:
+      - heading "书目分层标注进度" [level=2] [ref=f68e17]
+      - paragraph [ref=f68e18]: 命理语料可进入规则校勘与统计研究；古籍语料仅用于原文、译文、解读和版本阅读，周易与华严经不进入命理计算。
+      - table [ref=f68e19]:
+        - rowgroup [ref=f68e20]:
+          - row [ref=f68e21]:
+            - columnheader "体系" [ref=f68e22]
+            - columnheader "书名" [ref=f68e23]
+            - columnheader "数学化" [ref=f68e24]
+            - columnheader "章节" [ref=f68e25]
+            - columnheader "总段数" [ref=f68e26]
+            - columnheader "原文" [ref=f68e27]
+            - columnheader "原注" [ref=f68e28]
+            - columnheader "评注" [ref=f68e29]
+            - columnheader "现代白话" [ref=f68e30]
+            - columnheader "现代释译" [ref=f68e31]
+            - columnheader "站点内容" [ref=f68e32]
+            - columnheader "待人工校勘（low）" [ref=f68e33]
+            - columnheader "文本大小" [ref=f68e34]
+          - row [ref=f68e35]:
+            - cell "古籍语料 · 不参与命理计算" [ref=f68e36]
+          - row [ref=f68e37]:
+            - cell "佛典" [ref=f68e38]
+            - cell [ref=f68e39]:
+              - link "大方广佛华严经（实叉难陀译）" [ref=f68e40] [cursor=pointer]:
+                - /url: /canon/huayan_t0279
+            - cell "文献层" [ref=f68e41]
+            - cell "0" [ref=f68e43]
+            - cell "0" [ref=f68e44]
+            - cell "—" [ref=f68e45]
+            - cell "—" [ref=f68e46]
+            - cell "—" [ref=f68e47]
+            - cell "—" [ref=f68e48]
+            - cell "—" [ref=f68e49]
+            - cell "—" [ref=f68e50]
+            - cell "0" [ref=f68e51]
+            - cell "0.0 KB" [ref=f68e53]
+          - row [ref=f68e54]:
+            - cell "易经" [ref=f68e55]
+            - cell [ref=f68e56]:
+              - link "东坡易传" [ref=f68e57] [cursor=pointer]:
+                - /url: /canon/dongpo_yizhuan
+            - cell "理论层" [ref=f68e58]
+            - cell "65" [ref=f68e60]
+            - cell "193" [ref=f68e61]
+            - cell "65 高0/低65" [ref=f68e62]:
+              - generic [ref=f68e63]: "65"
+              - text: 高0/低65
+            - cell "—" [ref=f68e64]
+            - cell "—" [ref=f68e65]
+            - cell "64 高64/低0" [ref=f68e66]:
+              - generic [ref=f68e67]: "64"
+              - text: 高64/低0
+            - cell "—" [ref=f68e68]
+            - cell "64 高64/低0" [ref=f68e69]:
+              - generic [ref=f68e70]: "64"
+              - text: 高64/低0
+            - cell "65" [ref=f68e71]
+            - cell "514.1 KB" [ref=f68e73]
+          - row [ref=f68e74]:
+            - cell "易经" [ref=f68e75]
+            - cell [ref=f68e76]:
+              - link "易经" [ref=f68e77] [cursor=pointer]:
+                - /url: /canon/yijing
+            - cell "文献层" [ref=f68e78]
+            - cell "69" [ref=f68e80]
+            - cell "205" [ref=f68e81]
+            - cell "69 高0/低69" [ref=f68e82]:
+              - generic [ref=f68e83]: "69"
+              - text: 高0/低69
+            - cell "—" [ref=f68e84]
+            - cell "—" [ref=f68e85]
+            - cell "68 高68/低0" [ref=f68e86]:
+              - generic [ref=f68e87]: "68"
+              - text: 高68/低0
+            - cell "—" [ref=f68e88]
+            - cell "68 高68/低0" [ref=f68e89]:
+              - generic [ref=f68e90]: "68"
+              - text: 高68/低0
+            - cell "69" [ref=f68e91]
+            - cell "372.1 KB" [ref=f68e93]
+          - row [ref=f68e94]:
+            - cell "易经" [ref=f68e95]
+            - cell [ref=f68e96]:
+              - link "易传" [ref=f68e97] [cursor=pointer]:
+                - /url: /canon/yizhuan
+            - cell "理论层" [ref=f68e98]
+            - cell "6" [ref=f68e100]
+            - cell "16" [ref=f68e101]
+            - cell "6 高0/低6" [ref=f68e102]:
+              - generic [ref=f68e103]: "6"
+              - text: 高0/低6
+            - cell "—" [ref=f68e104]
+            - cell "—" [ref=f68e105]
+            - cell "5 高5/低0" [ref=f68e106]:
+              - generic [ref=f68e107]: "5"
+              - text: 高5/低0
+            - cell "—" [ref=f68e108]
+            - cell "5 高5/低0" [ref=f68e109]:
+              - generic [ref=f68e110]: "5"
+              - text: 高5/低0
+            - cell "6" [ref=f68e111]
+            - cell "55.2 KB" [ref=f68e113]
+          - row [ref=f68e114]:
+            - cell "命理语料 · 可进入命理研究流程" [ref=f68e115]
+          - row [ref=f68e116]:
+            - cell "五行理论" [ref=f68e117]
+            - cell [ref=f68e118]:
+              - link "五行大义" [ref=f68e119] [cursor=pointer]:
+                - /url: /canon/wuxing_dayi
+            - cell "理论层" [ref=f68e120]
+            - cell "9" [ref=f68e122]
+            - cell "19" [ref=f68e123]
+            - cell "9 高0/低9" [ref=f68e124]:
+              - generic [ref=f68e125]: "9"
+              - text: 高0/低9
+            - cell "—" [ref=f68e126]
+            - cell "—" [ref=f68e127]
+            - cell "5 高5/低0" [ref=f68e128]:
+              - generic [ref=f68e129]: "5"
+              - text: 高5/低0
+            - cell "—" [ref=f68e130]
+            - cell "5 高5/低0" [ref=f68e131]:
+              - generic [ref=f68e132]: "5"
+              - text: 高5/低0
+            - cell "9" [ref=f68e133]
+            - cell "296.9 KB" [ref=f68e135]
+          - row [ref=f68e136]:
+            - cell "八字" [ref=f68e137]
+            - cell [ref=f68e138]:
+              - link "八字提要" [ref=f68e139] [cursor=pointer]:
+                - /url: /canon/bazi_tiyao
+            - cell "T1+T2" [ref=f68e140]
+            - cell "121" [ref=f68e142]
+            - cell "357" [ref=f68e143]
+            - cell "121 高0/低121" [ref=f68e144]:
+              - generic [ref=f68e145]: "121"
+              - text: 高0/低121
+            - cell "—" [ref=f68e146]
+            - cell "—" [ref=f68e147]
+            - cell "118 高118/低0" [ref=f68e148]:
+              - generic [ref=f68e149]: "118"
+              - text: 高118/低0
+            - cell "—" [ref=f68e150]
+            - cell "118 高118/低0" [ref=f68e151]:
+              - generic [ref=f68e152]: "118"
+              - text: 高118/低0
+            - cell "121" [ref=f68e153]
+            - cell "996.9 KB" [ref=f68e155]
+          - row [ref=f68e156]:
+            - cell "八字" [ref=f68e157]
+            - cell [ref=f68e158]:
+              - link "滴天髓阐微" [ref=f68e159] [cursor=pointer]:
+                - /url: /canon/ditiansui
+              - text: （标记：任氏曰）
+            - cell "T3+T4" [ref=f68e160]
+            - cell "66" [ref=f68e162]
+            - cell "613" [ref=f68e163]
+            - cell "66 高0/低66" [ref=f68e164]:
+              - generic [ref=f68e165]: "66"
+              - text: 高0/低66
+            - cell "139 高136/低3" [ref=f68e166]:
+              - generic [ref=f68e167]: "139"
+              - text: 高136/低3
+            - cell "278 高139/低139" [ref=f68e168]:
+              - generic [ref=f68e169]: "278"
+              - text: 高139/低139
+            - cell "65 高65/低0" [ref=f68e170]:
+              - generic [ref=f68e171]: "65"
+              - text: 高65/低0
+            - cell "—" [ref=f68e172]
+            - cell "65 高65/低0" [ref=f68e173]:
+              - generic [ref=f68e174]: "65"
+              - text: 高65/低0
+            - cell "208" [ref=f68e175]
+            - cell "667.0 KB" [ref=f68e177]
+          - row [ref=f68e178]:
+            - cell "八字" [ref=f68e179]
+            - cell [ref=f68e180]:
+              - link "滴天髓（原文本）" [ref=f68e181] [cursor=pointer]:
+                - /url: /canon/ditiansui_yuanwen
+            - cell "T4" [ref=f68e182]
+            - cell "2" [ref=f68e184]
+            - cell "4" [ref=f68e185]
+            - cell "2 高0/低2" [ref=f68e186]:
+              - generic [ref=f68e187]: "2"
+              - text: 高0/低2
+            - cell "—" [ref=f68e188]
+            - cell "—" [ref=f68e189]
+            - cell "1 高1/低0" [ref=f68e190]:
+              - generic [ref=f68e191]: "1"
+              - text: 高1/低0
+            - cell "—" [ref=f68e192]
+            - cell "1 高1/低0" [ref=f68e193]:
+              - generic [ref=f68e194]: "1"
+              - text: 高1/低0
+            - cell "2" [ref=f68e195]
+            - cell "13.6 KB" [ref=f68e197]
+          - row [ref=f68e198]:
+            - cell "八字" [ref=f68e199]
+            - cell [ref=f68e200]:
+              - link "呱呱集" [ref=f68e201] [cursor=pointer]:
+                - /url: /canon/guagua_ji
+            - cell "命例集" [ref=f68e202]
+            - cell "4" [ref=f68e204]
+            - cell "10" [ref=f68e205]
+            - cell "4 高0/低4" [ref=f68e206]:
+              - generic [ref=f68e207]: "4"
+              - text: 高0/低4
+            - cell "—" [ref=f68e208]
+            - cell "—" [ref=f68e209]
+            - cell "3 高3/低0" [ref=f68e210]:
+              - generic [ref=f68e211]: "3"
+              - text: 高3/低0
+            - cell "—" [ref=f68e212]
+            - cell "3 高3/低0" [ref=f68e213]:
+              - generic [ref=f68e214]: "3"
+              - text: 高3/低0
+            - cell "4" [ref=f68e215]
+            - cell "237.0 KB" [ref=f68e217]
+          - row [ref=f68e218]:
+            - cell "八字" [ref=f68e219]
+            - cell [ref=f68e220]:
+              - link "兰台妙选原文" [ref=f68e221] [cursor=pointer]:
+                - /url: /canon/lantai_miaoxuan
+            - cell "T1+T4" [ref=f68e222]
+            - cell "4" [ref=f68e224]
+            - cell "10" [ref=f68e225]
+            - cell "4 高0/低4" [ref=f68e226]:
+              - generic [ref=f68e227]: "4"
+              - text: 高0/低4
+            - cell "—" [ref=f68e228]
+            - cell "—" [ref=f68e229]
+            - cell "3 高3/低0" [ref=f68e230]:
+              - generic [ref=f68e231]: "3"
+              - text: 高3/低0
+            - cell "—" [ref=f68e232]
+            - cell "3 高3/低0" [ref=f68e233]:
+              - generic [ref=f68e234]: "3"
+              - text: 高3/低0
+            - cell "4" [ref=f68e235]
+            - cell "81.4 KB" [ref=f68e237]
+          - row [ref=f68e238]:
+            - cell "八字" [ref=f68e239]
+            - cell [ref=f68e240]:
+              - link "命理探原" [ref=f68e241] [cursor=pointer]:
+                - /url: /canon/mingli_tanyuan
+            - cell "T2" [ref=f68e242]
+            - cell "11" [ref=f68e244]
+            - cell "31" [ref=f68e245]
+            - cell "11 高0/低11" [ref=f68e246]:
+              - generic [ref=f68e247]: "11"
+              - text: 高0/低11
+            - cell "—" [ref=f68e248]
+            - cell "—" [ref=f68e249]
+            - cell "10 高10/低0" [ref=f68e250]:
+              - generic [ref=f68e251]: "10"
+              - text: 高10/低0
+            - cell "—" [ref=f68e252]
+            - cell "10 高10/低0" [ref=f68e253]:
+              - generic [ref=f68e254]: "10"
+              - text: 高10/低0
+            - cell "11" [ref=f68e255]
+            - cell "207.3 KB" [ref=f68e257]
+          - row [ref=f68e258]:
+            - cell "八字" [ref=f68e259]
+            - cell [ref=f68e260]:
+              - link "命理约言" [ref=f68e261] [cursor=pointer]:
+                - /url: /canon/mingli_yueyan
+            - cell "T2" [ref=f68e262]
+            - cell "124" [ref=f68e264]
+            - cell "372" [ref=f68e265]
+            - cell "124 高0/低124" [ref=f68e266]:
+              - generic [ref=f68e267]: "124"
+              - text: 高0/低124
+            - cell "—" [ref=f68e268]
+            - cell "—" [ref=f68e269]
+            - cell "124 高124/低0" [ref=f68e270]:
+              - generic [ref=f68e271]: "124"
+              - text: 高124/低0
+            - cell "—" [ref=f68e272]
+            - cell "124 高124/低0" [ref=f68e273]:
+              - generic [ref=f68e274]: "124"
+              - text: 高124/低0
+            - cell "124" [ref=f68e275]
+            - cell "675.1 KB" [ref=f68e277]
+          - row [ref=f68e278]:
+            - cell "八字" [ref=f68e279]
+            - cell [ref=f68e280]:
+              - link "千里命稿" [ref=f68e281] [cursor=pointer]:
+                - /url: /canon/qianli_minggao
+            - cell "T2" [ref=f68e282]
+            - cell "24" [ref=f68e284]
+            - cell "70" [ref=f68e285]
+            - cell "24 高0/低24" [ref=f68e286]:
+              - generic [ref=f68e287]: "24"
+              - text: 高0/低24
+            - cell "—" [ref=f68e288]
+            - cell "—" [ref=f68e289]
+            - cell "23 高23/低0" [ref=f68e290]:
+              - generic [ref=f68e291]: "23"
+              - text: 高23/低0
+            - cell "—" [ref=f68e292]
+            - cell "23 高23/低0" [ref=f68e293]:
+              - generic [ref=f68e294]: "23"
+              - text: 高23/低0
+            - cell "24" [ref=f68e295]
+            - cell "416.2 KB" [ref=f68e297]
+          - row [ref=f68e298]:
+            - cell "八字" [ref=f68e299]
+            - cell [ref=f68e300]:
+              - link "穷通宝鉴" [ref=f68e301] [cursor=pointer]:
+                - /url: /canon/qiongtong_baojian
+            - cell "T1" [ref=f68e302]
+            - cell "114" [ref=f68e304]
+            - cell "342" [ref=f68e305]
+            - cell "114 高0/低114" [ref=f68e306]:
+              - generic [ref=f68e307]: "114"
+              - text: 高0/低114
+            - cell "—" [ref=f68e308]
+            - cell "—" [ref=f68e309]
+            - cell "114 高114/低0" [ref=f68e310]:
+              - generic [ref=f68e311]: "114"
+              - text: 高114/低0
+            - cell "—" [ref=f68e312]
+            - cell "114 高114/低0" [ref=f68e313]:
+              - generic [ref=f68e314]: "114"
+              - text: 高114/低0
+            - cell "114" [ref=f68e315]
+            - cell "978.2 KB" [ref=f68e317]
+          - row [ref=f68e318]:
+            - cell "八字" [ref=f68e319]
+            - cell [ref=f68e320]:
+              - link "三命通会" [ref=f68e321] [cursor=pointer]:
+                - /url: /canon/sanming_tonghui
+            - cell "T1+T2+T4" [ref=f68e322]
+            - cell "382" [ref=f68e324]
+            - cell "1130" [ref=f68e325]
+            - cell "382 高0/低382" [ref=f68e326]:
+              - generic [ref=f68e327]: "382"
+              - text: 高0/低382
+            - cell "—" [ref=f68e328]
+            - cell "—" [ref=f68e329]
+            - cell "374 高374/低0" [ref=f68e330]:
+              - generic [ref=f68e331]: "374"
+              - text: 高374/低0
+            - cell "—" [ref=f68e332]
+            - cell "374 高374/低0" [ref=f68e333]:
+              - generic [ref=f68e334]: "374"
+              - text: 高374/低0
+            - cell "382" [ref=f68e335]
+            - cell "2330.1 KB" [ref=f68e337]
+          - row [ref=f68e338]:
+            - cell "八字" [ref=f68e339]
+            - cell [ref=f68e340]:
+              - link "神峰通考" [ref=f68e341] [cursor=pointer]:
+                - /url: /canon/shenfeng_tongkao
+            - cell "T2" [ref=f68e342]
+            - cell "114" [ref=f68e344]
+            - cell "342" [ref=f68e345]
+            - cell "114 高0/低114" [ref=f68e346]:
+              - generic [ref=f68e347]: "114"
+              - text: 高0/低114
+            - cell "—" [ref=f68e348]
+            - cell "—" [ref=f68e349]
+            - cell "114 高114/低0" [ref=f68e350]:
+              - generic [ref=f68e351]: "114"
+              - text: 高114/低0
+            - cell "—" [ref=f68e352]
+            - cell "114 高114/低0" [ref=f68e353]:
+              - generic [ref=f68e354]: "114"
+              - text: 高114/低0
+            - cell "114" [ref=f68e355]
+            - cell "897.1 KB" [ref=f68e357]
+          - row [ref=f68e358]:
+            - cell "八字" [ref=f68e359]
+            - cell [ref=f68e360]:
+              - link "五行精纪" [ref=f68e361] [cursor=pointer]:
+                - /url: /canon/wuxing_jingji
+            - cell "T2+T4" [ref=f68e362]
+            - cell "33" [ref=f68e364]
+            - cell "95" [ref=f68e365]
+            - cell "33 高0/低33" [ref=f68e366]:
+              - generic [ref=f68e367]: "33"
+              - text: 高0/低33
+            - cell "—" [ref=f68e368]
+            - cell "—" [ref=f68e369]
+            - cell "31 高31/低0" [ref=f68e370]:
+              - generic [ref=f68e371]: "31"
+              - text: 高31/低0
+            - cell "—" [ref=f68e372]
+            - cell "31 高31/低0" [ref=f68e373]:
+              - generic [ref=f68e374]: "31"
+              - text: 高31/低0
+            - cell "33" [ref=f68e375]
+            - cell "519.0 KB" [ref=f68e377]
+          - row [ref=f68e378]:
+            - cell "八字" [ref=f68e379]
+            - cell [ref=f68e380]:
+              - link "渊海子平" [ref=f68e381] [cursor=pointer]:
+                - /url: /canon/yuanhai_ziping
+              - text: （标记：眉批）
+            - cell "T2+T4" [ref=f68e382]
+            - cell "305" [ref=f68e384]
+            - cell "890" [ref=f68e385]
+            - cell "305 高0/低305" [ref=f68e386]:
+              - generic [ref=f68e387]: "305"
+              - text: 高0/低305
+            - cell "—" [ref=f68e388]
+            - cell "1 高1/低0" [ref=f68e389]:
+              - generic [ref=f68e390]: "1"
+              - text: 高1/低0
+            - cell "292 高292/低0" [ref=f68e391]:
+              - generic [ref=f68e392]: "292"
+              - text: 高292/低0
+            - cell "—" [ref=f68e393]
+            - cell "292 高292/低0" [ref=f68e394]:
+              - generic [ref=f68e395]: "292"
+              - text: 高292/低0
+            - cell "305" [ref=f68e396]
+            - cell "1760.6 KB" [ref=f68e398]
+          - row [ref=f68e399]:
+            - cell "八字" [ref=f68e400]
+            - cell [ref=f68e401]:
+              - link "御定子平" [ref=f68e402] [cursor=pointer]:
+                - /url: /canon/yuding_ziping
+            - cell "T2" [ref=f68e403]
+            - cell "4" [ref=f68e405]
+            - cell "10" [ref=f68e406]
+            - cell "4 高0/低4" [ref=f68e407]:
+              - generic [ref=f68e408]: "4"
+              - text: 高0/低4
+            - cell "—" [ref=f68e409]
+            - cell "—" [ref=f68e410]
+            - cell "3 高3/低0" [ref=f68e411]:
+              - generic [ref=f68e412]: "3"
+              - text: 高3/低0
+            - cell "—" [ref=f68e413]
+            - cell "3 高3/低0" [ref=f68e414]:
+              - generic [ref=f68e415]: "3"
+              - text: 高3/低0
+            - cell "4" [ref=f68e416]
+            - cell "30.0 KB" [ref=f68e418]
+          - row [ref=f68e419]:
+            - cell "八字" [ref=f68e420]
+            - cell [ref=f68e421]:
+              - link "月谈赋" [ref=f68e422] [cursor=pointer]:
+                - /url: /canon/yuetan_fu
+            - cell "T4" [ref=f68e423]
+            - cell "2" [ref=f68e425]
+            - cell "4" [ref=f68e426]
+            - cell "2 高0/低2" [ref=f68e427]:
+              - generic [ref=f68e428]: "2"
+              - text: 高0/低2
+            - cell "—" [ref=f68e429]
+            - cell "—" [ref=f68e430]
+            - cell "1 高1/低0" [ref=f68e431]:
+              - generic [ref=f68e432]: "1"
+              - text: 高1/低0
+            - cell "—" [ref=f68e433]
+            - cell "1 高1/低0" [ref=f68e434]:
+              - generic [ref=f68e435]: "1"
+              - text: 高1/低0
+            - cell "2" [ref=f68e436]
+            - cell "18.2 KB" [ref=f68e438]
+          - row [ref=f68e439]:
+            - cell "八字" [ref=f68e440]
+            - cell [ref=f68e441]:
+              - link "造化元钥评注" [ref=f68e442] [cursor=pointer]:
+                - /url: /canon/zaohua_yuanyue
+            - cell "T1" [ref=f68e443]
+            - cell "20" [ref=f68e445]
+            - cell "56" [ref=f68e446]
+            - cell "20 高0/低20" [ref=f68e447]:
+              - generic [ref=f68e448]: "20"
+              - text: 高0/低20
+            - cell "—" [ref=f68e449]
+            - cell "—" [ref=f68e450]
+            - cell "18 高18/低0" [ref=f68e451]:
+              - generic [ref=f68e452]: "18"
+              - text: 高18/低0
+            - cell "—" [ref=f68e453]
+            - cell "18 高18/低0" [ref=f68e454]:
+              - generic [ref=f68e455]: "18"
+              - text: 高18/低0
+            - cell "20" [ref=f68e456]
+            - cell "123.6 KB" [ref=f68e458]
+          - row [ref=f68e459]:
+            - cell "八字" [ref=f68e460]
+            - cell [ref=f68e461]:
+              - link "子平管见" [ref=f68e462] [cursor=pointer]:
+                - /url: /canon/ziping_guanjian
+            - cell "T2" [ref=f68e463]
+            - cell "55" [ref=f68e465]
+            - cell "161" [ref=f68e466]
+            - cell "55 高0/低55" [ref=f68e467]:
+              - generic [ref=f68e468]: "55"
+              - text: 高0/低55
+            - cell "—" [ref=f68e469]
+            - cell "—" [ref=f68e470]
+            - cell "53 高53/低0" [ref=f68e471]:
+              - generic [ref=f68e472]: "53"
+              - text: 高53/低0
+            - cell "—" [ref=f68e473]
+            - cell "53 高53/低0" [ref=f68e474]:
+              - generic [ref=f68e475]: "53"
+              - text: 高53/低0
+            - cell "55" [ref=f68e476]
+            - cell "279.0 KB" [ref=f68e478]
+          - row [ref=f68e479]:
+            - cell "八字" [ref=f68e480]
+            - cell [ref=f68e481]:
+              - link "子平真诠" [ref=f68e482] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan
+              - text: （标记：徐注）
+            - cell "T2" [ref=f68e483]
+            - cell "51" [ref=f68e485]
+            - cell "979" [ref=f68e486]
+            - cell "298 高0/低298" [ref=f68e487]:
+              - generic [ref=f68e488]: "298"
+              - text: 高0/低298
+            - cell "—" [ref=f68e489]
+            - cell "579 高293/低286" [ref=f68e490]:
+              - generic [ref=f68e491]: "579"
+              - text: 高293/低286
+            - cell "51 高51/低0" [ref=f68e492]:
+              - generic [ref=f68e493]: "51"
+              - text: 高51/低0
+            - cell "—" [ref=f68e494]
+            - cell "51 高51/低0" [ref=f68e495]:
+              - generic [ref=f68e496]: "51"
+              - text: 高51/低0
+            - cell "584" [ref=f68e497]
+            - cell "508.2 KB" [ref=f68e499]
+          - row [ref=f68e500]:
+            - cell "八字古法" [ref=f68e501]
+            - cell [ref=f68e502]:
+              - link "鬼谷遗文" [ref=f68e503] [cursor=pointer]:
+                - /url: /canon/guigu_yiwen
+            - cell "T4" [ref=f68e504]
+            - cell "4" [ref=f68e506]
+            - cell "8" [ref=f68e507]
+            - cell "4 高0/低4" [ref=f68e508]:
+              - generic [ref=f68e509]: "4"
+              - text: 高0/低4
+            - cell "—" [ref=f68e510]
+            - cell "—" [ref=f68e511]
+            - cell "2 高2/低0" [ref=f68e512]:
+              - generic [ref=f68e513]: "2"
+              - text: 高2/低0
+            - cell "—" [ref=f68e514]
+            - cell "2 高2/低0" [ref=f68e515]:
+              - generic [ref=f68e516]: "2"
+              - text: 高2/低0
+            - cell "4" [ref=f68e517]
+            - cell "47.7 KB" [ref=f68e519]
+          - row [ref=f68e520]:
+            - cell "八字古法" [ref=f68e521]
+            - cell [ref=f68e522]:
+              - link "李虚中命书" [ref=f68e523] [cursor=pointer]:
+                - /url: /canon/lixuzhong_mingshu
+            - cell "T1+T4" [ref=f68e524]
+            - cell "6" [ref=f68e526]
+            - cell "14" [ref=f68e527]
+            - cell "6 高0/低6" [ref=f68e528]:
+              - generic [ref=f68e529]: "6"
+              - text: 高0/低6
+            - cell "—" [ref=f68e530]
+            - cell "—" [ref=f68e531]
+            - cell "4 高4/低0" [ref=f68e532]:
+              - generic [ref=f68e533]: "4"
+              - text: 高4/低0
+            - cell "—" [ref=f68e534]
+            - cell "4 高4/低0" [ref=f68e535]:
+              - generic [ref=f68e536]: "4"
+              - text: 高4/低0
+            - cell "6" [ref=f68e537]
+            - cell "97.7 KB" [ref=f68e539]
+          - row [ref=f68e540]:
+            - cell "八字古法" [ref=f68e541]
+            - cell [ref=f68e542]:
+              - link "珞琭子消息赋" [ref=f68e543] [cursor=pointer]:
+                - /url: /canon/luoluzi_xiaoxifu
+            - cell "T4" [ref=f68e544]
+            - cell "2" [ref=f68e546]
+            - cell "4" [ref=f68e547]
+            - cell "2 高0/低2" [ref=f68e548]:
+              - generic [ref=f68e549]: "2"
+              - text: 高0/低2
+            - cell "—" [ref=f68e550]
+            - cell "—" [ref=f68e551]
+            - cell "1 高1/低0" [ref=f68e552]:
+              - generic [ref=f68e553]: "1"
+              - text: 高1/低0
+            - cell "—" [ref=f68e554]
+            - cell "1 高1/低0" [ref=f68e555]:
+              - generic [ref=f68e556]: "1"
+              - text: 高1/低0
+            - cell "2" [ref=f68e557]
+            - cell "86.7 KB" [ref=f68e559]
+          - row [ref=f68e560]:
+            - cell "八字古法" [ref=f68e561]
+            - cell [ref=f68e562]:
+              - link "玉照定真经" [ref=f68e563] [cursor=pointer]:
+                - /url: /canon/yuzhao_dingzhenjing
+            - cell "T1+T4" [ref=f68e564]
+            - cell "20" [ref=f68e566]
+            - cell "58" [ref=f68e567]
+            - cell "20 高0/低20" [ref=f68e568]:
+              - generic [ref=f68e569]: "20"
+              - text: 高0/低20
+            - cell "—" [ref=f68e570]
+            - cell "—" [ref=f68e571]
+            - cell "19 高19/低0" [ref=f68e572]:
+              - generic [ref=f68e573]: "19"
+              - text: 高19/低0
+            - cell "—" [ref=f68e574]
+            - cell "19 高19/低0" [ref=f68e575]:
+              - generic [ref=f68e576]: "19"
+              - text: 高19/低0
+            - cell "20" [ref=f68e577]
+            - cell "82.7 KB" [ref=f68e579]
+          - row [ref=f68e580]:
+            - cell "星命" [ref=f68e581]
+            - cell [ref=f68e582]:
+              - link "星命抉古录" [ref=f68e583] [cursor=pointer]:
+                - /url: /canon/xingming_juegulu
+            - cell "T2+T4（需扩展 X）" [ref=f68e584]
+            - cell "10" [ref=f68e586]
+            - cell "30" [ref=f68e587]
+            - cell "10 高0/低10" [ref=f68e588]:
+              - generic [ref=f68e589]: "10"
+              - text: 高0/低10
+            - cell "—" [ref=f68e590]
+            - cell "—" [ref=f68e591]
+            - cell "10 高10/低0" [ref=f68e592]:
+              - generic [ref=f68e593]: "10"
+              - text: 高10/低0
+            - cell "—" [ref=f68e594]
+            - cell "10 高10/低0" [ref=f68e595]:
+              - generic [ref=f68e596]: "10"
+              - text: 高10/低0
+            - cell "10" [ref=f68e597]
+            - cell "125.2 KB" [ref=f68e599]
+          - row [ref=f68e600]:
+            - cell "星命" [ref=f68e601]
+            - cell [ref=f68e602]:
+              - link "星命总括" [ref=f68e603] [cursor=pointer]:
+                - /url: /canon/xingming_zongkuo
+            - cell "T2+T4（需扩展 X）" [ref=f68e604]
+            - cell "4" [ref=f68e606]
+            - cell "10" [ref=f68e607]
+            - cell "4 高0/低4" [ref=f68e608]:
+              - generic [ref=f68e609]: "4"
+              - text: 高0/低4
+            - cell "—" [ref=f68e610]
+            - cell "—" [ref=f68e611]
+            - cell "3 高3/低0" [ref=f68e612]:
+              - generic [ref=f68e613]: "3"
+              - text: 高3/低0
+            - cell "—" [ref=f68e614]
+            - cell "3 高3/低0" [ref=f68e615]:
+              - generic [ref=f68e616]: "3"
+              - text: 高3/低0
+            - cell "4" [ref=f68e617]
+            - cell "157.1 KB" [ref=f68e619]
+          - row [ref=f68e620]:
+            - cell "星命" [ref=f68e621]
+            - cell [ref=f68e622]:
+              - link "星平会海" [ref=f68e623] [cursor=pointer]:
+                - /url: /canon/xingping_huihai
+            - cell "T2（需扩展 X）" [ref=f68e624]
+            - cell "10" [ref=f68e626]
+            - cell "28" [ref=f68e627]
+            - cell "10 高0/低10" [ref=f68e628]:
+              - generic [ref=f68e629]: "10"
+              - text: 高0/低10
+            - cell "—" [ref=f68e630]
+            - cell "—" [ref=f68e631]
+            - cell "9 高9/低0" [ref=f68e632]:
+              - generic [ref=f68e633]: "9"
+              - text: 高9/低0
+            - cell "—" [ref=f68e634]
+            - cell "9 高9/低0" [ref=f68e635]:
+              - generic [ref=f68e636]: "9"
+              - text: 高9/低0
+            - cell "10" [ref=f68e637]
+            - cell "45.1 KB" [ref=f68e639]
+      - paragraph [ref=f68e640]: 置信度含义：高＝段落带显式标记（【徐注】/【原注】/【任氏曰】/【眉批】）或位于白话译文区块； 低＝按网页区块推断，网页“原文”标签不区分原著与评注（徐注五用神段即被其误标）， 低置信段落须人工校勘后方可用于规则提取。
+    - generic [ref=f68e641]:
+      - heading "规则库与校勘" [level=2] [ref=f68e642]
+      - table [ref=f68e643]:
+        - rowgroup [ref=f68e644]:
+          - row [ref=f68e645]:
+            - columnheader "流派" [ref=f68e646]
+            - columnheader "规则数" [ref=f68e647]
+            - columnheader "待校勘" [ref=f68e648]
+            - columnheader "已通过" [ref=f68e649]
+            - columnheader "已驳回" [ref=f68e650]
+            - columnheader [ref=f68e651]
+          - row [ref=f68e652]:
+            - cell [ref=f68e653]:
+              - link "qiongtong" [ref=f68e654] [cursor=pointer]:
+                - /url: /canon/rules/qiongtong
+            - cell "120" [ref=f68e655]
+            - cell "120" [ref=f68e656]
+            - cell "0" [ref=f68e658]
+            - cell "0" [ref=f68e659]
+            - cell [ref=f68e660]:
+              - link "去校勘" [ref=f68e661] [cursor=pointer]:
+                - /url: /canon/rules/qiongtong?status=candidate
+    - generic [ref=f68e662]:
+      - generic [ref=f68e663]:
+        - heading "扫描底本（raw，只读）" [level=2] [ref=f68e664]
+        - table [ref=f68e665]:
+          - rowgroup [ref=f68e666]:
+            - row [ref=f68e667]:
+              - columnheader "文件" [ref=f68e668]
+              - columnheader "大小" [ref=f68e669]
+            - row [ref=f68e670]:
+              - cell [ref=f68e671]:
+                - link "di_tian_sui_ming_scan.pdf" [ref=f68e672] [cursor=pointer]:
+                  - /url: /canon/scan/di_tian_sui_ming_scan.pdf
+              - cell "13.2 MB" [ref=f68e673]
+            - row [ref=f68e674]:
+              - cell [ref=f68e675]:
+                - link "di_tian_sui_qiong_tong_vol1.pdf" [ref=f68e676] [cursor=pointer]:
+                  - /url: /canon/scan/di_tian_sui_qiong_tong_vol1.pdf
+              - cell "1.8 MB" [ref=f68e677]
+            - row [ref=f68e678]:
+              - cell [ref=f68e679]:
+                - link "sanming_tonghui_1578.pdf" [ref=f68e680] [cursor=pointer]:
+                  - /url: /canon/scan/sanming_tonghui_1578.pdf
+              - cell "97.2 MB" [ref=f68e681]
+            - row [ref=f68e682]:
+              - cell [ref=f68e683]:
+                - link "yuanhai_ziping_vol1.pdf" [ref=f68e684] [cursor=pointer]:
+                  - /url: /canon/scan/yuanhai_ziping_vol1.pdf
+              - cell "17.2 MB" [ref=f68e685]
+            - row [ref=f68e686]:
+              - cell [ref=f68e687]:
+                - link "ziping_zhenquan_scan.pdf" [ref=f68e688] [cursor=pointer]:
+                  - /url: /canon/scan/ziping_zhenquan_scan.pdf
+              - cell "6.8 MB" [ref=f68e689]
+        - paragraph [ref=f68e690]: 扫描图像是版本核验的第一证据；OCR 文本与网页录入本都只是辅助比对材料。
+      - generic [ref=f68e691]:
+        - heading "OCR 进度" [level=2] [ref=f68e692]
+        - table [ref=f68e693]:
+          - rowgroup [ref=f68e694]:
+            - row [ref=f68e695]:
+              - columnheader "版本" [ref=f68e696]
+              - columnheader "已渲染页面" [ref=f68e697]
+              - columnheader "已识别页" [ref=f68e698]
+              - columnheader "状态" [ref=f68e699]
+            - row [ref=f68e700]:
+              - cell [ref=f68e701]:
+                - link "ditiansui_ming_scan_edition_a" [ref=f68e702] [cursor=pointer]:
+                  - /url: /canon/ocr/ditiansui_ming_scan_edition_a
+              - cell "69" [ref=f68e703]
+              - cell "69" [ref=f68e704]
+              - 'cell "raw: 69" [ref=f68e705]'
+            - row [ref=f68e707]:
+              - cell [ref=f68e708]:
+                - link "ditiansui_qiong_tong_scan_edition_a" [ref=f68e709] [cursor=pointer]:
+                  - /url: /canon/ocr/ditiansui_qiong_tong_scan_edition_a
+              - cell "54" [ref=f68e710]
+              - cell "54" [ref=f68e711]
+              - 'cell "raw: 54" [ref=f68e712]'
+            - row [ref=f68e714]:
+              - cell [ref=f68e715]:
+                - link "sanming_tonghui_scan_edition_a" [ref=f68e716] [cursor=pointer]:
+                  - /url: /canon/ocr/sanming_tonghui_scan_edition_a
+              - cell "1000" [ref=f68e717]
+              - cell "1000" [ref=f68e718]
+              - 'cell "raw: 1000" [ref=f68e719]'
+            - row [ref=f68e721]:
+              - cell [ref=f68e722]:
+                - link "yuanhai_ziping_scan_edition_a" [ref=f68e723] [cursor=pointer]:
+                  - /url: /canon/ocr/yuanhai_ziping_scan_edition_a
+              - cell "68" [ref=f68e724]
+              - cell "68" [ref=f68e725]
+              - 'cell "raw: 68" [ref=f68e726]'
+            - row [ref=f68e728]:
+              - cell [ref=f68e729]:
+                - link "ziping_zhenquan_scan_edition_a" [ref=f68e730] [cursor=pointer]:
+                  - /url: /canon/ocr/ziping_zhenquan_scan_edition_a
+              - cell "287" [ref=f68e731]
+              - cell "287" [ref=f68e732]
+              - 'cell "raw: 287" [ref=f68e733]'
+        - paragraph [ref=f68e735]:
+          - text: 入口脚本：
+          - code [ref=f68e736]: ocr_canon.py
+          - text: （PaddleOCR，逐页保存原始结果与页面 PNG）。

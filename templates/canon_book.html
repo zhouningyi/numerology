@@ -3,24 +3,35 @@
 {% block content %}
 <h1 style="font-size:22px;margin-bottom:2px">{{ title }} · 原著中心</h1>
 <p class="muted" style="font-size:13px;margin-bottom:12px">
-  <a href="/canon">← 返回古籍总览</a> · 共 {{ stats.chapters }} 章；原文默认显示，翻译、批注和扫描页作为辅助材料展开。
+  <a href="/canon">← 返回古籍总览</a> · {{ corpus_group }} · {{ calculation_scope }} · 共 {{ stats.chapters }} 章；原文为中心，现代翻译默认展开。
 </p>
 
 {% if chapter is none %}
 {% if book_spec %}
-<div class="card">
-  <h2>现代规格（spec）
-    <span class="badge {% if 'T1' in (book_spec.tier or '') %}badge-aa{% elif 'T2' in (book_spec.tier or '') %}badge-a{% elif 'T3' in (book_spec.tier or '') %}badge-b{% else %}badge-dd{% endif %}">{{ book_spec.tier }}</span>
-  </h2>
-  <p style="font-size:14px;margin:6px 0">{{ book_spec.spec }}</p>
-  <table style="max-width:760px">
-    <tr><th style="width:90px">输入</th><td>{{ book_spec.input or '—' }}</td></tr>
-    <tr><th>输出</th><td>{{ book_spec.output or '—' }}</td></tr>
-    <tr><th>可验证性</th><td>{{ book_spec.validation or '—' }}</td></tr>
-  </table>
-  <p class="muted" style="font-size:11px;margin-top:6px">
-    spec 是现代语言概括，帮助快速理解；规则编码以原文引文为准，数学化分级定义见
-    <a href="/docs/古籍数学化与计算流程方案">古籍数学化与计算流程方案</a>。
+<div class="card" style="border-left:3px solid var(--accent);padding:18px 22px">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px">
+    <h2 style="margin:0;font-size:16px">这本书是什么 · 现代解读</h2>
+    <span class="badge {% if 'T1' in (book_spec.tier or '') %}badge-aa{% elif 'T2' in (book_spec.tier or '') %}badge-a{% elif 'T3' in (book_spec.tier or '') %}badge-b{% else %}badge-dd{% endif %}"
+          style="font-size:13px">数学化 {{ book_spec.tier }}</span>
+  </div>
+  <p style="font-size:17px;line-height:1.9;margin:0 0 14px;color:var(--text)">{{ book_spec.spec }}</p>
+  <div class="grid grid-3" style="gap:10px">
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+      <div class="stat-label" style="margin-bottom:4px">输入</div>
+      <div style="font-size:14px;line-height:1.6">{{ book_spec.input or '—' }}</div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+      <div class="stat-label" style="margin-bottom:4px">输出</div>
+      <div style="font-size:14px;line-height:1.6">{{ book_spec.output or '—' }}</div>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+      <div class="stat-label" style="margin-bottom:4px">可验证性</div>
+      <div style="font-size:14px;line-height:1.6">{{ book_spec.validation or '—' }}</div>
+    </div>
+  </div>
+  <p class="muted" style="font-size:11px;margin-top:10px">
+    解读是现代语言概括，帮助快速理解；规则编码以原文引文为准。T1 查表 / T2 谓词规则 / T3 参数型 / T4 意象型，
+    定义见 <a href="/docs/古籍数学化与计算流程方案">古籍数学化与计算流程方案</a>。
   </p>
 </div>
 {% endif %}
@@ -30,7 +41,7 @@
     点击章节号直接进入原著正文。互联网版本的书籍介绍、站点宣传和空书名号不计入原文。
   </p>
   <table>
-    <tr><th>章节</th><th>原书章号</th><th>内容</th><th>原文段数</th><th>原注/评注</th><th>白话译文</th><th>站点内容</th><th></th></tr>
+    <tr><th>章节</th><th>原书章号</th><th>内容</th><th>原文段数</th><th>原注/评注</th><th>翻译/释译</th><th>站点内容</th><th></th></tr>
     {% for row in chapter_directory %}
     <tr>
       <td><a href="/canon/{{ book }}?chapter={{ row.number }}">第 {{ row.number }} 章</a></td>
@@ -43,7 +54,7 @@
       <td><a href="/canon/{{ book }}?chapter={{ row.number }}">打开</a></td>
     </tr>
     {% else %}
-    <tr><td colspan="8" class="muted">尚未生成章节分层文本。</td></tr>
+    <tr><td colspan="8" class="muted">尚未导入本书原文，当前仅登记书目和处理规范。</td></tr>
     {% endfor %}
   </table>
 </div>
@@ -74,24 +85,48 @@
   </p>
   {% endif %}
   <p class="muted" style="font-size:12px;margin-bottom:10px">
-    以下是互联网版本的原文分段，仅作检索底本；规则进入 spec 前仍需回看 PDF 扫描页。
+    以下是互联网版本的原文分段，仅作检索底本；规则进入 spec 前仍需回看 PDF 扫描页。可逐段展开下方现代翻译/释译，原注和评注仍单独折叠。
   </p>
   {% for s in original_segments %}
   <article style="margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
     <div class="muted" style="font-size:11px;margin-bottom:4px">原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}</div>
     <div class="canon-original" style="white-space:pre-wrap;font-size:15px;line-height:1.9">{{ s.text }}</div>
+    {% set inline_items = inline_by_original[loop.index0] %}
+    {% for aux in inline_items %}
+    <details class="canon-fold" open style="margin:8px 0 0;border-color:rgba(74,163,111,.35)">
+      <summary><span class="badge {{ layer_badges[aux.layer] }}">{{ layer_labels[aux.layer] }}</span> · 默认展开</summary>
+      <div class="canon-fold-body" style="background:rgba(74,163,111,.05)">
+        <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ aux.text }}</div>
+      </div>
+    </details>
+    {% endfor %}
   </article>
   {% else %}
   <p class="muted">该章节没有可显示的原文段落。</p>
   {% endfor %}
 </div>
 
+{% if unmatched_inline %}
+<div class="card">
+  <h2>本章级现代翻译/释译 · 默认展开</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">
+    本章译文段数与原文段数不一致，系统不强行逐段配对；以下保留原有范围，避免制造虚假的段落对应关系。
+  </p>
+  {% for s in unmatched_inline %}
+  <details class="canon-fold" open>
+    <summary><span class="badge {{ layer_badges[s.layer] }}">{{ layer_labels[s.layer] }}</span> · 本章范围</summary>
+    <div class="canon-fold-body"><div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ s.text }}</div></div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="card">
   <h2>辅助材料 · 点击展开</h2>
   <p class="muted" style="font-size:12px;margin-bottom:8px">
     白话译文来自互联网版本；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
   </p>
-  {% for auxiliary_layer in ('现代白话', '原注', '评注', '站点内容') %}
+  {% for auxiliary_layer in ('原注', '评注', '站点内容') %}
   {% set items = auxiliary_by_layer.get(auxiliary_layer, []) %}
   {% if items %}
   <details class="canon-fold">

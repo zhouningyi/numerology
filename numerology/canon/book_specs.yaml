@@ -160,11 +160,11 @@ specs:
     spec: 格局命名表：一批特殊格局的识别条件与名称，识别条件可查表化，吉凶断语多为赋体。
     validation: 格局识别可验证，断语层挂起
   yijing:
-    tier: 符号系统
-    input: 卦象（6 bit）
-    output: 卦爻辞
-    spec: 64 卦符号系统：状态空间数学化平凡（2^6），但"起卦→应验"的验证属 P2 前瞻实验，不是出生档案模型。
-    validation: P2 前瞻实验
+    tier: 文献层
+    input: —
+    output: 卦爻辞、现代释译
+    spec: 周易原典阅读语料；原文、翻译、解读和版本对照，不进入八字命理计算或出生档案统计。
+    validation: 不参与命理验证
   yizhuan:
     tier: 理论层
     input: —
@@ -177,3 +177,9 @@ specs:
     output: —
     spec: 苏轼的易经义理注释，文史价值为主。
     validation: 不验证
+  huayan_t0279:
+    tier: 文献层
+    input: —
+    output: 经文、现代释译
+    spec: 唐实叉难陀译《大方广佛华严经》（T0279）古籍阅读语料；只做原文、译文、解读和版本对照，不进入命理计算。
+    validation: 不参与命理验证

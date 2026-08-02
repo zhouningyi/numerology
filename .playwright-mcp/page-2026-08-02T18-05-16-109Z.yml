@@ -1,0 +1,59 @@
+- generic [active] [ref=f71e1]:
+  - navigation [ref=f71e2]:
+    - generic [ref=f71e3]:
+      - generic [ref=f71e4]: 命理统计
+      - link "概览" [ref=f71e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f71e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f71e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f71e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f71e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f71e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f71e11]:
+    - heading "大方广佛华严经（实叉难陀译） · 原著中心" [level=1] [ref=f71e12]
+    - paragraph [ref=f71e13]:
+      - link "← 返回古籍总览" [ref=f71e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 古籍语料 · 不参与命理计算 · 共 0 章；原文为中心，现代翻译默认展开。
+    - generic [ref=f71e15]:
+      - heading "现代规格（spec） 文献层" [level=2] [ref=f71e16]:
+        - text: 现代规格（spec）
+        - generic [ref=f71e17]: 文献层
+      - paragraph [ref=f71e18]: 唐实叉难陀译《大方广佛华严经》（T0279）古籍阅读语料；只做原文、译文、解读和版本对照，不进入命理计算。
+      - table [ref=f71e19]:
+        - rowgroup [ref=f71e20]:
+          - row [ref=f71e21]:
+            - rowheader "输入" [ref=f71e22]
+            - cell "—" [ref=f71e23]
+          - row [ref=f71e24]:
+            - rowheader "输出" [ref=f71e25]
+            - cell "经文、现代释译" [ref=f71e26]
+          - row [ref=f71e27]:
+            - rowheader "可验证性" [ref=f71e28]
+            - cell "不参与命理验证" [ref=f71e29]
+      - paragraph [ref=f71e30]:
+        - text: spec 是现代语言概括，帮助快速理解；规则编码以原文引文为准，数学化分级定义见
+        - link "古籍数学化与计算流程方案" [ref=f71e31] [cursor=pointer]:
+          - /url: /docs/古籍数学化与计算流程方案
+        - text: 。
+    - generic [ref=f71e32]:
+      - heading "《大方广佛华严经（实叉难陀译）》目录" [level=2] [ref=f71e33]
+      - paragraph [ref=f71e34]: 点击章节号直接进入原著正文。互联网版本的书籍介绍、站点宣传和空书名号不计入原文。
+      - table [ref=f71e35]:
+        - rowgroup [ref=f71e36]:
+          - row [ref=f71e37]:
+            - columnheader "章节" [ref=f71e38]
+            - columnheader "原书章号" [ref=f71e39]
+            - columnheader "内容" [ref=f71e40]
+            - columnheader "原文段数" [ref=f71e41]
+            - columnheader "原注/评注" [ref=f71e42]
+            - columnheader "白话译文" [ref=f71e43]
+            - columnheader "站点内容" [ref=f71e44]
+            - columnheader [ref=f71e45]
+          - row [ref=f71e46]:
+            - cell "尚未生成章节分层文本。" [ref=f71e47]

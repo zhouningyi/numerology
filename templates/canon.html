@@ -9,6 +9,9 @@
 
 <div class="card">
   <h2>书目分层标注进度</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">
+    <b>命理语料</b>可进入规则校勘与统计研究；<b>古籍语料</b>仅用于原文、译文、解读和版本阅读，周易与华严经不进入命理计算。
+  </p>
   <table>
     <tr>
       <th>体系</th><th>书名</th><th>数学化</th><th>章节</th><th>总段数</th>
@@ -16,12 +19,26 @@
       <th>待人工校勘（low）</th><th>文本大小</th>
     </tr>
     {% for b in books %}
+    {% if loop.first or b.corpus_group != books[loop.index0 - 1].corpus_group %}
+    <tr>
+      <td colspan="{{ 7 + layer_labels|length }}" style="background:rgba(88,166,255,.08);font-weight:600">
+        {{ b.corpus_group }}
+        <span class="muted" style="font-size:11px;font-weight:400">
+          · {{ b.calculation_scope }}
+        </span>
+      </td>
+    </tr>
+    {% endif %}
     <tr>
       <td class="muted">{{ b.system or '—' }}</td>
-      <td><a href="/canon/{{ b.key }}">{{ b.title }}</a>
+      <td style="max-width:360px">
+        <a href="/canon/{{ b.key }}">{{ b.title }}</a>
         {% if b.markers %}<span class="muted" style="font-size:11px">（标记：{{ b.markers|join('、') }}）</span>{% endif %}
+        {% if b.spec.spec %}
+        <div class="muted" style="font-size:11px;line-height:1.5;margin-top:2px">{{ b.spec.spec }}</div>
+        {% endif %}
       </td>
-      <td title="{{ b.spec.spec or '' }}">
+      <td>
         <span class="badge {% if 'T1' in (b.spec.tier or '') %}badge-aa{% elif 'T2' in (b.spec.tier or '') %}badge-a{% elif 'T3' in (b.spec.tier or '') %}badge-b{% else %}badge-dd{% endif %}">{{ b.spec.tier or '?' }}</span>
       </td>
       <td>{{ b.stats.chapters }}</td>

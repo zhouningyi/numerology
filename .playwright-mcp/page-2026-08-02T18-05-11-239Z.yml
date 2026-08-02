@@ -1,0 +1,83 @@
+- generic [active] [ref=f70e1]:
+  - navigation [ref=f70e2]:
+    - generic [ref=f70e3]:
+      - generic [ref=f70e4]: 命理统计
+      - link "概览" [ref=f70e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f70e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f70e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f70e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f70e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f70e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f70e11]:
+    - heading "子平真诠 · 原著中心" [level=1] [ref=f70e12]
+    - paragraph [ref=f70e13]:
+      - link "← 返回古籍总览" [ref=f70e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 命理语料 · 可进入命理研究流程 · 共 51 章；原文为中心，现代翻译默认展开。
+    - generic [ref=f70e15]:
+      - combobox [ref=f70e16]:
+        - option "辅助材料：全部" [selected]
+        - option "原文（原著正文）"
+        - option "原注（刘基）"
+        - option "评注（徐注/任氏曰/眉批）"
+        - option "现代白话（网站译文）"
+        - option "现代释译（项目整理）"
+        - option "站点内容（不入统计）"
+      - combobox [ref=f70e17]:
+        - option "全部置信度" [selected]
+        - option "高（显式标记）"
+        - option "低（待人工校勘）"
+      - button "筛选辅助材料" [ref=f70e18] [cursor=pointer]
+      - link "清除" [ref=f70e19] [cursor=pointer]:
+        - /url: /canon/ziping_zhenquan?chapter=3
+    - generic [ref=f70e20]:
+      - heading "原著正文 · 第 3 章 · 论十干十二支" [level=2] [ref=f70e21]
+      - paragraph [ref=f70e22]: 以下是互联网版本的原文分段，仅作检索底本；规则进入 spec 前仍需回看 PDF 扫描页。可逐段展开下方现代翻译/释译，原注和评注仍单独折叠。
+      - article [ref=f70e23]:
+        - generic [ref=f70e24]: 原文 · 段 6 · 待校勘
+        - generic [ref=f70e25]: 天地之间，一气而已。惟有动静，遂分阴阳。有老少，遂分四象。老者极动静之时，是为太阳太阴；少者初 动初静之际，是为少阴少阳。有是四象，而五行具于其中矣。水者，太阴也；火者，太阳也；木者，少阳 也；金者，少阴也；土者，阴阳老少、木火金水冲气所结也。
+      - article [ref=f70e26]:
+        - generic [ref=f70e27]: 原文 · 段 9 · 待校勘
+        - generic [ref=f70e28]: 有是五行，何以又有十干十二支乎？盖有阴阳，因生五行，而五行之中，各有阴阳。即以木论，甲乙者，木 之阴阳也。甲者，乙之气；乙者，甲之质。在天为生气，而流行于万物者，甲也；在地为万物，而承兹生气 者，乙也。又细分之，生气之散布者，甲之甲，而生气之凝成者，甲之乙；万木之所以有枝叶者，乙之甲， 而万木之枝枝叶叶者，乙之乙也。方其为甲，而乙之气已备；及其为乙，而甲之质乃坚。有是甲乙，而木之 阴阳具矣。
+      - article [ref=f70e29]:
+        - generic [ref=f70e30]: 原文 · 段 11 · 待校勘
+        - generic [ref=f70e31]: 何以复有寅卯者，又与甲乙分阴阳天地而言之者也。以甲乙而分阴阳，则甲为阳，乙为阴，木之行于天而为 阴阳者也。以寅卯而阴阳，则寅为阳，卯为阴，木之存乎地而为阴阳者也。以甲乙寅卯而统分阴阳，则甲乙 为阳寅卯为阴，木之在天成象而在地成形者也。甲乙行乎天，而寅卯受之；寅卯存乎地，而甲乙施焉。是故 甲乙如官长，寅卯如该管地方。甲禄于寅，乙禄于卯，如府官之在郡，县官之在邑，而各司一月之令也。
+      - article [ref=f70e32]:
+        - generic [ref=f70e33]: 原文 · 段 14 · 待校勘
+        - generic [ref=f70e34]: 甲乙在天，故动而不居。建寅之月，岂必当甲？建卯之月，岂必当乙？寅卯在地，故止而不迁。甲虽递易， 月必建寅；乙虽递易，月必建卯。以气而论，甲旺于乙；以质而论，乙坚于甲。而俗书谬论，以甲为大林， 盛而宜斩，乙为微苗，脆而莫伤，可为不知阴阳之理者矣。以木类推，余者可知，惟土为木火金水冲气，故 寄旺于四时，而阴阳气质之理，亦同此论。欲学命者，必须先知干支之说，然后可以入门。
+    - generic [ref=f70e35]:
+      - heading "本章级现代翻译/释译 · 默认展开" [level=2] [ref=f70e36]
+      - paragraph [ref=f70e37]: 本章译文段数与原文段数不一致，系统不强行逐段配对；以下保留原有范围，避免制造虚假的段落对应关系。
+      - group [ref=f70e38]:
+        - generic "现代白话（网站译文） · 本章范围" [ref=f70e39] [cursor=pointer]:
+          - generic [ref=f70e40]: 现代白话（网站译文）
+          - text: · 本章范围
+        - generic [ref=f70e41]: 天地之间，本是一股浑然之气。这股气有动有静，由此分化出阴阳两面。阴阳各有老嫩之别——动静到极 致的状态，称为太阳与太阴；刚开始动与刚开始静的状态，称为少阳与少阴。由这四象进一步演化，五行 （金、木、水、火、土）便蕴含其中：水为太阴，火为太阳，木为少阳，金为少阴，土则由阴阳交冲汇聚 而成。 五行各自分阴阳，便生出十天干（甲乙丙丁戊己庚辛壬癸）。以木为例：甲是木气在天流行的阳面，是生 机散布的力量；乙是木气落于地的阴面，是万物承接生气、凝结成形的质料。甲如气之施予者，乙如质之 承受者。 天干与地支（子丑寅卯……至亥，共十二个）的关系，好比官员与辖地。天干是流行于天的气，动而不 定；地支是固定的时令之序，恒而不移。甲禄（旺盛寄托）于寅月，乙禄于卯月，犹如地方官员在其所辖 之地方可发号施令。 阳干性刚，即使力弱也不轻易顺从强势格局；阴干性柔，四柱（出生年月日时对应的八字组合）中财官偏 盛时便随势而从。这是阴阳天干在命局推演中最根本的性情差异。
+    - generic [ref=f70e43]:
+      - heading "辅助材料 · 点击展开" [level=2] [ref=f70e44]
+      - paragraph [ref=f70e45]: 白话译文来自互联网版本；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
+      - group [ref=f70e46]:
+        - generic "评注（徐注/任氏曰/眉批） · 7 段" [ref=f70e47] [cursor=pointer]:
+          - generic [ref=f70e48]: 评注（徐注/任氏曰/眉批）
+          - text: · 7 段
+      - group [ref=f70e49]:
+        - generic "站点内容（不入统计） · 1 段" [ref=f70e50] [cursor=pointer]:
+          - generic [ref=f70e51]: 站点内容（不入统计）
+          - text: · 1 段
+    - generic [ref=f70e52]:
+      - heading "版本与扫描辅助" [level=2] [ref=f70e53]
+      - paragraph [ref=f70e54]: PDF 页码先通过 OCR 标题自动定位，再由人工复核章节边界；字符相似度仅用于定位，不是校勘结论。
+      - generic [ref=f70e55]:
+        - generic [ref=f70e56]:
+          - strong [ref=f70e57]: ziping_zhenquan_scan_edition_a
+          - text: · 本章未定位，待人工复核
+        - link "打开原版 PDF：ziping_zhenquan_scan.pdf" [ref=f70e58] [cursor=pointer]:
+          - /url: /canon/scan/ziping_zhenquan_scan.pdf
+        - text: SHA256：71402a780b03… 本章尚未定位，不显示全量页面作为对应结果
+        - generic [ref=f70e59]: 本章未定位，待人工复核。

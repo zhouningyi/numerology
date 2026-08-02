@@ -56,7 +56,7 @@ LUCKCLUB_BOOKS: dict[str, dict] = {
     "xingming_juegulu": {"category": "bazi", "book_id": "025", "title": "星命抉古录", "system": "星命"},
     "lantai_miaoxuan": {"category": "bazi", "book_id": "026", "title": "兰台妙选原文", "system": "八字"},
     # 易经：占卜体系的经典底本
-    "yijing": {"category": "yijing", "book_id": "001", "title": "易经", "system": "易经"},
+    "yijing": {"category": "yijing", "book_id": "001", "title": "周易", "system": "易经"},
     "yizhuan": {"category": "yijing", "book_id": "002", "title": "易传", "system": "易经"},
     "dongpo_yizhuan": {"category": "yijing", "book_id": "003", "title": "东坡易传", "system": "易经"},
 }

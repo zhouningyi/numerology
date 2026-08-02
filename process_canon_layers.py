@@ -4,7 +4,7 @@
 两件事：
 1. 把滴天髓爬虫快照（raw JSONL）清洗落到 data/processed/canon/ditiansui_online.txt，
    与其他三本书流水线对齐；raw 目录保持只读。
-2. 对四本书的 processed 文本逐段打层级标签，输出
+2. 对注册书目的 processed 文本逐段打层级标签，输出
    data/processed/canon/layers/<book>_layers.jsonl。
 
 层级取值：原文（经文/原著正文）、原注（刘基原注）、评注（徐注/任氏曰/眉批）、
@@ -36,6 +36,18 @@ _CURATED = {
     "sanming_tonghui": {"commentary_markers": []},
 }
 
+# 不来自 luckclub 的古籍先登记到同一语料目录，待下载原文后再生成 layers 文件。
+# 这类书只用于古籍阅读、翻译、版本和解读对照，不进入命理计算。
+_EXTRA_CORPUS_BOOKS = {
+    "huayan_t0279": {
+        "title": "大方广佛华严经（实叉难陀译）",
+        "system": "佛典",
+        "corpus_group": "古籍语料",
+        "calculation_scope": "不参与命理计算",
+        "commentary_markers": [],
+    },
+}
+
 
 def _build_books() -> dict[str, dict]:
     books: dict[str, dict] = {}
@@ -43,11 +55,21 @@ def _build_books() -> dict[str, dict]:
         books[slug] = {
             "title": meta["title"],
             "system": meta.get("system", ""),
+            "corpus_group": (
+                "古籍语料" if meta.get("category") in {"yijing", "buddhist"}
+                else "命理语料"
+            ),
+            "calculation_scope": (
+                "不参与命理计算" if meta.get("category") in {"yijing", "buddhist"}
+                else "可进入命理研究流程"
+            ),
             "commentary_markers": [],
         }
     for slug, extra in _CURATED.items():
         books.setdefault(slug, {"title": slug, "system": "", "commentary_markers": []})
         books[slug].update(extra)
+    for slug, meta in _EXTRA_CORPUS_BOOKS.items():
+        books[slug] = dict(meta)
     return books
 
 
