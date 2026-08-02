@@ -14,9 +14,9 @@
   </h2>
   <div class="grid grid-2">
     <div>
-      <img src="/canon/ocr/{{ source_id }}/pages/{{ p.image }}"
+        <img class="scan-preview" src="/canon/ocr/{{ source_id }}/pages/{{ p.image }}"
            style="max-width:100%;border:1px solid var(--border);border-radius:6px"
-           alt="第 {{ p.number }} 页扫描图">
+           alt="第 {{ p.number }} 页扫描图" data-caption="{{ source_id }} · PDF 第 {{ p.number }} 页">
     </div>
     <div>
       {% if p.text %}

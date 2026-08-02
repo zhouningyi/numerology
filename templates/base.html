@@ -131,22 +131,120 @@
     display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
     margin-bottom: 16px;
   }
+
+  /* 顶部 Tab 使用局部切换；请求期间保留当前页面，避免点击后出现空白。 */
+  body.nav-loading #page-content { opacity: .62; transition: opacity .12s ease; }
+  .canon-fold { margin: 7px 0; border: 1px solid var(--border); border-radius: 6px; background: rgba(88,166,255,.03); }
+  .canon-fold summary { cursor: pointer; padding: 6px 9px; color: var(--text-muted); font-size: 13px; }
+  .canon-fold summary:hover { color: var(--text); }
+  .canon-fold-body { padding: 7px 10px 10px; border-top: 1px solid var(--border); }
+  .canon-original { padding: 5px 0; }
+  .scan-compare-row { display: grid; grid-template-columns: 96px 1fr; gap: 9px; align-items: start; margin: 8px 0; }
+  .scan-preview { max-width: 100%; max-height: 180px; object-fit: contain; cursor: zoom-in;
+                 border: 1px solid var(--border); border-radius: 5px; background: #fff; }
+  dialog.scan-modal { width: min(94vw, 1100px); max-width: none; max-height: 94vh; padding: 10px;
+                      border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+  dialog.scan-modal::backdrop { background: rgba(0,0,0,.78); }
+  .scan-modal img { display: block; max-width: 100%; max-height: 82vh; margin: 0 auto; object-fit: contain; background: #fff; }
+  .scan-modal-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+  .scan-modal-close { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 3px 10px; }
+  @media (max-width: 768px) { .scan-compare-row { grid-template-columns: 72px 1fr; } }
 </style>
 </head>
 <body>
 <nav>
   <div class="container">
     <span class="logo">命理统计</span>
-    <a href="/">概览</a>
-    <a href="/persons">人物列表</a>
-    <a href="/domains">预测域</a>
-    <a href="/quality">质量审计</a>
-    <a href="/canon">古籍语料</a>
-    <a href="/docs">研究文档</a>
+    <a href="/" data-fast-nav>概览</a>
+    <a href="/persons" data-fast-nav>人物列表</a>
+    <a href="/domains" data-fast-nav>预测域</a>
+    <a href="/quality" data-fast-nav>质量审计</a>
+    <a href="/canon" data-fast-nav>古籍语料</a>
+    <a href="/docs" data-fast-nav>研究文档</a>
   </div>
 </nav>
-<div class="container">
+<main id="page-content" class="container">
   {% block content %}{% endblock %}
-</div>
+</main>
+<dialog id="scan-image-modal" class="scan-modal">
+  <div class="scan-modal-bar">
+    <span id="scan-image-caption">扫描页</span>
+    <button type="button" class="scan-modal-close" id="scan-image-close">关闭</button>
+  </div>
+  <img id="scan-image-large" alt="放大扫描页">
+</dialog>
+<script>
+(() => {
+  const cache = new Map();
+  const currentPath = () => window.location.pathname + window.location.search;
+
+  async function fetchPage(url) {
+    if (!cache.has(url)) {
+      cache.set(url, fetch(url, {credentials: 'same-origin'}).then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      }));
+    }
+    return cache.get(url);
+  }
+
+  function updateNav(url) {
+    document.querySelectorAll('nav a[data-fast-nav]').forEach((link) => {
+      link.setAttribute('aria-current', link.getAttribute('href') === url ? 'page' : 'false');
+    });
+  }
+
+  async function showPage(url, pushState) {
+    document.body.classList.add('nav-loading');
+    try {
+      const html = await fetchPage(url);
+      const parsed = new DOMParser().parseFromString(html, 'text/html');
+      const next = parsed.querySelector('#page-content');
+      if (!next) {
+        window.location.href = url;
+        return;
+      }
+      document.title = parsed.title;
+      document.querySelector('#page-content').replaceWith(next);
+      if (pushState) history.pushState({}, '', url);
+      updateNav(url);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      window.location.href = url;
+    } finally {
+      document.body.classList.remove('nav-loading');
+    }
+  }
+
+  document.querySelectorAll('nav a[data-fast-nav]').forEach((link) => {
+    link.addEventListener('mouseenter', () => { fetchPage(link.href).catch(() => {}); });
+    link.addEventListener('focus', () => { fetchPage(link.href).catch(() => {}); });
+    link.addEventListener('click', (event) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      const url = new URL(link.href).pathname + new URL(link.href).search;
+      if (url !== currentPath()) showPage(url, true);
+    });
+  });
+
+  window.addEventListener('popstate', () => showPage(currentPath(), false));
+  updateNav(currentPath());
+
+  const modal = document.querySelector('#scan-image-modal');
+  const largeImage = document.querySelector('#scan-image-large');
+  const caption = document.querySelector('#scan-image-caption');
+  const closeModal = () => { if (modal.open) modal.close(); };
+  document.addEventListener('click', (event) => {
+    const image = event.target.closest('.scan-preview');
+    if (!image) return;
+    largeImage.src = image.src;
+    largeImage.alt = image.alt;
+    caption.textContent = image.dataset.caption || image.alt || '扫描页';
+    modal.showModal();
+  });
+  document.querySelector('#scan-image-close').addEventListener('click', closeModal);
+  modal.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
+})();
+</script>
 </body>
 </html>

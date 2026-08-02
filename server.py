@@ -2,6 +2,7 @@
 """Web server for browsing numerology data."""
 
 import math
+import difflib
 import json
 import os
 import re
@@ -20,6 +21,7 @@ DOCS_DIR = BASE_DIR / "docs"
 CANON_PROCESSED_DIR = BASE_DIR / "data" / "processed" / "canon"
 CANON_LAYERS_DIR = CANON_PROCESSED_DIR / "layers"
 CANON_OCR_DIR = CANON_PROCESSED_DIR / "ocr"
+CANON_SCAN_IMAGES_DIR = CANON_PROCESSED_DIR / "scans"
 CANON_SCAN_DIR = BASE_DIR / "data" / "raw" / "canon" / "wikimedia"
 
 LAYER_LABELS = {
@@ -541,6 +543,20 @@ def canon_layer_stats(segments: list[dict]) -> dict:
     return stats
 
 
+def scan_files_for_book(book: str) -> list[Path]:
+    """按文件名把本地扫描底本归入对应著作。"""
+    prefixes = {
+        "ziping_zhenquan": ("ziping_zhenquan",),
+        "yuanhai_ziping": ("yuanhai_ziping",),
+        "ditiansui": ("di_tian_sui",),
+        "sanming_tonghui": ("sanming_tonghui",),
+    }
+    return [
+        pdf for pdf in sorted(CANON_SCAN_DIR.glob("*.pdf"))
+        if pdf.stem.startswith(prefixes.get(book, ()))
+    ]
+
+
 def ocr_editions() -> list[dict]:
     """扫描 OCR 输出目录，汇总每个版本的页面与识别进度。"""
     editions = []
@@ -566,6 +582,214 @@ def ocr_editions() -> list[dict]:
             "status_counts": status_counts,
         })
     return editions
+
+
+def load_ocr_records(source_id: str) -> list[dict]:
+    """读取一个版本的 OCR 原始记录；无结果时返回空列表。"""
+    path = CANON_OCR_DIR / source_id / "ocr.jsonl"
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def load_scan_image_records(source_id: str) -> list[dict]:
+    """读取独立于 OCR 的扫描页面记录。"""
+    path = CANON_SCAN_IMAGES_DIR / source_id / "images.jsonl"
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def load_page_map(source_id: str) -> dict[int, int]:
+    """读取人工维护的 PDF 页码→章节映射。"""
+    path = CANON_OCR_DIR / source_id / "page_map.json"
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    page_values = raw.get("pages", raw) if isinstance(raw, dict) else {}
+    result = {}
+    for page, chapter in page_values.items():
+        try:
+            if isinstance(chapter, dict):
+                chapter = chapter.get("chapter")
+            result[int(page)] = int(chapter)
+        except (TypeError, ValueError):
+            continue
+    return result
+
+
+def load_page_chapters(source_id: str) -> dict[int, list[int]]:
+    """读取页码对应的全部章节；一页内可能连续排有多个小章节。"""
+    path = CANON_OCR_DIR / source_id / "page_map.json"
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    details = raw.get("page_details", {}) if isinstance(raw, dict) else {}
+    result = {}
+    if isinstance(details, dict):
+        for page, detail in details.items():
+            try:
+                chapters = detail.get("chapters", []) if isinstance(detail, dict) else []
+                result[int(page)] = [int(chapter) for chapter in chapters]
+            except (TypeError, ValueError):
+                continue
+    primary = load_page_map(source_id)
+    for page, chapter in primary.items():
+        result.setdefault(page, [chapter])
+    return result
+
+
+def record_chapter(record: dict, page_map: dict[int, int]) -> int | None:
+    """优先使用 OCR 批次章节，其次使用人工页码映射。"""
+    if record.get("chapter") is not None:
+        return record["chapter"]
+    return page_map.get(int(record["page_pdf"]))
+
+
+def comparable_text(text: str) -> str:
+    """仅用于定位差异，去掉空白，不做繁简或异体字替换。"""
+    return re.sub(r"\s+", "", text or "")
+
+
+def text_diff_counts(left: str, right: str) -> dict[str, int]:
+    """统计两份文本的粗略差异字符数，不自动判定哪一份正确。"""
+    counts = {"online_only": 0, "pdf_only": 0, "equal": 0}
+    for tag, left_start, left_end, right_start, right_end in difflib.SequenceMatcher(
+        None, left, right
+    ).get_opcodes():
+        if tag == "equal":
+            counts["equal"] += left_end - left_start
+        elif tag == "delete":
+            counts["online_only"] += left_end - left_start
+        elif tag == "insert":
+            counts["pdf_only"] += right_end - right_start
+        else:
+            counts["online_only"] += left_end - left_start
+            counts["pdf_only"] += right_end - right_start
+    return counts
+
+
+def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dict:
+    """建立互联网文本与 PDF/OCR 的章节级对照摘要。
+
+    字符相似度只用于定位版本差异，不代表校勘结论；没有章节映射时不计算。
+    """
+    selected = [s for s in segments if chapter is None or s["chapter"] == chapter]
+    online_text = "\n".join(
+        s["text"] for s in selected if s["layer"] not in {"现代白话", "站点内容"}
+    )
+    editions = []
+    ocr_inputs = set()
+    prefix = f"{book}_"
+    for source_dir in sorted(CANON_OCR_DIR.glob(f"{prefix}*")):
+        if not source_dir.is_dir():
+            continue
+        source_id = source_dir.name
+        records = load_ocr_records(source_id)
+        ocr_inputs.update(
+            Path(r["input_pdf"]).name
+            for r in records
+            if r.get("input_pdf")
+        )
+        page_map = load_page_map(source_id)
+        page_chapters = load_page_chapters(source_id)
+        images = sorted((source_dir / "pages").glob("page-*.png"))
+        if chapter is None:
+            selected_records = records
+        else:
+            selected_records = [
+                r for r in records if chapter in page_chapters.get(
+                    int(r["page_pdf"]), [record_chapter(r, page_map)]
+                )
+            ]
+        pages = []
+        record_by_page = {int(r["page_pdf"]): r for r in records}
+        for image in images:
+            number = int(image.stem.rsplit("-", 1)[1])
+            record = record_by_page.get(number, {})
+            mapped_chapter = record_chapter(record, page_map) if record else page_map.get(number)
+            chapter_list = page_chapters.get(number, [mapped_chapter] if mapped_chapter is not None else [])
+            if chapter is None or chapter in chapter_list:
+                pages.append({
+                    "number": number,
+                    "image": image.name,
+                    "chapter": mapped_chapter,
+                    "chapters": chapter_list,
+                    "text": record.get("text_raw"),
+                    "status": record.get("ocr_status", "未识别"),
+                })
+        pdf_text = "\n".join(r.get("text_raw", "") for r in selected_records)
+        online_norm = comparable_text(online_text)
+        pdf_norm = comparable_text(pdf_text)
+        similarity = None
+        diff_counts = None
+        if online_norm and pdf_norm and selected_records:
+            similarity = round(difflib.SequenceMatcher(None, online_norm, pdf_norm).ratio(), 3)
+            diff_counts = text_diff_counts(online_norm, pdf_norm)
+        if not records and images:
+            status = "已渲染，未运行 OCR"
+        elif not records:
+            status = "未渲染"
+        elif chapter is not None and not selected_records:
+            status = "已 OCR，待章节标注"
+        elif not selected_records:
+            status = "无 OCR 文字"
+        else:
+            status = "已标注，可对照"
+        editions.append({
+            "source_id": source_id,
+            "page_count": len(images),
+            "ocr_count": len(records),
+            "selected_page_count": len(pages),
+            "selected_ocr_count": len(selected_records),
+            "status": status,
+            "similarity": similarity,
+            "diff_counts": diff_counts,
+            "pages": pages,
+        })
+    for pdf in scan_files_for_book(book):
+        if pdf.name in ocr_inputs:
+            continue
+        image_records = load_scan_image_records(pdf.stem)
+        editions.append({
+            "source_id": f"scan_{pdf.stem}",
+            "scan_filename": pdf.name,
+            "scan_url": f"/canon/scan/{pdf.name}",
+            "page_count": None,
+            "ocr_count": 0,
+            "selected_page_count": 0,
+            "selected_ocr_count": 0,
+            "status": "已记录图片，尚未章节标注/OCR" if image_records else "已有扫描底本，尚未记录图片",
+            "similarity": None,
+            "diff_counts": None,
+            "pages": [
+                {
+                    "number": row["page_pdf"],
+                    "image": row["image"],
+                    "image_url": f"/canon/scan-images/{pdf.stem}/pages/{row['image']}",
+                    "chapter": row.get("chapter"),
+                    "status": row.get("image_status", "recorded"),
+                }
+                for row in image_records
+            ],
+        })
+    return {
+        "chapter": chapter,
+        "online_segment_count": len(selected),
+        "online_char_count": len(comparable_text(online_text)),
+        "online_segments": selected if chapter is not None else [],
+        "editions": editions,
+    }
 
 
 @app.route("/canon")
@@ -601,25 +825,49 @@ def canon_book(book):
     chapter = request.args.get("chapter", type=int)
     layer = request.args.get("layer", "")
     confidence = request.args.get("confidence", "")
-    page = max(request.args.get("page", 1, type=int), 1)
-    per_page = 50
-
     chapters = sorted({s["chapter"] for s in segments if s["chapter"] is not None})
-    filtered = [
-        s for s in segments
-        if (chapter is None or s["chapter"] == chapter)
-        and (not layer or s["layer"] == layer)
-        and (not confidence or s["confidence"] == confidence)
+    chapter_directory = []
+    for number in chapters:
+        chapter_segments = [s for s in segments if s["chapter"] == number]
+        chapter_directory.append({
+            "number": number,
+            "title": next((s.get("chapter_title") for s in chapter_segments if s.get("chapter_title")), None),
+            "book_label": next((s.get("book_chapter_label") for s in chapter_segments if s.get("book_chapter_label")), None),
+            "original_count": sum(s["layer"] == "原文" for s in chapter_segments),
+            "commentary_count": sum(s["layer"] in {"原注", "评注"} for s in chapter_segments),
+            "translation_count": sum(s["layer"] == "现代白话" for s in chapter_segments),
+            "site_count": sum(s["layer"] == "站点内容" for s in chapter_segments),
+        })
+    chapter_segments = [s for s in segments if chapter is not None and s["chapter"] == chapter]
+    chapter_title = next(
+        (s.get("chapter_title") for s in chapter_segments if s.get("chapter_title")),
+        None,
+    )
+    book_chapter_label = next(
+        (s.get("book_chapter_label") for s in chapter_segments if s.get("book_chapter_label")),
+        None,
+    )
+    original_segments = [
+        s for s in chapter_segments
+        if s["layer"] == "原文" and (not confidence or s["confidence"] == confidence)
     ]
-    total = len(filtered)
-    total_pages = math.ceil(total / per_page) if total else 1
-    rows = filtered[(page - 1) * per_page : page * per_page]
+    auxiliary_by_layer = {}
+    for auxiliary_layer in ("原注", "评注", "现代白话", "站点内容"):
+        auxiliary_by_layer[auxiliary_layer] = [
+            s for s in chapter_segments
+            if s["layer"] == auxiliary_layer
+            and (not layer or layer == auxiliary_layer)
+            and (not confidence or s["confidence"] == confidence)
+        ]
+    alignment = canon_alignment(book, segments, chapter)
     return render_template(
         "canon_book.html",
         book=book, title=CANON_BOOKS[book]["title"], stats=canon_layer_stats(segments),
-        segments=rows, chapters=chapters, chapter=chapter, layer=layer,
-        confidence=confidence, page=page, total=total, total_pages=total_pages,
-        layer_labels=LAYER_LABELS, layer_badges=LAYER_BADGES,
+        chapters=chapters, chapter=chapter, layer=layer,
+        confidence=confidence, chapter_directory=chapter_directory,
+        chapter_title=chapter_title, book_chapter_label=book_chapter_label,
+        original_segments=original_segments, auxiliary_by_layer=auxiliary_by_layer,
+        layer_labels=LAYER_LABELS, layer_badges=LAYER_BADGES, alignment=alignment,
     )
 
 
@@ -629,12 +877,9 @@ def canon_ocr(source_id):
     source_dir = CANON_OCR_DIR / source_id
     if not re.fullmatch(r"[A-Za-z0-9_\-]+", source_id) or not source_dir.is_dir():
         abort(404)
-    records_by_page = {}
-    ocr_jsonl = source_dir / "ocr.jsonl"
-    if ocr_jsonl.exists():
-        with ocr_jsonl.open(encoding="utf-8") as handle:
-            for record in map(json.loads, handle):
-                records_by_page[record["page_pdf"]] = record
+    records_by_page = {int(r["page_pdf"]): r for r in load_ocr_records(source_id)}
+    page_map = load_page_map(source_id)
+    page_chapters = load_page_chapters(source_id)
     pages = []
     for image in sorted((source_dir / "pages").glob("page-*.png")):
         number = int(image.stem.rsplit("-", 1)[1])
@@ -644,6 +889,8 @@ def canon_ocr(source_id):
             "image": image.name,
             "text": record.get("text_raw") if record else None,
             "status": record.get("ocr_status") if record else "未识别",
+            "chapter": record_chapter(record, page_map) if record else page_map.get(number),
+            "chapters": page_chapters.get(number, []),
         })
     return render_template("canon_ocr.html", source_id=source_id, pages=pages)
 
@@ -655,6 +902,24 @@ def canon_ocr_image(source_id, filename):
     ):
         abort(404)
     return send_from_directory(CANON_OCR_DIR / source_id / "pages", filename)
+
+
+@app.route("/canon/scan-images/<source_id>/pages/<filename>")
+def canon_scan_image(source_id, filename):
+    """提供已记录的扫描页面图片。"""
+    if not re.fullmatch(r"[A-Za-z0-9_\-]+", source_id) or not re.fullmatch(
+        r"page-\d+\.png", filename
+    ):
+        abort(404)
+    return send_from_directory(CANON_SCAN_IMAGES_DIR / source_id / "pages", filename)
+
+
+@app.route("/canon/scan/<filename>")
+def canon_scan(filename):
+    """在浏览器中打开本地只读扫描 PDF。"""
+    if not re.fullmatch(r"[A-Za-z0-9_.\-]+\.pdf", filename):
+        abort(404)
+    return send_from_directory(CANON_SCAN_DIR, filename, mimetype="application/pdf")
 
 
 # ── 研究文档与经验总结 ─────────────────────────────────────────

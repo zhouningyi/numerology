@@ -41,6 +41,8 @@ SECTION_SITE = "site"        # 关键词/现代启示等网站生成内容
 MARKER_RE = re.compile(r"^\*{0,2}【(徐注|原注|任氏曰|眉批)】")
 PAGE_RE = re.compile(r"^第\s*[一二三四五六七八九十百零〇0-9\s]+页$")
 CHAPTER_RE = re.compile(r"^(?:《[^》]+》)?第\s*(\d+)\s*章(?:\s+(\S.*))?$")
+# 原书自带的篇章号，如“《滴天髓阐微》上篇第30章 燥湿”；与站点目录编号（含目录/序/简介）不同
+BOOK_LABEL_RE = re.compile(r"^(?:《[^》]+》)?\s*([上中下]篇第\s*\d+\s*章)\s*(.*)$")
 
 _LABELS = {
     "原文": SECTION_TEXT,
@@ -60,7 +62,7 @@ _BOILERPLATE_SUBSTR = (
 )
 _BOILERPLATE_EXACT = {
     "首页", "八字", "中医", "易经", "风水", "目录", "译", "/", "---",
-    "原 文", "白 话 译 文", "章节目录",
+    "原 文", "白 话 译 文", "章节目录", "《》", "原文 白话译文",
 }
 
 
@@ -72,10 +74,17 @@ def _section_label(line: str) -> str | None:
 def _is_boilerplate(line: str) -> bool:
     if line in _BOILERPLATE_EXACT:
         return True
+    if line.startswith("首页/"):  # 面包屑导航
+        return True
     return any(s in line for s in _BOILERPLATE_SUBSTR)
 
 
-def tag_lines(lines: list[str], commentary_markers: list[str]):
+def tag_lines(
+    lines: list[str],
+    commentary_markers: list[str],
+    skip_prelude: bool = False,
+    chapter_titles: dict[int, str | None] | None = None,
+):
     """逐行打 (layer, confidence, chapter, marker) 标签。
 
     状态机：区块标签切换 section；显式【标记】把 text 区块切到对应层（high）；
@@ -84,6 +93,8 @@ def tag_lines(lines: list[str], commentary_markers: list[str]):
     section = SECTION_TEXT
     layer, confidence, marker = "原文", "low", None
     chapter: int | None = None
+    seen_chapter = False
+    titles = chapter_titles or {}
     for raw in lines:
         line = raw.strip()
         if not line or _is_boilerplate(line):
@@ -91,7 +102,12 @@ def tag_lines(lines: list[str], commentary_markers: list[str]):
         m = CHAPTER_RE.match(line)
         if m:
             chapter = int(m.group(1))
+            seen_chapter = True
             section, layer, confidence, marker = SECTION_TEXT, "原文", "low", None
+            continue
+        # 网页封面、书籍介绍和站点宣传不属于原著正文；保留在 raw 文本中，
+        # 但不让它们进入原文层，也不计入章节统计。
+        if skip_prelude and not seen_chapter:
             continue
         label = _section_label(line)
         if label:
@@ -107,6 +123,19 @@ def tag_lines(lines: list[str], commentary_markers: list[str]):
             continue
         if PAGE_RE.match(line):
             layer, confidence, marker = "原文", "low", None
+            continue
+        title = titles.get(chapter) or ""
+        if title and line == title and section == SECTION_TEXT:
+            continue  # 页内重复出现的章节标题行
+        bl = BOOK_LABEL_RE.match(line)
+        if bl:
+            # 原书篇章号行是标题，不入正文；但有的行标题后直接粘着经文，需保留
+            layer, confidence, marker = "原文", "low", None
+            remainder = (bl.group(2) or "").strip()
+            if title and remainder.startswith(title):
+                remainder = remainder[len(title):].strip()
+            if remainder:
+                yield "原文", "low", chapter, None, remainder
             continue
         mk = MARKER_RE.match(line)
         if mk:
@@ -162,10 +191,37 @@ def build_ditiansui_txt() -> Path:
     return out
 
 
+def extract_book_labels(lines: list[str]) -> dict[int, str]:
+    """提取原书自带篇章号（如“上篇第30章”），键为站点章节号。"""
+    labels: dict[int, str] = {}
+    chapter: int | None = None
+    for raw in lines:
+        line = raw.strip()
+        m = CHAPTER_RE.match(line)
+        if m:
+            chapter = int(m.group(1))
+            continue
+        bl = BOOK_LABEL_RE.match(line)
+        if bl and chapter is not None and chapter not in labels:
+            labels[chapter] = re.sub(r"\s+", "", bl.group(1))
+    return labels
+
+
 def process_book(book: str, config: dict) -> tuple[Path, Counter]:
     source = PROCESSED_DIR / f"{book}_online.txt"
     lines = source.read_text(encoding="utf-8").splitlines()
-    segments = merge_segments(book, tag_lines(lines, config["commentary_markers"]))
+    chapter_titles = extract_chapter_titles(lines)
+    book_labels = extract_book_labels(lines)
+    segments = merge_segments(
+        book,
+        tag_lines(
+            lines, config["commentary_markers"],
+            skip_prelude=True, chapter_titles=chapter_titles,
+        ),
+    )
+    for segment in segments:
+        segment["chapter_title"] = chapter_titles.get(segment["chapter"])
+        segment["book_chapter_label"] = book_labels.get(segment["chapter"])
     LAYERS_DIR.mkdir(parents=True, exist_ok=True)
     out = LAYERS_DIR / f"{book}_layers.jsonl"
     with out.open("w", encoding="utf-8") as handle:
@@ -173,6 +229,29 @@ def process_book(book: str, config: dict) -> tuple[Path, Counter]:
             handle.write(json.dumps(seg, ensure_ascii=False) + "\n")
     stats = Counter((seg["layer"], seg["confidence"]) for seg in segments)
     return out, stats
+
+
+def extract_chapter_titles(lines: list[str]) -> dict[int, str | None]:
+    """提取章节标题；兼容标题与“第 N 章”分行的网页格式。"""
+    titles: dict[int, str | None] = {}
+    for index, raw in enumerate(lines):
+        match = CHAPTER_RE.match(raw.strip())
+        if not match:
+            continue
+        title = (match.group(2) or "").strip()
+        if not title:
+            for following in lines[index + 1 :]:
+                candidate = following.strip()
+                if not candidate or _is_boilerplate(candidate):
+                    continue
+                if _section_label(candidate) or PAGE_RE.match(candidate):
+                    continue
+                if CHAPTER_RE.match(candidate):
+                    break
+                title = candidate
+                break
+        titles[int(match.group(1))] = title or None
+    return titles
 
 
 def main() -> None:

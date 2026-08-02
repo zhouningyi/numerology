@@ -69,6 +69,43 @@ def test_renshi_marker_and_page_reset_for_ditiansui():
     ]
 
 
+def test_breadcrumb_tab_labels_and_duplicate_titles_are_dropped():
+    lines = [
+        "第 32 章",
+        "首页/ 滴天髓阐微/ 滴天髓阐微/ 燥湿",
+        "原文 白话译文",
+        "燥湿",
+        "第 三十二 页",
+        "地道有燥湿，生成品汇，人道得之，不可偏也。",
+    ]
+    segs = merge_segments(
+        "test",
+        tag_lines(lines, ["任氏曰"], chapter_titles={32: "燥湿"}),
+    )
+    assert len(segs) == 1
+    assert segs[0]["text"] == "地道有燥湿，生成品汇，人道得之，不可偏也。"
+
+
+def test_book_label_line_is_heading_but_glued_verse_is_kept():
+    from process_canon_layers import extract_book_labels
+
+    lines = [
+        "第 5 章",
+        "人道",
+        "《滴天髓阐微》上篇第03章 人道戴天覆地人为贵，顺则吉兮凶则悖。",
+        "**【原注】**万物莫不得五行而戴天覆地。",
+    ]
+    labels = extract_book_labels(lines)
+    assert labels == {5: "上篇第03章"}
+    segs = merge_segments(
+        "test", tag_lines(lines, ["任氏曰"], chapter_titles={5: "人道"})
+    )
+    # 篇章号与标题剥离后，粘连的经文保留为原文层
+    assert segs[0]["layer"] == "原文"
+    assert segs[0]["text"] == "戴天覆地人为贵，顺则吉兮凶则悖。"
+    assert segs[1]["layer"] == "原注"
+
+
 def test_boilerplate_lines_are_dropped():
     lines = [
         "典 古籍典藏 luckclub.cn 目录 八字 中医 易经 风水",
