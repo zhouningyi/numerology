@@ -521,12 +521,27 @@ def prediction_domains_dashboard():
 
 
 # ── 古籍语料与规则研究 ─────────────────────────────────────────
-def load_canon_layers(book: str) -> list[dict]:
-    path = CANON_LAYERS_DIR / f"{book}_layers.jsonl"
+# 按文件 mtime 缓存 jsonl，避免每次请求重复解析大文件（三命通会 OCR 约 16MB）
+_JSONL_CACHE: dict[Path, tuple[float, list]] = {}
+
+
+def _load_jsonl_cached(path: Path, slim=None) -> list[dict]:
     if not path.exists():
         return []
+    mtime = path.stat().st_mtime
+    cached = _JSONL_CACHE.get(path)
+    if cached and cached[0] == mtime:
+        return cached[1]
     with path.open(encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle]
+        rows = [json.loads(line) for line in handle if line.strip()]
+    if slim:
+        rows = [slim(row) for row in rows]
+    _JSONL_CACHE[path] = (mtime, rows)
+    return rows
+
+
+def load_canon_layers(book: str) -> list[dict]:
+    return _load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl")
 
 
 def canon_layer_stats(segments: list[dict]) -> dict:
@@ -566,11 +581,7 @@ def ocr_editions() -> list[dict]:
         if not source_dir.is_dir():
             continue
         pages = sorted((source_dir / "pages").glob("page-*.png"))
-        records = []
-        ocr_jsonl = source_dir / "ocr.jsonl"
-        if ocr_jsonl.exists():
-            with ocr_jsonl.open(encoding="utf-8") as handle:
-                records = [json.loads(line) for line in handle]
+        records = load_ocr_records(source_dir.name)
         status_counts = {}
         for record in records:
             status = record.get("ocr_status", "raw")
@@ -584,13 +595,19 @@ def ocr_editions() -> list[dict]:
     return editions
 
 
+def _slim_ocr_record(record: dict) -> dict:
+    """页面展示与对齐只需少数字段；raw_result/blocks 留在磁盘上按需查。"""
+    return {
+        key: record.get(key)
+        for key in ("page_pdf", "text_raw", "ocr_status", "chapter", "input_pdf")
+    }
+
+
 def load_ocr_records(source_id: str) -> list[dict]:
-    """读取一个版本的 OCR 原始记录；无结果时返回空列表。"""
-    path = CANON_OCR_DIR / source_id / "ocr.jsonl"
-    if not path.exists():
-        return []
-    with path.open(encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
+    """读取一个版本的 OCR 记录（瘦身+缓存）；无结果时返回空列表。"""
+    return _load_jsonl_cached(
+        CANON_OCR_DIR / source_id / "ocr.jsonl", slim=_slim_ocr_record
+    )
 
 
 def load_scan_image_records(source_id: str) -> list[dict]:
@@ -654,6 +671,9 @@ def record_chapter(record: dict, page_map: dict[int, int]) -> int | None:
     if record.get("chapter") is not None:
         return record["chapter"]
     return page_map.get(int(record["page_pdf"]))
+
+
+SIMILARITY_CHAR_CAP = 30_000  # 章节级文本远小于此；超过说明在比全书，直接跳过
 
 
 def comparable_text(text: str) -> str:
@@ -733,7 +753,12 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
         pdf_norm = comparable_text(pdf_text)
         similarity = None
         diff_counts = None
-        if online_norm and pdf_norm and selected_records:
+        # SequenceMatcher 是 O(n×m)：只在章节级文本量下计算，全书级会卡住页面
+        if (
+            online_norm and pdf_norm and selected_records
+            and len(online_norm) <= SIMILARITY_CHAR_CAP
+            and len(pdf_norm) <= SIMILARITY_CHAR_CAP
+        ):
             similarity = round(difflib.SequenceMatcher(None, online_norm, pdf_norm).ratio(), 3)
             diff_counts = text_diff_counts(online_norm, pdf_norm)
         if not records and images:
@@ -859,7 +884,14 @@ def canon_book(book):
             and (not layer or layer == auxiliary_layer)
             and (not confidence or s["confidence"] == confidence)
         ]
-    alignment = canon_alignment(book, segments, chapter)
+    # 目录视图不渲染版本对照卡片，跳过对齐计算（全书级 difflib 会卡页面十几秒）
+    if chapter is not None:
+        alignment = canon_alignment(book, segments, chapter)
+    else:
+        alignment = {
+            "chapter": None, "online_segment_count": 0, "online_char_count": 0,
+            "online_segments": [], "editions": [],
+        }
     return render_template(
         "canon_book.html",
         book=book, title=CANON_BOOKS[book]["title"], stats=canon_layer_stats(segments),
