@@ -11,7 +11,7 @@
 {% set has_io = book_spec.input and book_spec.input != '—' %}
 <div class="card" style="border-left:3px solid var(--accent);padding:18px 22px">
   <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-    <h2 style="margin:0;font-size:16px">这本书是什么 · 理科解读</h2>
+    <h2 style="margin:0;font-size:16px">这本书是什么</h2>
     <span class="badge {% if 'T1' in (book_spec.tier or '') %}badge-aa{% elif 'T2' in (book_spec.tier or '') %}badge-a{% elif 'T3' in (book_spec.tier or '') %}badge-b{% else %}badge-dd{% endif %}"
           style="font-size:13px">{{ book_spec.tier }}</span>
   </div>
@@ -24,7 +24,7 @@
   <dialog id="overview-modal"
           style="max-width:720px;background:var(--surface);color:var(--text);
                  border:1px solid var(--border);border-radius:10px;padding:26px 30px">
-    <h3 style="margin:0 0 4px;font-size:18px">《{{ title }}》· 理科解读</h3>
+    <h3 style="margin:0 0 4px;font-size:18px">《{{ title }}》· 完整解读</h3>
     <div class="muted" style="font-size:12px;margin-bottom:12px">数学化等级：{{ book_spec.tier }}</div>
     <p style="font-size:15px;line-height:1.9;margin:0 0 12px"><strong>{{ book_spec.spec }}</strong></p>
     <div style="font-size:14.5px;line-height:2;white-space:pre-wrap">{{ book_spec.overview }}</div>
