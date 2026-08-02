@@ -20,6 +20,22 @@
   <blockquote style="border-left:3px solid var(--yin);padding:3px 10px;margin:4px 0;font-size:13px;color:var(--text)">
     {{ r.concepts[key] }}
   </blockquote>
+  <details class="canon-fold" style="margin-top:4px">
+    <summary style="cursor:pointer;font-size:13px" class="muted">展开全文</summary>
+    <div style="padding:8px 0 0">
+      {% if r.translations and r.translations['中文'] %}
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.9">{{ r.translations['中文'] }}</div>
+      <details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">英文原文</summary>
+        <div style="white-space:pre-wrap;font-size:13px;line-height:1.8;margin-top:6px" class="muted">{{ r.description }}</div>
+      </details>
+      {% else %}
+      <div style="white-space:pre-wrap;font-size:13.5px;line-height:1.8">{{ r.description }}</div>
+      {% endif %}
+      <p class="muted" style="font-size:12px;margin-top:6px">
+        <a href="/nde/experience/{{ r.slug }}">查看完整问卷与标签 →</a>
+      </p>
+    </div>
+  </details>
 </div>
 {% else %}
 <div class="card muted">该概念下暂无标注案例（翻译与标注按批推进中）。</div>
