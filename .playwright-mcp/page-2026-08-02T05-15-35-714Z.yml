@@ -1,0 +1,68 @@
+- generic [active] [ref=f13e1]:
+  - navigation [ref=f13e2]:
+    - generic [ref=f13e3]:
+      - generic [ref=f13e4]: 命理统计
+      - link "概览" [ref=f13e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f13e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f13e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f13e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f13e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f13e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f13e11]:
+    - heading "渊海子平 · 原著中心" [level=1] [ref=f13e12]
+    - paragraph [ref=f13e13]:
+      - link "← 返回古籍总览" [ref=f13e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 共 305 章；原文默认显示，翻译、批注和扫描页作为辅助材料展开。
+    - generic [ref=f13e15]:
+      - combobox [ref=f13e16]:
+        - option "辅助材料：全部" [selected]
+        - option "原文（原著正文）"
+        - option "原注（刘基）"
+        - option "评注（徐注/任氏曰/眉批）"
+        - option "现代白话（网站译文）"
+        - option "站点内容（不入统计）"
+      - combobox [ref=f13e17]:
+        - option "全部置信度" [selected]
+        - option "高（显式标记）"
+        - option "低（待人工校勘）"
+      - button "筛选辅助材料" [ref=f13e18] [cursor=pointer]
+      - link "清除" [ref=f13e19] [cursor=pointer]:
+        - /url: /canon/yuanhai_ziping?chapter=1
+    - generic [ref=f13e20]:
+      - heading "原著正文 · 第 1 章 · 题记与引" [level=2] [ref=f13e21]
+      - paragraph [ref=f13e22]: 以下是互联网版本的原文分段，仅作检索底本；规则进入 spec 前仍需回看 PDF 扫描页。
+      - article [ref=f13e23]:
+        - generic [ref=f13e24]: 原文 · 段 3 · 待校勘
+        - generic [ref=f13e25]: 题记与引 题记与引 渊海子平卷一 题记与引 题记 子平书，宋徐公东斋已详明矣。传有《渊海》、《渊源》之集，其理则一，篇句俱同。今之用者，惟宗《渊 海》。而《渊源》亦有妙用，或未之集。今将二书合并参考，遗失总归一轶。加之诗诀、起例，增解字义。 後学识之，则二书了然在目，无遗矣。谨白。 引 子平渊海之理，始自唐大夫李公虚中，以人生年月日时，生克旺相，休囚制化，决人生之祸福，其验神矣。 及公幕，昌黎韩炉为之作墓志，以记之後。经吕大夫才又裁定之，并无述作之者。至於有宋徐公升复以人生 日主分作六事，议论精微，作《渊海》之书，集话儒之义传布，至今悉皆宗之。後之诸君，文集渊源理义， 篇章雷同，迄今数百年矣。板籍有亥承鲁鱼之谬，学者少知其义。今唐君锦池礼请精通此理者，以二书并 之，增之口诀，正其讹僞矣。非悬壶化杖者，孰能更易。样行於世，神後学习之，不失古人之遗范矣。书 成，唐子示金书，以此为引。 崇领七年孟冬吉日重梓
+    - generic [ref=f13e26]:
+      - heading "辅助材料 · 点击展开" [level=2] [ref=f13e27]
+      - paragraph [ref=f13e28]: 白话译文来自互联网版本；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
+      - group [ref=f13e29]:
+        - generic "现代白话（网站译文） · 1 段" [ref=f13e30] [cursor=pointer]:
+          - generic [ref=f13e31]: 现代白话（网站译文）
+          - text: · 1 段
+      - group [ref=f13e32]:
+        - generic "站点内容（不入统计） · 1 段" [ref=f13e33] [cursor=pointer]:
+          - generic [ref=f13e34]: 站点内容（不入统计）
+          - text: · 1 段
+    - generic [ref=f13e35]:
+      - heading "版本与扫描辅助" [level=2] [ref=f13e36]
+      - paragraph [ref=f13e37]: PDF 页码先通过 OCR 标题自动定位，再由人工复核章节边界；字符相似度仅用于定位，不是校勘结论。
+      - generic [ref=f13e38]:
+        - generic [ref=f13e39]:
+          - strong [ref=f13e40]: yuanhai_ziping_scan_edition_a
+          - text: · 已标注，可对照 · 相似度 13.2% · 网页独有 350 字 / PDF 独有 187 字
+        - generic [ref=f13e41]:
+          - generic [ref=f13e42]:
+            - img "yuanhai_ziping_scan_edition_a PDF 第 1 页" [ref=f13e43]
+            - generic [ref=f13e44]: PDF 第 1 页 · raw · 第 1 章
+          - generic [ref=f13e45]:
+            - img "yuanhai_ziping_scan_edition_a PDF 第 2 页" [ref=f13e46]
+            - generic [ref=f13e47]: PDF 第 2 页 · raw · 第 1 章

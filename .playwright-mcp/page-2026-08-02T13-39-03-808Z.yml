@@ -1,0 +1,35 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: 命理统计
+      - link "概览" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=e11]:
+    - heading "OCR 结果 · ziping_zhenquan_scan_edition_a" [level=1] [ref=e12]
+    - paragraph [ref=e13]:
+      - link "← 返回古籍总览" [ref=e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 扫描图像是版本核验的第一证据，OCR 文本为原始识别结果（未人工修改）。 · 底本 PDF：
+      - strong [ref=e15]: ziping_zhenquan_scan.pdf
+      - text: · SHA256：71402a780b03…
+    - paragraph [ref=e16]:
+      - link "返回分页索引" [ref=e17] [cursor=pointer]:
+        - /url: "?size=20"
+      - text: · 这是唯一的 PDF 第 63 页。
+    - generic [ref=e18]:
+      - heading "PDF 第 63 页 raw" [level=2] [ref=e19]:
+        - text: PDF 第 63 页
+        - generic [ref=e20]: raw
+      - generic [ref=e21]:
+        - img "第 63 页扫描图" [ref=e23]
+        - generic [ref=e24]: 刦建祿用官通根而以爲拱戍之格塡實不利辛日坐丑寅年亥月 爲木火通明而以爲格成鼠貴如此謬論百無一是此皆由不知命 卯時不以爲正財之格而以爲塡實拱貴乙逢寅月時遇丙子不以 理而委爲詳斷也 法論行運則不知同中有異而以干支相類者爲一例究箕綠由一 則不知陰陽至理而以俗書體象欹爲確論論格局則不知專尋月 八字本有定理理之不明遂生異端妄言妄聽牢不可破如論干支 則以俗書無知委作誤依其說而深入迷途一則以論命取運偶然 令而以拘泥外格爲活變論生尅則不察喜忌而以傷旺扶弱爲定 子平巽逢 論時說以訛傳訛 五十四

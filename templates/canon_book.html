@@ -105,13 +105,22 @@
     </div>
     {% if edition.scan_url %}
     <a href="{{ edition.scan_url }}" target="_blank" rel="noopener" style="font-size:12px">打开原版 PDF：{{ edition.scan_filename }}</a>
+    {% elif edition.scan_filename %}
+    <span class="muted" style="font-size:12px">底本 PDF：{{ edition.scan_filename }}</span>
+    {% endif %}
+    {% if edition.input_sha256 %}<span class="muted" style="font-size:11px;margin-left:8px">SHA256：{{ edition.input_sha256 }}…</span>{% endif %}
+    {% if edition.ocr_url and edition.selected_page_count %}
+    <a href="{{ edition.ocr_url }}" target="_blank" rel="noopener" style="font-size:12px;margin-left:8px">打开该版本 OCR 索引</a>
+    {% elif edition.ocr_url %}
+    <span class="muted" style="font-size:12px;margin-left:8px">本章尚未定位，不显示全量页面作为对应结果</span>
     {% endif %}
     <div class="scan-compare-row">
       {% for p in edition.pages %}
       <div>
         <img class="scan-preview" src="{{ p.image_url or ('/canon/ocr/' ~ edition.source_id ~ '/pages/' ~ p.image) }}"
              alt="{{ edition.source_id }} PDF 第 {{ p.number }} 页" data-caption="{{ edition.source_id }} · PDF 第 {{ p.number }} 页">
-        <div class="muted" style="font-size:11px">PDF 第 {{ p.number }} 页 · {{ p.status }}{% if p.chapters %} · 第 {{ p.chapters|join('、') }} 章{% endif %}</div>
+        <div class="muted" style="font-size:11px">PDF 第 {{ p.number }} 页 · {{ p.status }}{% if p.chapters %} · 第 {{ p.chapters|join('、') }} 章{% endif %}{% if p.mapping_status %} · {{ p.mapping_status }}{% endif %}</div>
+        <a href="/canon/ocr/{{ edition.source_id }}?page={{ p.number }}" target="_blank" rel="noopener" style="font-size:11px">打开本页 OCR</a>
       </div>
       {% else %}
       <span class="muted" style="font-size:12px">{{ edition.status }}。</span>

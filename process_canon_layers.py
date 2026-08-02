@@ -23,16 +23,35 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from download_canon_web import LUCKCLUB_BOOKS, OUTPUT_ROOT as RAW_WEB_DIR
+
 PROCESSED_DIR = Path("data/processed/canon")
 LAYERS_DIR = PROCESSED_DIR / "layers"
-DITIANSUI_RAW = Path("data/raw/canon/web/luckclub/ditiansui_pages.jsonl")
 
-BOOKS = {
-    "ziping_zhenquan": {"title": "子平真诠", "commentary_markers": ["徐注"]},
-    "yuanhai_ziping": {"title": "渊海子平", "commentary_markers": ["眉批"]},
-    "ditiansui": {"title": "滴天髓阐微", "commentary_markers": ["任氏曰"]},
-    "sanming_tonghui": {"title": "三命通会", "commentary_markers": []},
+# 核心四书的人工配置（评注标记等）；其余书目从下载注册表自动纳入
+_CURATED = {
+    "ziping_zhenquan": {"commentary_markers": ["徐注"]},
+    "yuanhai_ziping": {"commentary_markers": ["眉批"]},
+    "ditiansui": {"commentary_markers": ["任氏曰"]},
+    "sanming_tonghui": {"commentary_markers": []},
 }
+
+
+def _build_books() -> dict[str, dict]:
+    books: dict[str, dict] = {}
+    for slug, meta in LUCKCLUB_BOOKS.items():
+        books[slug] = {
+            "title": meta["title"],
+            "system": meta.get("system", ""),
+            "commentary_markers": [],
+        }
+    for slug, extra in _CURATED.items():
+        books.setdefault(slug, {"title": slug, "system": "", "commentary_markers": []})
+        books[slug].update(extra)
+    return books
+
+
+BOOKS = _build_books()
 
 SECTION_TEXT = "text"        # 网站"原文"区块：评注本全书文本
 SECTION_BAIHUA = "baihua"    # 网站白话译文
@@ -175,15 +194,24 @@ def merge_segments(book: str, tagged) -> list[dict]:
     return segments
 
 
-def build_ditiansui_txt() -> Path:
-    """raw JSONL → processed 文本，保留章节标题与区块标签供分层复用。"""
-    out = PROCESSED_DIR / "ditiansui_online.txt"
+def build_txt_from_jsonl(book: str) -> Path | None:
+    """raw JSONL → processed 文本，保留章节标题与区块标签供分层复用。
+
+    返回 None 表示该书还没有 raw 快照。已有 processed 文本的书（如 PDF 转出的
+    早期四书）默认不覆盖；滴天髓历来由 JSONL 重建，保持原行为。
+    """
+    raw = RAW_WEB_DIR / f"{book}_pages.jsonl"
+    if not raw.exists():
+        return None
+    out = PROCESSED_DIR / f"{book}_online.txt"
+    if out.exists() and book != "ditiansui":
+        return out
     parts: list[str] = []
-    with DITIANSUI_RAW.open(encoding="utf-8") as handle:
+    with raw.open(encoding="utf-8") as handle:
         for row in map(json.loads, handle):
             if row["chapter"] == 0:  # 目录页只有站点导航
                 continue
-            heading = re.search(r"《滴天髓阐微》第\s*(\d+)\s*章", row["text"])
+            heading = re.search(r"《[^》]+》第\s*(\d+)\s*章", row["text"])
             number = int(heading.group(1)) if heading else row["chapter"]
             parts.append(f"第 {number} 章")
             parts.append(row["text"])
@@ -259,10 +287,11 @@ def main() -> None:
     parser.add_argument("--books", nargs="*", default=list(BOOKS))
     args = parser.parse_args()
 
-    if "ditiansui" in args.books:
-        path = build_ditiansui_txt()
-        print(f"滴天髓 processed 文本 -> {path}")
     for book in args.books:
+        built = build_txt_from_jsonl(book)
+        if built is None and not (PROCESSED_DIR / f"{book}_online.txt").exists():
+            print(f"跳过 {BOOKS[book]['title']}：无 raw 快照也无 processed 文本")
+            continue
         out, stats = process_book(book, BOOKS[book])
         total = sum(stats.values())
         detail = "，".join(

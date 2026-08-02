@@ -5,7 +5,20 @@
 <p class="muted" style="font-size:13px;margin-bottom:12px">
   <a href="/canon">← 返回古籍总览</a> ·
   扫描图像是版本核验的第一证据，OCR 文本为原始识别结果（未人工修改）。
+  {% if scan_filename %}· 底本 PDF：<strong>{{ scan_filename }}</strong>{% endif %}
+  {% if input_sha256 %}· SHA256：{{ input_sha256 }}…{% endif %}
 </p>
+
+{% if requested_page is none and total_pages > page_size %}
+<p class="muted" style="font-size:12px;margin-bottom:10px">
+  当前显示第 {{ (page_index - 1) * page_size + 1 }}–{{ [page_index * page_size, total_pages] | min }} / {{ total_pages }} 页。
+  {% if page_index > 1 %}<a href="?index={{ page_index - 1 }}&size={{ page_size }}">上一组</a>{% endif %}
+  {% if page_index * page_size < total_pages %}<a href="?index={{ page_index + 1 }}&size={{ page_size }}" style="margin-left:8px">下一组</a>{% endif %}
+  · 直接查看 PDF 页：<code>?page=63</code>
+</p>
+{% elif requested_page is not none %}
+<p class="muted" style="font-size:12px;margin-bottom:10px"><a href="?size=20">返回分页索引</a> · 这是唯一的 PDF 第 {{ requested_page }} 页。</p>
+{% endif %}
 
 {% for p in pages %}
 <div class="card">

@@ -1,0 +1,606 @@
+- generic [active] [ref=f5e1]:
+  - navigation [ref=f5e2]:
+    - generic [ref=f5e3]:
+      - generic [ref=f5e4]: 命理统计
+      - link "概览" [ref=f5e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f5e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f5e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f5e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f5e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f5e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f5e11]:
+    - heading "子平真诠 · 原著中心" [level=1] [ref=f5e12]
+    - paragraph [ref=f5e13]:
+      - link "← 返回古籍总览" [ref=f5e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 共 52 章；原文默认显示，翻译、批注和扫描页作为辅助材料展开。
+    - generic [ref=f5e15]:
+      - heading "《子平真诠》目录" [level=2] [ref=f5e16]
+      - paragraph [ref=f5e17]: 点击章节号直接进入原著正文。互联网版本的书籍介绍、站点宣传和空书名号不计入原文。
+      - table [ref=f5e18]:
+        - rowgroup [ref=f5e19]:
+          - row [ref=f5e20]:
+            - columnheader "章节" [ref=f5e21]
+            - columnheader "原文段数" [ref=f5e22]
+            - columnheader "原注/评注" [ref=f5e23]
+            - columnheader "白话译文" [ref=f5e24]
+            - columnheader "站点内容" [ref=f5e25]
+            - columnheader [ref=f5e26]
+          - row [ref=f5e27]:
+            - cell [ref=f5e28]:
+              - link "第 0 章" [ref=f5e29] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=0
+            - cell "1" [ref=f5e30]
+            - cell "0" [ref=f5e31]
+            - cell "0" [ref=f5e32]
+            - cell "0" [ref=f5e33]
+            - cell [ref=f5e34]:
+              - link "打开" [ref=f5e35] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=0
+          - row [ref=f5e36]:
+            - cell [ref=f5e37]:
+              - link "第 1 章" [ref=f5e38] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=1
+            - cell "1" [ref=f5e39]
+            - cell "0" [ref=f5e40]
+            - cell "1" [ref=f5e41]
+            - cell "1" [ref=f5e42]
+            - cell [ref=f5e43]:
+              - link "打开" [ref=f5e44] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=1
+          - row [ref=f5e45]:
+            - cell [ref=f5e46]:
+              - link "第 2 章" [ref=f5e47] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=2
+            - cell "1" [ref=f5e48]
+            - cell "0" [ref=f5e49]
+            - cell "1" [ref=f5e50]
+            - cell "1" [ref=f5e51]
+            - cell [ref=f5e52]:
+              - link "打开" [ref=f5e53] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=2
+          - row [ref=f5e54]:
+            - cell [ref=f5e55]:
+              - link "第 3 章" [ref=f5e56] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=3
+            - cell "4" [ref=f5e57]
+            - cell "7" [ref=f5e58]
+            - cell "1" [ref=f5e59]
+            - cell "1" [ref=f5e60]
+            - cell [ref=f5e61]:
+              - link "打开" [ref=f5e62] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=3
+          - row [ref=f5e63]:
+            - cell [ref=f5e64]:
+              - link "第 4 章" [ref=f5e65] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=4
+            - cell "3" [ref=f5e66]
+            - cell "6" [ref=f5e67]
+            - cell "1" [ref=f5e68]
+            - cell "1" [ref=f5e69]
+            - cell [ref=f5e70]:
+              - link "打开" [ref=f5e71] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=4
+          - row [ref=f5e72]:
+            - cell [ref=f5e73]:
+              - link "第 5 章" [ref=f5e74] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=5
+            - cell "4" [ref=f5e75]
+            - cell "8" [ref=f5e76]
+            - cell "1" [ref=f5e77]
+            - cell "1" [ref=f5e78]
+            - cell [ref=f5e79]:
+              - link "打开" [ref=f5e80] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=5
+          - row [ref=f5e81]:
+            - cell [ref=f5e82]:
+              - link "第 6 章" [ref=f5e83] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=6
+            - cell "3" [ref=f5e84]
+            - cell "6" [ref=f5e85]
+            - cell "1" [ref=f5e86]
+            - cell "1" [ref=f5e87]
+            - cell [ref=f5e88]:
+              - link "打开" [ref=f5e89] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=6
+          - row [ref=f5e90]:
+            - cell [ref=f5e91]:
+              - link "第 7 章" [ref=f5e92] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=7
+            - cell "7" [ref=f5e93]
+            - cell "14" [ref=f5e94]
+            - cell "1" [ref=f5e95]
+            - cell "1" [ref=f5e96]
+            - cell [ref=f5e97]:
+              - link "打开" [ref=f5e98] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=7
+          - row [ref=f5e99]:
+            - cell [ref=f5e100]:
+              - link "第 8 章" [ref=f5e101] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=8
+            - cell "2" [ref=f5e102]
+            - cell "4" [ref=f5e103]
+            - cell "1" [ref=f5e104]
+            - cell "1" [ref=f5e105]
+            - cell [ref=f5e106]:
+              - link "打开" [ref=f5e107] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=8
+          - row [ref=f5e108]:
+            - cell [ref=f5e109]:
+              - link "第 9 章" [ref=f5e110] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=9
+            - cell "6" [ref=f5e111]
+            - cell "12" [ref=f5e112]
+            - cell "1" [ref=f5e113]
+            - cell "1" [ref=f5e114]
+            - cell [ref=f5e115]:
+              - link "打开" [ref=f5e116] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=9
+          - row [ref=f5e117]:
+            - cell [ref=f5e118]:
+              - link "第 10 章" [ref=f5e119] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=10
+            - cell "5" [ref=f5e120]
+            - cell "10" [ref=f5e121]
+            - cell "1" [ref=f5e122]
+            - cell "1" [ref=f5e123]
+            - cell [ref=f5e124]:
+              - link "打开" [ref=f5e125] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=10
+          - row [ref=f5e126]:
+            - cell [ref=f5e127]:
+              - link "第 11 章" [ref=f5e128] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=11
+            - cell "7" [ref=f5e129]
+            - cell "14" [ref=f5e130]
+            - cell "1" [ref=f5e131]
+            - cell "1" [ref=f5e132]
+            - cell [ref=f5e133]:
+              - link "打开" [ref=f5e134] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=11
+          - row [ref=f5e135]:
+            - cell [ref=f5e136]:
+              - link "第 12 章" [ref=f5e137] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=12
+            - cell "6" [ref=f5e138]
+            - cell "11" [ref=f5e139]
+            - cell "1" [ref=f5e140]
+            - cell "1" [ref=f5e141]
+            - cell [ref=f5e142]:
+              - link "打开" [ref=f5e143] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=12
+          - row [ref=f5e144]:
+            - cell [ref=f5e145]:
+              - link "第 13 章" [ref=f5e146] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=13
+            - cell "4" [ref=f5e147]
+            - cell "8" [ref=f5e148]
+            - cell "1" [ref=f5e149]
+            - cell "1" [ref=f5e150]
+            - cell [ref=f5e151]:
+              - link "打开" [ref=f5e152] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=13
+          - row [ref=f5e153]:
+            - cell [ref=f5e154]:
+              - link "第 14 章" [ref=f5e155] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=14
+            - cell "7" [ref=f5e156]
+            - cell "14" [ref=f5e157]
+            - cell "1" [ref=f5e158]
+            - cell "1" [ref=f5e159]
+            - cell [ref=f5e160]:
+              - link "打开" [ref=f5e161] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=14
+          - row [ref=f5e162]:
+            - cell [ref=f5e163]:
+              - link "第 15 章" [ref=f5e164] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=15
+            - cell "8" [ref=f5e165]
+            - cell "16" [ref=f5e166]
+            - cell "1" [ref=f5e167]
+            - cell "1" [ref=f5e168]
+            - cell [ref=f5e169]:
+              - link "打开" [ref=f5e170] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=15
+          - row [ref=f5e171]:
+            - cell [ref=f5e172]:
+              - link "第 16 章" [ref=f5e173] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=16
+            - cell "9" [ref=f5e174]
+            - cell "18" [ref=f5e175]
+            - cell "1" [ref=f5e176]
+            - cell "1" [ref=f5e177]
+            - cell [ref=f5e178]:
+              - link "打开" [ref=f5e179] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=16
+          - row [ref=f5e180]:
+            - cell [ref=f5e181]:
+              - link "第 17 章" [ref=f5e182] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=17
+            - cell "5" [ref=f5e183]
+            - cell "10" [ref=f5e184]
+            - cell "1" [ref=f5e185]
+            - cell "1" [ref=f5e186]
+            - cell [ref=f5e187]:
+              - link "打开" [ref=f5e188] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=17
+          - row [ref=f5e189]:
+            - cell [ref=f5e190]:
+              - link "第 18 章" [ref=f5e191] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=18
+            - cell "7" [ref=f5e192]
+            - cell "11" [ref=f5e193]
+            - cell "1" [ref=f5e194]
+            - cell "1" [ref=f5e195]
+            - cell [ref=f5e196]:
+              - link "打开" [ref=f5e197] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=18
+          - row [ref=f5e198]:
+            - cell [ref=f5e199]:
+              - link "第 19 章" [ref=f5e200] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=19
+            - cell "5" [ref=f5e201]
+            - cell "9" [ref=f5e202]
+            - cell "1" [ref=f5e203]
+            - cell "1" [ref=f5e204]
+            - cell [ref=f5e205]:
+              - link "打开" [ref=f5e206] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=19
+          - row [ref=f5e207]:
+            - cell [ref=f5e208]:
+              - link "第 20 章" [ref=f5e209] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=20
+            - cell "2" [ref=f5e210]
+            - cell "4" [ref=f5e211]
+            - cell "1" [ref=f5e212]
+            - cell "1" [ref=f5e213]
+            - cell [ref=f5e214]:
+              - link "打开" [ref=f5e215] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=20
+          - row [ref=f5e216]:
+            - cell [ref=f5e217]:
+              - link "第 21 章" [ref=f5e218] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=21
+            - cell "2" [ref=f5e219]
+            - cell "4" [ref=f5e220]
+            - cell "1" [ref=f5e221]
+            - cell "1" [ref=f5e222]
+            - cell [ref=f5e223]:
+              - link "打开" [ref=f5e224] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=21
+          - row [ref=f5e225]:
+            - cell [ref=f5e226]:
+              - link "第 22 章" [ref=f5e227] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=22
+            - cell "8" [ref=f5e228]
+            - cell "16" [ref=f5e229]
+            - cell "1" [ref=f5e230]
+            - cell "1" [ref=f5e231]
+            - cell [ref=f5e232]:
+              - link "打开" [ref=f5e233] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=22
+          - row [ref=f5e234]:
+            - cell [ref=f5e235]:
+              - link "第 23 章" [ref=f5e236] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=23
+            - cell "4" [ref=f5e237]
+            - cell "8" [ref=f5e238]
+            - cell "1" [ref=f5e239]
+            - cell "1" [ref=f5e240]
+            - cell [ref=f5e241]:
+              - link "打开" [ref=f5e242] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=23
+          - row [ref=f5e243]:
+            - cell [ref=f5e244]:
+              - link "第 24 章" [ref=f5e245] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=24
+            - cell "3" [ref=f5e246]
+            - cell "6" [ref=f5e247]
+            - cell "1" [ref=f5e248]
+            - cell "1" [ref=f5e249]
+            - cell [ref=f5e250]:
+              - link "打开" [ref=f5e251] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=24
+          - row [ref=f5e252]:
+            - cell [ref=f5e253]:
+              - link "第 25 章" [ref=f5e254] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=25
+            - cell "4" [ref=f5e255]
+            - cell "8" [ref=f5e256]
+            - cell "1" [ref=f5e257]
+            - cell "1" [ref=f5e258]
+            - cell [ref=f5e259]:
+              - link "打开" [ref=f5e260] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=25
+          - row [ref=f5e261]:
+            - cell [ref=f5e262]:
+              - link "第 26 章" [ref=f5e263] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=26
+            - cell "6" [ref=f5e264]
+            - cell "12" [ref=f5e265]
+            - cell "1" [ref=f5e266]
+            - cell "1" [ref=f5e267]
+            - cell [ref=f5e268]:
+              - link "打开" [ref=f5e269] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=26
+          - row [ref=f5e270]:
+            - cell [ref=f5e271]:
+              - link "第 27 章" [ref=f5e272] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=27
+            - cell "13" [ref=f5e273]
+            - cell "26" [ref=f5e274]
+            - cell "1" [ref=f5e275]
+            - cell "1" [ref=f5e276]
+            - cell [ref=f5e277]:
+              - link "打开" [ref=f5e278] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=27
+          - row [ref=f5e279]:
+            - cell [ref=f5e280]:
+              - link "第 28 章" [ref=f5e281] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=28
+            - cell "6" [ref=f5e282]
+            - cell "11" [ref=f5e283]
+            - cell "1" [ref=f5e284]
+            - cell "1" [ref=f5e285]
+            - cell [ref=f5e286]:
+              - link "打开" [ref=f5e287] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=28
+          - row [ref=f5e288]:
+            - cell [ref=f5e289]:
+              - link "第 29 章" [ref=f5e290] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=29
+            - cell "3" [ref=f5e291]
+            - cell "6" [ref=f5e292]
+            - cell "1" [ref=f5e293]
+            - cell "1" [ref=f5e294]
+            - cell [ref=f5e295]:
+              - link "打开" [ref=f5e296] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=29
+          - row [ref=f5e297]:
+            - cell [ref=f5e298]:
+              - link "第 30 章" [ref=f5e299] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=30
+            - cell "2" [ref=f5e300]
+            - cell "4" [ref=f5e301]
+            - cell "1" [ref=f5e302]
+            - cell "1" [ref=f5e303]
+            - cell [ref=f5e304]:
+              - link "打开" [ref=f5e305] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=30
+          - row [ref=f5e306]:
+            - cell [ref=f5e307]:
+              - link "第 31 章" [ref=f5e308] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=31
+            - cell "8" [ref=f5e309]
+            - cell "16" [ref=f5e310]
+            - cell "1" [ref=f5e311]
+            - cell "1" [ref=f5e312]
+            - cell [ref=f5e313]:
+              - link "打开" [ref=f5e314] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=31
+          - row [ref=f5e315]:
+            - cell [ref=f5e316]:
+              - link "第 32 章" [ref=f5e317] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=32
+            - cell "4" [ref=f5e318]
+            - cell "8" [ref=f5e319]
+            - cell "1" [ref=f5e320]
+            - cell "1" [ref=f5e321]
+            - cell [ref=f5e322]:
+              - link "打开" [ref=f5e323] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=32
+          - row [ref=f5e324]:
+            - cell [ref=f5e325]:
+              - link "第 33 章" [ref=f5e326] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=33
+            - cell "5" [ref=f5e327]
+            - cell "10" [ref=f5e328]
+            - cell "1" [ref=f5e329]
+            - cell "1" [ref=f5e330]
+            - cell [ref=f5e331]:
+              - link "打开" [ref=f5e332] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=33
+          - row [ref=f5e333]:
+            - cell [ref=f5e334]:
+              - link "第 34 章" [ref=f5e335] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=34
+            - cell "7" [ref=f5e336]
+            - cell "14" [ref=f5e337]
+            - cell "1" [ref=f5e338]
+            - cell "1" [ref=f5e339]
+            - cell [ref=f5e340]:
+              - link "打开" [ref=f5e341] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=34
+          - row [ref=f5e342]:
+            - cell [ref=f5e343]:
+              - link "第 35 章" [ref=f5e344] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=35
+            - cell "11" [ref=f5e345]
+            - cell "22" [ref=f5e346]
+            - cell "1" [ref=f5e347]
+            - cell "1" [ref=f5e348]
+            - cell [ref=f5e349]:
+              - link "打开" [ref=f5e350] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=35
+          - row [ref=f5e351]:
+            - cell [ref=f5e352]:
+              - link "第 36 章" [ref=f5e353] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=36
+            - cell "7" [ref=f5e354]
+            - cell "14" [ref=f5e355]
+            - cell "1" [ref=f5e356]
+            - cell "1" [ref=f5e357]
+            - cell [ref=f5e358]:
+              - link "打开" [ref=f5e359] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=36
+          - row [ref=f5e360]:
+            - cell [ref=f5e361]:
+              - link "第 37 章" [ref=f5e362] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=37
+            - cell "10" [ref=f5e363]
+            - cell "20" [ref=f5e364]
+            - cell "1" [ref=f5e365]
+            - cell "1" [ref=f5e366]
+            - cell [ref=f5e367]:
+              - link "打开" [ref=f5e368] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=37
+          - row [ref=f5e369]:
+            - cell [ref=f5e370]:
+              - link "第 38 章" [ref=f5e371] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=38
+            - cell "8" [ref=f5e372]
+            - cell "16" [ref=f5e373]
+            - cell "1" [ref=f5e374]
+            - cell "1" [ref=f5e375]
+            - cell [ref=f5e376]:
+              - link "打开" [ref=f5e377] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=38
+          - row [ref=f5e378]:
+            - cell [ref=f5e379]:
+              - link "第 39 章" [ref=f5e380] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=39
+            - cell "9" [ref=f5e381]
+            - cell "18" [ref=f5e382]
+            - cell "1" [ref=f5e383]
+            - cell "1" [ref=f5e384]
+            - cell [ref=f5e385]:
+              - link "打开" [ref=f5e386] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=39
+          - row [ref=f5e387]:
+            - cell [ref=f5e388]:
+              - link "第 40 章" [ref=f5e389] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=40
+            - cell "5" [ref=f5e390]
+            - cell "10" [ref=f5e391]
+            - cell "1" [ref=f5e392]
+            - cell "1" [ref=f5e393]
+            - cell [ref=f5e394]:
+              - link "打开" [ref=f5e395] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=40
+          - row [ref=f5e396]:
+            - cell [ref=f5e397]:
+              - link "第 41 章" [ref=f5e398] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=41
+            - cell "11" [ref=f5e399]
+            - cell "21" [ref=f5e400]
+            - cell "1" [ref=f5e401]
+            - cell "1" [ref=f5e402]
+            - cell [ref=f5e403]:
+              - link "打开" [ref=f5e404] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=41
+          - row [ref=f5e405]:
+            - cell [ref=f5e406]:
+              - link "第 42 章" [ref=f5e407] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=42
+            - cell "6" [ref=f5e408]
+            - cell "12" [ref=f5e409]
+            - cell "1" [ref=f5e410]
+            - cell "1" [ref=f5e411]
+            - cell [ref=f5e412]:
+              - link "打开" [ref=f5e413] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=42
+          - row [ref=f5e414]:
+            - cell [ref=f5e415]:
+              - link "第 43 章" [ref=f5e416] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=43
+            - cell "11" [ref=f5e417]
+            - cell "22" [ref=f5e418]
+            - cell "1" [ref=f5e419]
+            - cell "1" [ref=f5e420]
+            - cell [ref=f5e421]:
+              - link "打开" [ref=f5e422] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=43
+          - row [ref=f5e423]:
+            - cell [ref=f5e424]:
+              - link "第 44 章" [ref=f5e425] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=44
+            - cell "6" [ref=f5e426]
+            - cell "12" [ref=f5e427]
+            - cell "1" [ref=f5e428]
+            - cell "1" [ref=f5e429]
+            - cell [ref=f5e430]:
+              - link "打开" [ref=f5e431] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=44
+          - row [ref=f5e432]:
+            - cell [ref=f5e433]:
+              - link "第 45 章" [ref=f5e434] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=45
+            - cell "6" [ref=f5e435]
+            - cell "12" [ref=f5e436]
+            - cell "1" [ref=f5e437]
+            - cell "1" [ref=f5e438]
+            - cell [ref=f5e439]:
+              - link "打开" [ref=f5e440] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=45
+          - row [ref=f5e441]:
+            - cell [ref=f5e442]:
+              - link "第 46 章" [ref=f5e443] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=46
+            - cell "3" [ref=f5e444]
+            - cell "6" [ref=f5e445]
+            - cell "1" [ref=f5e446]
+            - cell "1" [ref=f5e447]
+            - cell [ref=f5e448]:
+              - link "打开" [ref=f5e449] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=46
+          - row [ref=f5e450]:
+            - cell [ref=f5e451]:
+              - link "第 47 章" [ref=f5e452] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=47
+            - cell "13" [ref=f5e453]
+            - cell "26" [ref=f5e454]
+            - cell "1" [ref=f5e455]
+            - cell "1" [ref=f5e456]
+            - cell [ref=f5e457]:
+              - link "打开" [ref=f5e458] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=47
+          - row [ref=f5e459]:
+            - cell [ref=f5e460]:
+              - link "第 48 章" [ref=f5e461] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=48
+            - cell "7" [ref=f5e462]
+            - cell "13" [ref=f5e463]
+            - cell "1" [ref=f5e464]
+            - cell "1" [ref=f5e465]
+            - cell [ref=f5e466]:
+              - link "打开" [ref=f5e467] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=48
+          - row [ref=f5e468]:
+            - cell [ref=f5e469]:
+              - link "第 49 章" [ref=f5e470] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=49
+            - cell "12" [ref=f5e471]
+            - cell "24" [ref=f5e472]
+            - cell "1" [ref=f5e473]
+            - cell "1" [ref=f5e474]
+            - cell [ref=f5e475]:
+              - link "打开" [ref=f5e476] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=49
+          - row [ref=f5e477]:
+            - cell [ref=f5e478]:
+              - link "第 50 章" [ref=f5e479] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=50
+            - cell "1" [ref=f5e480]
+            - cell "0" [ref=f5e481]
+            - cell "1" [ref=f5e482]
+            - cell "1" [ref=f5e483]
+            - cell [ref=f5e484]:
+              - link "打开" [ref=f5e485] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=50
+          - row [ref=f5e486]:
+            - cell [ref=f5e487]:
+              - link "第 51 章" [ref=f5e488] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=51
+            - cell "1" [ref=f5e489]
+            - cell "0" [ref=f5e490]
+            - cell "1" [ref=f5e491]
+            - cell "1" [ref=f5e492]
+            - cell [ref=f5e493]:
+              - link "打开" [ref=f5e494] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan?chapter=51

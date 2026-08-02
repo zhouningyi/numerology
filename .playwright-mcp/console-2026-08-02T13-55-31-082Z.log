@@ -1,0 +1,3 @@
+[    6464ms] [ERROR] Failed to load resource: net::ERR_INVALID_HTTP_RESPONSE @ http://127.0.0.1:8898/canon/ocr/ziping_zhenquan_scan_edition_a/pages/page-0013.png:0
+[    6465ms] [ERROR] Failed to load resource: net::ERR_INVALID_HTTP_RESPONSE @ http://127.0.0.1:8898/canon/ocr/ziping_zhenquan_scan_edition_a/pages/page-0010.png:0
+[    8106ms] [ERROR] Failed to load resource: the server responded with a status of 404 (NOT FOUND) @ http://127.0.0.1:8898/favicon.ico:0

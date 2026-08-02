@@ -65,6 +65,8 @@ python3 ocr_canon.py \
 
 结果写入 `data/processed/canon/ocr/<source_id>/`：`pages/` 是页面图像，`ocr.jsonl` 是带文字框和分数的原始结果，`ocr.txt` 是便于搜索的文本，`manifest.json` 记录输入哈希和运行参数。首次使用前需按 PaddleOCR 官方文档安装依赖；脚本未安装时会明确报错，不会静默退化为不可靠的文本。
 
+大部头扫描本建议分段并行处理。已有页图时使用 `--append --skip-render` 续跑；初筛可使用 `--no-textline-orientation --mobile --rec-batch-size 8`，但最终规则仍须回看扫描图。不同进程应写入不同 `--output-root`，完成后用 [merge_ocr_parts.py](../merge_ocr_parts.py) 按页码合并，并检查无缺页、重复页。
+
 古籍常见竖排、双栏、眉批和版心，不能只依赖整页纯文本输出。应尽量保留：
 
 1. 页面坐标；
@@ -173,3 +175,67 @@ rule_status: candidate
 ## 8. 本项目当前执行口径
 
 现有 [古籍逻辑提取初稿](古籍逻辑提取初稿.md) 中的内容全部继续保持 `candidate`。下一步应先从每本书选少量高价值章节，完成“扫描页—OCR—网页文本—人工校订—Y 域—操作化”的闭环，再批量提取。模型可以帮助定位、比对和生成现代短释，但不能单独决定原文、版本归属或规则是否成立。
+
+## 9. 章节对照与翻译层
+
+网页版本通常有明确章节号，PDF 只有页码。因此，章节对照必须单独保存；OCR 标题只能生成“定位候选”，不能替代人工复核。两种方式均可：
+
+1. 按章节运行 OCR，命令增加 `--chapter 1`，该批记录自动带章节号；
+2. 用标题定位脚本生成初稿，再在 `data/processed/canon/ocr/<source_id>/page_map.json` 中复核页码映射：
+
+```bash
+python3 map_scan_chapters.py \
+  --book yuanhai_ziping \
+  --source-id yuanhai_ziping_scan_edition_a
+```
+
+脚本同时生成 `chapter_mapping_review.json`。`headings` 保存标题命中方式和分数，`pages` 是兼容旧页面的“页码→主章节”映射，`page_details` 保存一页内的全部章节；同页多个标题时不能把整页差异误当成单章差异。对于带序文的扫描本，可用 `--content-start-page` 跳过前置页。
+
+```json
+{
+  "pages": {"12": 1, "13": 1, "14": 2},
+  "page_details": {
+    "13": {"chapters": [1, 2], "mapping_status": "待人工复核"}
+  }
+}
+```
+
+网页与 PDF 对照页会显示：网页段落数、PDF 页数、OCR 状态和字符差异定位值。字符相似度只用于找出需要回看的页面，不是校勘结论；扫描页只有在存在映射时才显示“已标注，可对照”。
+
+翻译分三种层次保存：
+
+- `quote_original`：扫描本核对后的原文；
+- `modern_interpretation`：研究者写的最小现代解释，用于规则操作化；
+- `translation`：完整白话译文，必须记录来源、译者/模型、版本和时间。
+
+当前网页中的“现代白话”只是互联网版本自带的译文，页面会单独标注来源，不把它当作本项目翻译，也不把它直接写进古籍原文或 rules。评论、原注、评注和白话均使用可展开/关闭的折叠块；扫描页缩略图可点击放大查看原版。
+
+## 10. 扫描图片记录
+
+扫描图片先独立于 OCR 记录，目录为：
+
+```text
+data/processed/canon/scans/<source_id>/
+├── pages/page-0001.png
+├── images.jsonl
+└── manifest.json
+```
+
+例如：
+
+```bash
+python3 record_scan_images.py \
+  --input data/raw/canon/wikimedia/yuanhai_ziping_vol1.pdf \
+  --source-id yuanhai_ziping_vol1 \
+  --pages 1-3
+```
+
+`images.jsonl` 保存 PDF 页码、图片哈希、输入 PDF 哈希和记录时间。图片没有章节映射时，页面显示“已记录图片，尚未章节标注/OCR”；这类图片只作为版本核验样例，不能当作某一章节的扫描证据。
+
+## 11. 防止扫描版本错配的最终约束
+
+章节页不再把“打开全部 OCR 页面”当作本章扫描证据。一个扫描版本必须同时绑定：`source_id`、唯一 `input_pdf`、PDF 的 `input_sha256`、渲染后的 `page_pdf` 和 `page_map.json`。网页显示章节时，只允许显示 `page_map.json` 中包含当前章节的页面；没有映射时只显示“本章尚未定位”，不展示全量图片作为对应结果。
+
+OCR 全量入口采用分页；章节缩略图另有“打开本页 OCR”链接。这样“查看整版本”和“查看本章证据”是两个不同动作，不会再把目录页或全书第一页误认为章节页。
+
+《子平真诠》扫描本的正文从 PDF 第 10 页开始，第 5—9 页为目录。第 32 章《论时说以讹传讹》已核到 PDF 第 63—64 页；对应文件为 `ziping_zhenquan_scan.pdf`，SHA256 前缀为 `71402a780b03`。这类页码记录仍标为“人工补标注”，最终校勘以扫描图为准。

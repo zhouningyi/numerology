@@ -1,0 +1,173 @@
+- generic [active] [ref=f9e1]:
+  - navigation [ref=f9e2]:
+    - generic [ref=f9e3]:
+      - generic [ref=f9e4]: 命理统计
+      - link "概览" [ref=f9e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f9e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f9e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f9e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f9e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f9e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f9e11]:
+    - heading "古籍语料与规则研究" [level=1] [ref=f9e12]
+    - paragraph [ref=f9e13]:
+      - text: 流水线：扫描 PDF / 网页快照 → processed 文本 → 逐段分层标注（candidate）→ 人工校勘（verified）→ 规则 YAML → 预注册。 分层说明见
+      - link "古籍逻辑提取初稿" [ref=f9e14] [cursor=pointer]:
+        - /url: /docs/古籍逻辑提取初稿
+      - text: 与
+      - link "OCR 与校勘规范" [ref=f9e15] [cursor=pointer]:
+        - /url: /docs/古籍OCR与规则校勘规范
+      - text: 。
+    - generic [ref=f9e16]:
+      - heading "四本书分层标注进度" [level=2] [ref=f9e17]
+      - table [ref=f9e18]:
+        - rowgroup [ref=f9e19]:
+          - row [ref=f9e20]:
+            - columnheader "书名" [ref=f9e21]
+            - columnheader "章节" [ref=f9e22]
+            - columnheader "总段数" [ref=f9e23]
+            - columnheader "原文" [ref=f9e24]
+            - columnheader "原注" [ref=f9e25]
+            - columnheader "评注" [ref=f9e26]
+            - columnheader "现代白话" [ref=f9e27]
+            - columnheader "站点内容" [ref=f9e28]
+            - columnheader "待人工校勘（low）" [ref=f9e29]
+            - columnheader "文本大小" [ref=f9e30]
+          - row [ref=f9e31]:
+            - cell [ref=f9e32]:
+              - link "子平真诠" [ref=f9e33] [cursor=pointer]:
+                - /url: /canon/ziping_zhenquan
+              - text: （标记：徐注）
+            - cell "52" [ref=f9e34]
+            - cell "981" [ref=f9e35]
+            - cell "300 高0/低300" [ref=f9e36]:
+              - generic [ref=f9e37]: "300"
+              - text: 高0/低300
+            - cell "—" [ref=f9e38]
+            - cell "579 高293/低286" [ref=f9e39]:
+              - generic [ref=f9e40]: "579"
+              - text: 高293/低286
+            - cell "51 高51/低0" [ref=f9e41]:
+              - generic [ref=f9e42]: "51"
+              - text: 高51/低0
+            - cell "51 高51/低0" [ref=f9e43]:
+              - generic [ref=f9e44]: "51"
+              - text: 高51/低0
+            - cell "586" [ref=f9e45]
+            - cell "508.2 KB" [ref=f9e47]
+          - row [ref=f9e48]:
+            - cell [ref=f9e49]:
+              - link "渊海子平" [ref=f9e50] [cursor=pointer]:
+                - /url: /canon/yuanhai_ziping
+              - text: （标记：眉批）
+            - cell "305" [ref=f9e51]
+            - cell "891" [ref=f9e52]
+            - cell "306 高0/低306" [ref=f9e53]:
+              - generic [ref=f9e54]: "306"
+              - text: 高0/低306
+            - cell "—" [ref=f9e55]
+            - cell "1 高1/低0" [ref=f9e56]:
+              - generic [ref=f9e57]: "1"
+              - text: 高1/低0
+            - cell "292 高292/低0" [ref=f9e58]:
+              - generic [ref=f9e59]: "292"
+              - text: 高292/低0
+            - cell "292 高292/低0" [ref=f9e60]:
+              - generic [ref=f9e61]: "292"
+              - text: 高292/低0
+            - cell "306" [ref=f9e62]
+            - cell "1760.6 KB" [ref=f9e64]
+          - row [ref=f9e65]:
+            - cell [ref=f9e66]:
+              - link "滴天髓阐微" [ref=f9e67] [cursor=pointer]:
+                - /url: /canon/ditiansui
+              - text: （标记：任氏曰）
+            - cell "66" [ref=f9e68]
+            - cell "613" [ref=f9e69]
+            - cell "66 高0/低66" [ref=f9e70]:
+              - generic [ref=f9e71]: "66"
+              - text: 高0/低66
+            - cell "139 高136/低3" [ref=f9e72]:
+              - generic [ref=f9e73]: "139"
+              - text: 高136/低3
+            - cell "278 高139/低139" [ref=f9e74]:
+              - generic [ref=f9e75]: "278"
+              - text: 高139/低139
+            - cell "65 高65/低0" [ref=f9e76]:
+              - generic [ref=f9e77]: "65"
+              - text: 高65/低0
+            - cell "65 高65/低0" [ref=f9e78]:
+              - generic [ref=f9e79]: "65"
+              - text: 高65/低0
+            - cell "208" [ref=f9e80]
+            - cell "667.0 KB" [ref=f9e82]
+          - row [ref=f9e83]:
+            - cell [ref=f9e84]:
+              - link "三命通会" [ref=f9e85] [cursor=pointer]:
+                - /url: /canon/sanming_tonghui
+            - cell "382" [ref=f9e86]
+            - cell "1131" [ref=f9e87]
+            - cell "383 高0/低383" [ref=f9e88]:
+              - generic [ref=f9e89]: "383"
+              - text: 高0/低383
+            - cell "—" [ref=f9e90]
+            - cell "—" [ref=f9e91]
+            - cell "374 高374/低0" [ref=f9e92]:
+              - generic [ref=f9e93]: "374"
+              - text: 高374/低0
+            - cell "374 高374/低0" [ref=f9e94]:
+              - generic [ref=f9e95]: "374"
+              - text: 高374/低0
+            - cell "383" [ref=f9e96]
+            - cell "2330.1 KB" [ref=f9e98]
+      - paragraph [ref=f9e99]: 置信度含义：高＝段落带显式标记（【徐注】/【原注】/【任氏曰】/【眉批】）或位于白话译文区块； 低＝按网页区块推断，网页“原文”标签不区分原著与评注（徐注五用神段即被其误标）， 低置信段落须人工校勘后方可用于规则提取。
+    - generic [ref=f9e100]:
+      - generic [ref=f9e101]:
+        - heading "扫描底本（raw，只读）" [level=2] [ref=f9e102]
+        - table [ref=f9e103]:
+          - rowgroup [ref=f9e104]:
+            - row [ref=f9e105]:
+              - columnheader "文件" [ref=f9e106]
+              - columnheader "大小" [ref=f9e107]
+            - row [ref=f9e108]:
+              - cell "di_tian_sui_ming_scan.pdf" [ref=f9e109]
+              - cell "13.2 MB" [ref=f9e110]
+            - row [ref=f9e111]:
+              - cell "di_tian_sui_qiong_tong_vol1.pdf" [ref=f9e112]
+              - cell "1.8 MB" [ref=f9e113]
+            - row [ref=f9e114]:
+              - cell "sanming_tonghui_1578.pdf" [ref=f9e115]
+              - cell "97.2 MB" [ref=f9e116]
+            - row [ref=f9e117]:
+              - cell "yuanhai_ziping_vol1.pdf" [ref=f9e118]
+              - cell "17.2 MB" [ref=f9e119]
+            - row [ref=f9e120]:
+              - cell "ziping_zhenquan_scan.pdf" [ref=f9e121]
+              - cell "6.8 MB" [ref=f9e122]
+        - paragraph [ref=f9e123]: 扫描图像是版本核验的第一证据；OCR 文本与网页录入本都只是辅助比对材料。
+      - generic [ref=f9e124]:
+        - heading "OCR 进度" [level=2] [ref=f9e125]
+        - table [ref=f9e126]:
+          - rowgroup [ref=f9e127]:
+            - row [ref=f9e128]:
+              - columnheader "版本" [ref=f9e129]
+              - columnheader "已渲染页面" [ref=f9e130]
+              - columnheader "已识别页" [ref=f9e131]
+              - columnheader "状态" [ref=f9e132]
+            - row [ref=f9e133]:
+              - cell [ref=f9e134]:
+                - link "ziping_zhenquan_scan_edition_a" [ref=f9e135] [cursor=pointer]:
+                  - /url: /canon/ocr/ziping_zhenquan_scan_edition_a
+              - cell "1" [ref=f9e136]
+              - cell "0" [ref=f9e137]
+              - cell "未运行 OCR" [ref=f9e138]
+        - paragraph [ref=f9e139]:
+          - text: 入口脚本：
+          - code [ref=f9e140]: ocr_canon.py
+          - text: （PaddleOCR，逐页保存原始结果与页面 PNG）。

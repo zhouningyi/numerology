@@ -1,0 +1,31 @@
+- generic [active] [ref=f2e1]:
+  - navigation [ref=f2e2]:
+    - generic [ref=f2e3]:
+      - generic [ref=f2e4]: 命理统计
+      - link "概览" [ref=f2e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f2e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f2e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f2e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f2e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f2e10] [cursor=pointer]:
+        - /url: /docs
+  - generic [ref=f2e11]:
+    - heading "OCR 结果 · ziping_zhenquan_scan_edition_a" [level=1] [ref=f2e12]
+    - paragraph [ref=f2e13]:
+      - link "← 返回古籍总览" [ref=f2e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 扫描图像是版本核验的第一证据，OCR 文本为原始识别结果（未人工修改）。
+    - generic [ref=f2e15]:
+      - heading "PDF 第 1 页 未识别" [level=2] [ref=f2e16]:
+        - text: PDF 第 1 页
+        - generic [ref=f2e17]: 未识别
+      - generic [ref=f2e18]:
+        - img "第 1 页扫描图" [ref=f2e20]
+        - paragraph [ref=f2e22]:
+          - text: 该页尚未运行 OCR。运行：
+          - code [ref=f2e23]: python3 ocr_canon.py --pages 1 …

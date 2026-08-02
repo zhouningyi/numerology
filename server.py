@@ -610,6 +610,18 @@ def load_ocr_records(source_id: str) -> list[dict]:
     )
 
 
+def load_ocr_manifest(source_id: str) -> dict:
+    """读取 OCR 版本清单，确保页面能回溯到唯一 PDF 底本。"""
+    path = CANON_OCR_DIR / source_id / "manifest.json"
+    if not path.exists():
+        return {}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
 def load_scan_image_records(source_id: str) -> list[dict]:
     """读取独立于 OCR 的扫描页面记录。"""
     path = CANON_SCAN_IMAGES_DIR / source_id / "images.jsonl"
@@ -666,6 +678,27 @@ def load_page_chapters(source_id: str) -> dict[int, list[int]]:
     return result
 
 
+def load_page_mapping_details(source_id: str) -> dict[int, dict]:
+    """读取页级映射状态，用于区分自动定位和人工补标注。"""
+    path = CANON_OCR_DIR / source_id / "page_map.json"
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    details = raw.get("page_details", {}) if isinstance(raw, dict) else {}
+    result = {}
+    if isinstance(details, dict):
+        for page, detail in details.items():
+            if isinstance(detail, dict):
+                try:
+                    result[int(page)] = detail
+                except (TypeError, ValueError):
+                    continue
+    return result
+
+
 def record_chapter(record: dict, page_map: dict[int, int]) -> int | None:
     """优先使用 OCR 批次章节，其次使用人工页码映射。"""
     if record.get("chapter") is not None:
@@ -716,6 +749,8 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
             continue
         source_id = source_dir.name
         records = load_ocr_records(source_id)
+        manifest = load_ocr_manifest(source_id)
+        scan_filename = Path(str(manifest.get("input_pdf") or "")).name
         ocr_inputs.update(
             Path(r["input_pdf"]).name
             for r in records
@@ -723,6 +758,8 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
         )
         page_map = load_page_map(source_id)
         page_chapters = load_page_chapters(source_id)
+        page_details = load_page_mapping_details(source_id)
+        has_mapping = bool(page_map) or bool(page_chapters)
         images = sorted((source_dir / "pages").glob("page-*.png"))
         if chapter is None:
             selected_records = records
@@ -747,6 +784,7 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
                     "chapters": chapter_list,
                     "text": record.get("text_raw"),
                     "status": record.get("ocr_status", "未识别"),
+                    "mapping_status": page_details.get(number, {}).get("mapping_status"),
                 })
         pdf_text = "\n".join(r.get("text_raw", "") for r in selected_records)
         online_norm = comparable_text(online_text)
@@ -766,9 +804,14 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
         elif not records:
             status = "未渲染"
         elif chapter is not None and not selected_records:
-            status = "已 OCR，待章节标注"
+            status = "本章未定位，待人工复核" if has_mapping else "已 OCR，待章节标注"
         elif not selected_records:
             status = "无 OCR 文字"
+        elif any(
+            page_details.get(int(record["page_pdf"]), {}).get("mapping_status") == "人工补标注"
+            for record in selected_records
+        ):
+            status = "已补标注，待扫描图复核"
         else:
             status = "已标注，可对照"
         editions.append({
@@ -778,6 +821,10 @@ def canon_alignment(book: str, segments: list[dict], chapter: int | None) -> dic
             "selected_page_count": len(pages),
             "selected_ocr_count": len(selected_records),
             "status": status,
+            "ocr_url": f"/canon/ocr/{source_id}",
+            "scan_filename": scan_filename or None,
+            "scan_url": f"/canon/scan/{scan_filename}" if scan_filename and (CANON_SCAN_DIR / scan_filename).exists() else None,
+            "input_sha256": str(manifest.get("input_sha256") or "")[:12] or None,
             "similarity": similarity,
             "diff_counts": diff_counts,
             "pages": pages,
@@ -827,10 +874,12 @@ def canon_dashboard():
         books.append({
             "key": book,
             "title": config["title"],
+            "system": config.get("system", ""),
             "markers": config["commentary_markers"],
             "stats": canon_layer_stats(segments),
             "text_size": text_file.stat().st_size if text_file.exists() else 0,
         })
+    books.sort(key=lambda b: (b["system"], b["key"]))
     scans = [
         {"name": pdf.name, "size_mb": pdf.stat().st_size / 1024 / 1024}
         for pdf in sorted(CANON_SCAN_DIR.glob("*.pdf"))
@@ -910,10 +959,25 @@ def canon_ocr(source_id):
     if not re.fullmatch(r"[A-Za-z0-9_\-]+", source_id) or not source_dir.is_dir():
         abort(404)
     records_by_page = {int(r["page_pdf"]): r for r in load_ocr_records(source_id)}
+    manifest = load_ocr_manifest(source_id)
     page_map = load_page_map(source_id)
     page_chapters = load_page_chapters(source_id)
+    all_images = sorted((source_dir / "pages").glob("page-*.png"))
+    requested_page = request.args.get("page", type=int)
+    if requested_page is not None:
+        images = [
+            image for image in all_images
+            if int(image.stem.rsplit("-", 1)[1]) == requested_page
+        ]
+        page_index = None
+        page_size = 1
+    else:
+        page_size = min(max(request.args.get("size", 20, type=int), 1), 50)
+        page_index = max(request.args.get("index", 1, type=int), 1)
+        start = (page_index - 1) * page_size
+        images = all_images[start:start + page_size]
     pages = []
-    for image in sorted((source_dir / "pages").glob("page-*.png")):
+    for image in images:
         number = int(image.stem.rsplit("-", 1)[1])
         record = records_by_page.get(number)
         pages.append({
@@ -924,7 +988,15 @@ def canon_ocr(source_id):
             "chapter": record_chapter(record, page_map) if record else page_map.get(number),
             "chapters": page_chapters.get(number, []),
         })
-    return render_template("canon_ocr.html", source_id=source_id, pages=pages)
+    return render_template(
+        "canon_ocr.html",
+        source_id=source_id,
+        pages=pages,
+        scan_filename=Path(str(manifest.get("input_pdf") or "")).name or None,
+        input_sha256=str(manifest.get("input_sha256") or "")[:12] or None,
+        total_pages=len(all_images), page_index=page_index, page_size=page_size,
+        requested_page=requested_page,
+    )
 
 
 @app.route("/canon/ocr/<source_id>/pages/<filename>")
@@ -933,7 +1005,11 @@ def canon_ocr_image(source_id, filename):
         r"page-\d+\.png", filename
     ):
         abort(404)
-    return send_from_directory(CANON_OCR_DIR / source_id / "pages", filename)
+    # OCR 页面会被缩略图和弹窗重复请求；关闭条件缓存，避免开发服务器在
+    # 并发 304 响应下出现浏览器 ERR_INVALID_HTTP_RESPONSE。
+    return send_from_directory(
+        CANON_OCR_DIR / source_id / "pages", filename, conditional=False, max_age=0
+    )
 
 
 @app.route("/canon/scan-images/<source_id>/pages/<filename>")
@@ -943,7 +1019,15 @@ def canon_scan_image(source_id, filename):
         r"page-\d+\.png", filename
     ):
         abort(404)
-    return send_from_directory(CANON_SCAN_IMAGES_DIR / source_id / "pages", filename)
+    return send_from_directory(
+        CANON_SCAN_IMAGES_DIR / source_id / "pages", filename, conditional=False, max_age=0
+    )
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """避免浏览器自动请求 favicon 时产生无意义的 404。"""
+    return "", 204
 
 
 @app.route("/canon/scan/<filename>")

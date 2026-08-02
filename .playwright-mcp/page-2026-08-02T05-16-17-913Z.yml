@@ -1,0 +1,64 @@
+- generic [active] [ref=f14e1]:
+  - navigation [ref=f14e2]:
+    - generic [ref=f14e3]:
+      - generic [ref=f14e4]: 命理统计
+      - link "概览" [ref=f14e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f14e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f14e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f14e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f14e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f14e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f14e11]:
+    - heading "渊海子平 · 原著中心" [level=1] [ref=f14e12]
+    - paragraph [ref=f14e13]:
+      - link "← 返回古籍总览" [ref=f14e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 共 305 章；原文默认显示，翻译、批注和扫描页作为辅助材料展开。
+    - generic [ref=f14e15]:
+      - combobox [ref=f14e16]:
+        - option "辅助材料：全部" [selected]
+        - option "原文（原著正文）"
+        - option "原注（刘基）"
+        - option "评注（徐注/任氏曰/眉批）"
+        - option "现代白话（网站译文）"
+        - option "站点内容（不入统计）"
+      - combobox [ref=f14e17]:
+        - option "全部置信度" [selected]
+        - option "高（显式标记）"
+        - option "低（待人工校勘）"
+      - button "筛选辅助材料" [ref=f14e18] [cursor=pointer]
+      - link "清除" [ref=f14e19] [cursor=pointer]:
+        - /url: /canon/yuanhai_ziping?chapter=8
+    - generic [ref=f14e20]:
+      - heading "原著正文 · 第 8 章 · 论十二支三合" [level=2] [ref=f14e21]
+      - paragraph [ref=f14e22]: 以下是互联网版本的原文分段，仅作检索底本；规则进入 spec 前仍需回看 PDF 扫描页。
+      - article [ref=f14e23]:
+        - generic [ref=f14e24]: 原文 · 段 25 · 待校勘
+        - generic [ref=f14e25]: 论十二支三合 论十二支三合 渊海子平卷一 论十二支三合 申子辰水局， 亥卯未木局， 寅午戌火局， 巳酉丑金局， 辰戌丑未土局。 (凡看命以三合取用为局入格。) 眉批：合局者为贵，但得五行相顺。
+    - generic [ref=f14e26]:
+      - heading "辅助材料 · 点击展开" [level=2] [ref=f14e27]
+      - paragraph [ref=f14e28]: 白话译文来自互联网版本；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
+      - group [ref=f14e29]:
+        - generic "现代白话（网站译文） · 1 段" [ref=f14e30] [cursor=pointer]:
+          - generic [ref=f14e31]: 现代白话（网站译文）
+          - text: · 1 段
+      - group [ref=f14e32]:
+        - generic "站点内容（不入统计） · 1 段" [ref=f14e33] [cursor=pointer]:
+          - generic [ref=f14e34]: 站点内容（不入统计）
+          - text: · 1 段
+    - generic [ref=f14e35]:
+      - heading "版本与扫描辅助" [level=2] [ref=f14e36]
+      - paragraph [ref=f14e37]: PDF 页码先通过 OCR 标题自动定位，再由人工复核章节边界；字符相似度仅用于定位，不是校勘结论。
+      - generic [ref=f14e38]:
+        - generic [ref=f14e39]:
+          - strong [ref=f14e40]: yuanhai_ziping_scan_edition_a
+          - text: · 已标注，可对照 · 相似度 7.7% · 网页独有 74 字 / PDF 独有 215 字
+        - generic [ref=f14e42]:
+          - img "yuanhai_ziping_scan_edition_a PDF 第 7 页" [ref=f14e43]
+          - generic [ref=f14e44]: PDF 第 7 页 · raw · 第 7、8 章

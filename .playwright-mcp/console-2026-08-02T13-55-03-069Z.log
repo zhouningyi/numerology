@@ -1,0 +1,5 @@
+[    5777ms] [ERROR] Failed to load resource: net::ERR_INVALID_HTTP_RESPONSE @ http://127.0.0.1:8898/canon/ocr/sanming_tonghui_scan_edition_a/pages/page-0013.png:0
+[    6080ms] [ERROR] Failed to load resource: net::ERR_INVALID_HTTP_RESPONSE @ http://127.0.0.1:8898/canon/ocr/ziping_zhenquan_scan_edition_a/pages/page-0009.png:0
+[    6080ms] [ERROR] Failed to load resource: net::ERR_INVALID_HTTP_RESPONSE @ http://127.0.0.1:8898/canon/ocr/ziping_zhenquan_scan_edition_a/pages/page-0012.png:0
+[    6082ms] [ERROR] Failed to load resource: net::ERR_INVALID_HTTP_RESPONSE @ http://127.0.0.1:8898/canon/ocr/ziping_zhenquan_scan_edition_a/pages/page-0019.png:0
+[    6954ms] [ERROR] Failed to load resource: the server responded with a status of 404 (NOT FOUND) @ http://127.0.0.1:8898/favicon.ico:0

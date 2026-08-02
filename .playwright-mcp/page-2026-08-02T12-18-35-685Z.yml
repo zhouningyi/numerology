@@ -1,0 +1,84 @@
+- generic [active] [ref=f20e1]:
+  - navigation [ref=f20e2]:
+    - generic [ref=f20e3]:
+      - generic [ref=f20e4]: 命理统计
+      - link "概览" [ref=f20e5] [cursor=pointer]:
+        - /url: /
+      - link "人物列表" [ref=f20e6] [cursor=pointer]:
+        - /url: /persons
+      - link "预测域" [ref=f20e7] [cursor=pointer]:
+        - /url: /domains
+      - link "质量审计" [ref=f20e8] [cursor=pointer]:
+        - /url: /quality
+      - link "古籍语料" [ref=f20e9] [cursor=pointer]:
+        - /url: /canon
+      - link "研究文档" [ref=f20e10] [cursor=pointer]:
+        - /url: /docs
+  - main [ref=f20e11]:
+    - heading "滴天髓阐微 · 原著中心" [level=1] [ref=f20e12]
+    - paragraph [ref=f20e13]:
+      - link "← 返回古籍总览" [ref=f20e14] [cursor=pointer]:
+        - /url: /canon
+      - text: · 共 66 章；原文默认显示，翻译、批注和扫描页作为辅助材料展开。
+    - generic [ref=f20e15]:
+      - combobox [ref=f20e16]:
+        - option "辅助材料：全部" [selected]
+        - option "原文（原著正文）"
+        - option "原注（刘基）"
+        - option "评注（徐注/任氏曰/眉批）"
+        - option "现代白话（网站译文）"
+        - option "站点内容（不入统计）"
+      - combobox [ref=f20e17]:
+        - option "全部置信度" [selected]
+        - option "高（显式标记）"
+        - option "低（待人工校勘）"
+      - button "筛选辅助材料" [ref=f20e18] [cursor=pointer]
+      - link "清除" [ref=f20e19] [cursor=pointer]:
+        - /url: /canon/ditiansui?chapter=32
+    - generic [ref=f20e20]:
+      - heading "原著正文 · 第 32 章（原书上篇第30章） · 燥湿" [level=2] [ref=f20e21]
+      - paragraph [ref=f20e22]: “第 32 章”是互联网目录编号（目录、序、简介占号）；原书篇章号为 上篇第30章，与扫描本核对时以原书章号为准。
+      - paragraph [ref=f20e23]: 以下是互联网版本的原文分段，仅作检索底本；规则进入 spec 前仍需回看 PDF 扫描页。
+      - article [ref=f20e24]:
+        - generic [ref=f20e25]: 原文 · 段 289 · 待校勘
+        - generic [ref=f20e26]: 地道有燥湿，生成品汇，人道得之，不可偏也。
+    - generic [ref=f20e27]:
+      - heading "辅助材料 · 点击展开" [level=2] [ref=f20e28]
+      - paragraph [ref=f20e29]: 白话译文来自互联网版本；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
+      - group [ref=f20e30]:
+        - generic "现代白话（网站译文） · 1 段" [ref=f20e31] [cursor=pointer]:
+          - generic [ref=f20e32]: 现代白话（网站译文）
+          - text: · 1 段
+      - group [ref=f20e33]:
+        - generic "原注（刘基） · 1 段" [ref=f20e34] [cursor=pointer]:
+          - generic [ref=f20e35]: 原注（刘基）
+          - text: · 1 段
+      - group [ref=f20e36]:
+        - generic "评注（徐注/任氏曰/眉批） · 2 段" [ref=f20e37] [cursor=pointer]:
+          - generic [ref=f20e38]: 评注（徐注/任氏曰/眉批）
+          - text: · 2 段
+      - group [ref=f20e39]:
+        - generic "站点内容（不入统计） · 1 段" [ref=f20e40] [cursor=pointer]:
+          - generic [ref=f20e41]: 站点内容（不入统计）
+          - text: · 1 段
+    - generic [ref=f20e42]:
+      - heading "版本与扫描辅助" [level=2] [ref=f20e43]
+      - paragraph [ref=f20e44]: PDF 页码先通过 OCR 标题自动定位，再由人工复核章节边界；字符相似度仅用于定位，不是校勘结论。
+      - generic [ref=f20e45]:
+        - generic [ref=f20e46]:
+          - strong [ref=f20e47]: ditiansui_ming_scan_edition_a
+          - text: · 已标注，可对照 · 相似度 1.3% · 网页独有 872 字 / PDF 独有 210 字
+        - link "打开该版本全部 OCR 页面" [ref=f20e48] [cursor=pointer]:
+          - /url: /canon/ocr/ditiansui_ming_scan_edition_a
+        - generic [ref=f20e50]:
+          - img "ditiansui_ming_scan_edition_a PDF 第 36 页" [ref=f20e51]
+          - generic [ref=f20e52]: PDF 第 36 页 · raw · 第 32、33 章
+      - generic [ref=f20e53]:
+        - generic [ref=f20e54]:
+          - strong [ref=f20e55]: ditiansui_qiong_tong_scan_edition_a
+          - text: · 已标注，可对照 · 相似度 10.6% · 网页独有 817 字 / PDF 独有 229 字
+        - link "打开该版本全部 OCR 页面" [ref=f20e56] [cursor=pointer]:
+          - /url: /canon/ocr/ditiansui_qiong_tong_scan_edition_a
+        - generic [ref=f20e58]:
+          - img "ditiansui_qiong_tong_scan_edition_a PDF 第 29 页" [ref=f20e59]
+          - generic [ref=f20e60]: PDF 第 29 页 · raw · 第 31、32 章
