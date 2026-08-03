@@ -180,7 +180,9 @@
       {% if aux.pairs %}
       <div class="sent-linked" style="font-size:14px;line-height:1.9">
         {%- for p in aux.pairs -%}
-        <span class="sent" data-si="{{ loop.index0 }}">{{ p[1] }}</span>
+        {%- set is_ai = aux.pair_sources and aux.pair_sources[loop.index0] == 'ai' -%}
+        <span class="sent{% if is_ai %} sent-ai{% endif %}" data-si="{{ loop.index0 }}"
+              {% if is_ai %}title="译本未覆盖此句，模型按译本文风补译"{% endif %}>{{ p[1] }}</span>
         {%- endfor -%}
       </div>
       {% else %}

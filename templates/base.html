@@ -167,6 +167,10 @@
     background: rgba(88, 166, 255, .20);
     box-shadow: 0 1px 0 rgba(88, 166, 255, .55);
   }
+  /* 译本未覆盖的补译句：虚线下划线提示（悬停看说明） */
+  .sent-linked .sent.sent-ai {
+    border-bottom: 1px dashed rgba(210, 153, 34, .8);
+  }
   .canon-seg.yijing-seg .canon-original { cursor: default; }
   /* 《华严经》按原文小段逐段对照，原文与译文默认同时展开。 */
   .canon-seg.huayan-seg .seg-trans { display: block; }
@@ -251,6 +255,8 @@
   .nde-case-tags-body { display:flex; flex-wrap:wrap; gap:5px; padding:7px 0 2px; width:100%; }
   .nde-case-meta { display:flex; flex-wrap:wrap; gap:5px 14px; color:var(--text-muted); font-size:12px; margin:3px 0 6px; }
   .nde-case-content { padding-top:2px; }
+  .nde-advanced-bar { padding-bottom:2px; }
+  .nde-advanced-chip { border-radius:6px; border-color:var(--accent); color:var(--accent); background:rgba(88,166,255,.08); }
   @media (max-width: 768px) {
     .nde-reader { height:calc(100vh - 70px); }
     .nde-reader-header { max-height:52vh; }
@@ -409,17 +415,20 @@
 
   // 标签：普通点击单选/再次点击取消；Ctrl/Command 点击在当前集合中切换标签。
   document.addEventListener('click', (event) => {
-    const chip = event.target.closest('.nde-filter-chip[data-tag]');
+    const chip = event.target.closest('.nde-filter-chip[data-tag], .nde-filter-chip[data-facet]');
     if (!chip) return;
     event.preventDefault();
     const url = new URL(chip.href, window.location.href);
     const current = new URL(window.location.href).searchParams;
-    const selected = current.getAll('tag');
+    const selected = [
+      ...current.getAll('tag').map((value) => `tag:${value}`),
+      ...current.getAll('facet').map((value) => `facet:${value}`),
+    ];
     // 兼容旧的 concept 参数，但新链接统一写入 tag=concept:xxx。
     current.getAll('concept').forEach((key) => {
-      if (!selected.includes(`concept:${key}`)) selected.push(`concept:${key}`);
+      if (!selected.includes(`tag:concept:${key}`)) selected.push(`tag:concept:${key}`);
     });
-    const key = chip.dataset.tag;
+    const key = chip.dataset.tag ? `tag:${chip.dataset.tag}` : `facet:${chip.dataset.facet}`;
     const multi = event.ctrlKey || event.metaKey;
     if (multi) {
       const index = selected.indexOf(key);
@@ -432,7 +441,12 @@
     }
     url.search = '';
     url.searchParams.delete('page');
-    selected.forEach((item) => url.searchParams.append('tag', item));
+    selected.forEach((item) => {
+      const separator = item.indexOf(':');
+      const kind = item.slice(0, separator);
+      const value = item.slice(separator + 1);
+      url.searchParams.append(kind, value);
+    });
     window.location.href = url.pathname + url.search;
   });
 
