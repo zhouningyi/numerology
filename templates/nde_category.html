@@ -3,8 +3,18 @@
 {% block content %}
 <h1 style="font-size:22px;margin-bottom:2px">{{ spec.name }}</h1>
 <p class="muted" style="font-size:13px;margin-bottom:12px">
-  <a href="/nde">← 返回现象分类</a> · {{ spec.description }} · 共 {{ total }} 篇
+  <a href="/nde">← 返回现象分类</a> · {{ spec.description }} · 共 {{ total }} 篇 · 每页 {{ page_size }} 篇
 </p>
+<p class="muted" style="font-size:12px;margin-bottom:6px">
+  当前页案例默认展开；英文原文中的彩色标记是模型概念证据句，颜色只区分概念，不代表真实性或强度。
+</p>
+{% if highlight_legend %}
+<div class="nde-highlight-legend" aria-label="本页重点颜色图例">
+  {% for item in highlight_legend %}
+  <span class="nde-highlight-chip" data-color="{{ item.color }}" style="background:rgba(88,166,255,.08)">{{ item.name }}</span>
+  {% endfor %}
+</div>
+{% endif %}
 
 {% for r in rows %}
 <div class="card" style="padding:12px 16px">
@@ -15,19 +25,18 @@
   <div style="font-size:13px;margin-bottom:4px">
     <span class="muted">问卷证据：</span>{{ r.categories[key] }}
   </div>
-  <details class="canon-fold" style="margin-top:4px">
-    <summary style="cursor:pointer;font-size:13px">
-      <span class="muted" style="display:inline-block;max-width:90%;vertical-align:bottom;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.description[:120] }}…</span>
-      展开全文
-    </summary>
+  <details class="canon-fold lang-switch" open style="margin-top:4px">
+    <summary style="cursor:pointer;font-size:13px">全文（重点已着色）</summary>
     <div style="padding:8px 0 0">
-      {% if r.translations and r.translations['中文'] %}
-      <div style="white-space:pre-wrap;font-size:14px;line-height:1.9">{{ r.translations['中文'] }}</div>
-      <details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">英文原文</summary>
-        <div style="white-space:pre-wrap;font-size:13px;line-height:1.8;margin-top:6px" class="muted">{{ r.description }}</div>
-      </details>
+      {% if r.translation_zh_html %}
+      <div class="lang-tabs">
+        <button type="button" class="lt-btn active" data-target="zh">中文</button>
+        <button type="button" class="lt-btn" data-target="en">原文</button>
+      </div>
+      <div class="lang-pane" data-lang="zh" style="white-space:pre-wrap;font-size:14px;line-height:1.95">{{ r.translation_zh_html|safe }}</div>
+      <div class="lang-pane" data-lang="en" hidden style="white-space:pre-wrap;font-size:13.5px;line-height:1.8">{{ r.description_html|safe }}</div>
       {% else %}
-      <div style="white-space:pre-wrap;font-size:13.5px;line-height:1.8">{{ r.description }}</div>
+      <div style="white-space:pre-wrap;font-size:13.5px;line-height:1.8">{{ r.description_html|safe }}</div>
       {% endif %}
       <p class="muted" style="font-size:12px;margin-top:6px">
         <a href="/nde/experience/{{ r.slug }}">查看完整问卷与标签 →</a>

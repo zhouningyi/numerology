@@ -16,22 +16,33 @@
   <a href="/nde/concept/{{ t.key }}" class="badge badge-yin" title="{{ t.evidence }}" style="margin-right:6px">◈ {{ t.name }}</a>
   {% endfor %}
 </div>
+{% if highlight_legend %}
+<div class="nde-highlight-legend" aria-label="概念证据颜色图例">
+  {% for item in highlight_legend %}
+  <span class="nde-highlight-chip" data-color="{{ item.color }}">{{ item.name }}</span>
+  {% endfor %}
+</div>
+{% endif %}
 
-<div class="card">
-  <h2>体验叙述（英文原文）</h2>
+<div class="card lang-switch">
+  <h2>体验叙述</h2>
   {% if concept_tags %}
   <p class="muted" style="font-size:12px;margin-bottom:8px">
-    正文中<mark class="ev-mark">高亮</mark>的句子是概念标注的证据（悬停查看概念名）；证据由模型摘句，个别可能因改写未能定位。
+    正文中的<mark class="ev-mark">彩色标记</mark>是概念标注的证据句（悬停查看概念名）；颜色只区分概念，个别句子可能因改写未能定位。
   </p>
   {% endif %}
-  <div style="white-space:pre-wrap;font-size:14.5px;line-height:1.9">{{ description_html|safe }}</div>
-  {% if r.translations %}
-  {% for lang, text in r.translations.items() %}
-  <h2 style="margin-top:14px">译文（{{ lang }}）</h2>
-  <div style="white-space:pre-wrap;font-size:14.5px;line-height:1.9">{{ text }}</div>
-  {% endfor %}
+  {% if translation_zh_html %}
+  <div class="lang-tabs">
+    <button type="button" class="lt-btn active" data-target="zh">中文</button>
+    <button type="button" class="lt-btn" data-target="en">原文</button>
+  </div>
+  <div class="lang-pane" data-lang="zh"
+       style="white-space:pre-wrap;font-size:14.5px;line-height:1.95">{{ translation_zh_html|safe }}</div>
+  <div class="lang-pane" data-lang="en" hidden
+       style="white-space:pre-wrap;font-size:14.5px;line-height:1.9">{{ description_html|safe }}</div>
   {% else %}
-  <p class="muted" style="font-size:12px;margin-top:10px">中文译文尚未生成；译文生成后将与原文并排显示在本页。</p>
+  <div style="white-space:pre-wrap;font-size:14.5px;line-height:1.9">{{ description_html|safe }}</div>
+  <p class="muted" style="font-size:12px;margin-top:10px">中文译文尚未生成；生成后本页默认显示中文并支持切换原文。</p>
   {% endif %}
 </div>
 

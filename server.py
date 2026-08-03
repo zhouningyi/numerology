@@ -39,7 +39,7 @@ LAYER_LABELS = {
     "原文": "原文（原著正文）",
     "原注": "原注（刘基）",
     "评注": "评注（徐注/任氏曰/眉批）",
-    "现代白话": "现代白话（网站译文）",
+    "现代白话": "白话译文",
     "现代释译": "现代释译（项目整理）",
     "相关著作": "相关著作（跨书聚合）",
     "站点内容": "站点内容（不入统计）",
@@ -558,6 +558,7 @@ def load_canon_layers(book: str) -> list[dict]:
     # 对齐完成后优先使用逐段模型结果；没有结果才显示卷/品级现代译文。
     aligned_path = CANON_LAYERS_DIR / f"{book}_aligned_layers.jsonl"
     modern_path = CANON_LAYERS_DIR / f"{book}_modern_layers.jsonl"
+    generated_path = CANON_LAYERS_DIR / f"{book}_generated_layers.jsonl"
     if aligned_path.exists() and aligned_path.stat().st_size:
         aligned_rows = _load_jsonl_cached(aligned_path)
         rows.extend(aligned_rows)
@@ -572,6 +573,9 @@ def load_canon_layers(book: str) -> list[dict]:
             )
     elif modern_path.exists():
         rows.extend(_load_jsonl_cached(modern_path))
+    # 项目自己的“小段独立翻译”与网站白话分开保存，均挂回原文段下方。
+    if generated_path.exists() and generated_path.stat().st_size:
+        rows.extend(_load_jsonl_cached(generated_path))
     related_path = CANON_LAYERS_DIR / f"{book}_related_layers.jsonl"
     if related_path.exists():
         rows.extend(_load_jsonl_cached(related_path))
@@ -1284,17 +1288,41 @@ def canon_rule_review(school, rule_id):
 NDE_EXPERIENCES_PATH = BASE_DIR / "data" / "processed" / "nderf" / "experiences.jsonl"
 NDE_TRANSLATIONS_PATH = BASE_DIR / "data" / "processed" / "nderf" / "translations.jsonl"
 NDE_CONCEPTS_PATH = BASE_DIR / "numerology" / "nde" / "concepts.yaml"
+NDE_PAGE_SIZE = 12
+
+# 概念证据使用固定颜色，颜色只表达“这是哪个概念的证据”，不表达真伪或强度。
+NDE_CONCEPT_COLORS = {
+    "scale_illusion": "violet",
+    "time_illusion": "blue",
+    "interpenetration": "teal",
+    "oneness": "green",
+    "consciousness_independent": "indigo",
+    "direct_knowing": "orange",
+    "light_conscious": "yellow",
+    "multiple_realms": "purple",
+    "love_fundamental": "pink",
+    "more_real": "red",
+    "no_judgment": "cyan",
+    "purpose_order": "lime",
+}
 
 
 def load_nde_concepts() -> dict:
     return yaml.safe_load(NDE_CONCEPTS_PATH.read_text(encoding="utf-8"))["concepts"]
 
 
+NDE_EVIDENCE_ZH_PATH = BASE_DIR / "data" / "processed" / "nderf" / "evidence_zh.jsonl"
+
+
 def load_nde_experiences() -> list[dict]:
-    """案例记录合并翻译与概念标注（translations.jsonl 独立增量文件）。"""
+    """案例记录合并翻译、概念标注与中文证据映射（各自独立增量文件）。"""
     records = _load_jsonl_cached(NDE_EXPERIENCES_PATH)
     translations = {
         row["slug"]: row for row in _load_jsonl_cached(NDE_TRANSLATIONS_PATH)
+    }
+    evidence_zh = {
+        row["slug"]: row.get("concepts_zh", {})
+        for row in _load_jsonl_cached(NDE_EVIDENCE_ZH_PATH)
     }
     for record in records:
         extra = translations.get(record["slug"])
@@ -1304,7 +1332,50 @@ def load_nde_experiences() -> list[dict]:
         else:
             record.setdefault("translations", {})
             record.setdefault("concepts", {})
+        record["concepts_zh"] = evidence_zh.get(record["slug"], {})
     return records
+
+
+def prepare_nde_rows(rows: list[dict], concept_specs: dict) -> tuple[list[dict], list[dict]]:
+    """为列表页准备原文证据高亮；不修改缓存中的原始记录。"""
+    prepared = []
+    legend = {}
+    for source in rows:
+        record = dict(source)
+        concept_tags = [
+            {
+                "key": key,
+                "name": concept_specs[key]["name"],
+                "evidence": evidence,
+                "color": NDE_CONCEPT_COLORS.get(key, "default"),
+            }
+            for key, evidence in record.get("concepts", {}).items()
+            if key in concept_specs and evidence
+        ]
+        record["description_html"] = highlight_evidence(
+            record.get("description", ""), concept_tags
+        )
+        zh_text = (record.get("translations") or {}).get("中文", "")
+        zh_tags = [
+            {
+                "key": key,
+                "name": concept_specs[key]["name"],
+                "evidence": sentence,
+                "color": NDE_CONCEPT_COLORS.get(key, "default"),
+            }
+            for key, sentence in record.get("concepts_zh", {}).items()
+            if key in concept_specs and sentence
+        ]
+        record["translation_zh_html"] = (
+            highlight_evidence(zh_text, zh_tags) if zh_text else ""
+        )
+        record["highlight_tags"] = concept_tags
+        for tag in concept_tags + zh_tags:
+            legend[tag["key"]] = {
+                "key": tag["key"], "name": tag["name"], "color": tag["color"]
+            }
+        prepared.append(record)
+    return prepared, list(legend.values())
 
 
 @app.route("/nde")
@@ -1353,16 +1424,19 @@ def nde_category(key):
     if key not in phenomena:
         abort(404)
     page = max(request.args.get("page", 1, type=int), 1)
-    per_page = 50
+    per_page = NDE_PAGE_SIZE
     matched = [
         r for r in load_nde_experiences() if key in r.get("categories", {})
     ]
     total = len(matched)
     total_pages = math.ceil(total / per_page) if total else 1
-    rows = matched[(page - 1) * per_page : page * per_page]
+    rows, highlight_legend = prepare_nde_rows(
+        matched[(page - 1) * per_page : page * per_page], load_nde_concepts()
+    )
     return render_template(
         "nde_category.html", spec=phenomena[key], key=key, rows=rows,
         total=total, page=page, total_pages=total_pages,
+        highlight_legend=highlight_legend, page_size=per_page,
     )
 
 
@@ -1417,16 +1491,19 @@ def nde_concept(key):
     if key not in concepts:
         abort(404)
     page = max(request.args.get("page", 1, type=int), 1)
-    per_page = 50
+    per_page = NDE_PAGE_SIZE
     matched = [
         r for r in load_nde_experiences() if key in r.get("concepts", {})
     ]
     total = len(matched)
     total_pages = math.ceil(total / per_page) if total else 1
-    rows = matched[(page - 1) * per_page : page * per_page]
+    rows, highlight_legend = prepare_nde_rows(
+        matched[(page - 1) * per_page : page * per_page], concepts
+    )
     return render_template(
         "nde_concept.html", spec=concepts[key], key=key, rows=rows,
         total=total, page=page, total_pages=total_pages,
+        highlight_legend=highlight_legend, page_size=per_page,
     )
 
 
@@ -1437,7 +1514,7 @@ def highlight_evidence(text: str, evidences: list[dict]) -> str:
     """
     from markupsafe import escape
 
-    spans = []  # (start, end, name)
+    spans = []  # (start, end, name, key, color)
     lowered = text.lower()
     for item in evidences:
         needle = (item.get("evidence") or "").strip().strip('"')
@@ -1451,18 +1528,27 @@ def highlight_evidence(text: str, evidences: list[dict]) -> str:
         else:
             needle_len = len(needle)
         if pos >= 0 and needle_len:
-            spans.append((pos, pos + needle_len, item["name"]))
+            spans.append((
+                pos, pos + needle_len, item["name"],
+                item.get("key", "default"), item.get("color", "default"),
+            ))
     spans.sort()
     merged, last_end = [], -1
-    for start, end, name in spans:
+    for start, end, name, concept_key, color in spans:
         if start >= last_end:  # 忽略重叠区间
-            merged.append((start, end, name))
+            merged.append((start, end, name, concept_key, color))
             last_end = end
     parts, cursor = [], 0
-    for start, end, name in merged:
+    for start, end, name, concept_key, color in merged:
         parts.append(str(escape(text[cursor:start])))
+        safe_key = re.sub(r"[^A-Za-z0-9_-]", "", str(concept_key)) or "default"
+        color_attrs = (
+            f' data-concept="{escape(safe_key)}" data-color="{escape(color)}"'
+            if safe_key != "default" else ""
+        )
         parts.append(
-            f'<mark class="ev-mark" title="概念证据：{escape(name)}">'
+            f'<mark class="ev-mark" title="概念证据：{escape(name)}"'
+            f'{color_attrs}>'
             f"{escape(text[start:end])}</mark>"
         )
         cursor = end
@@ -1507,15 +1593,30 @@ def nde_experience(slug):
     ]
     concept_specs = load_nde_concepts()
     concept_tags = [
-        {"key": key, "name": concept_specs[key]["name"], "evidence": evidence}
+        {"key": key, "name": concept_specs[key]["name"], "evidence": evidence,
+         "color": NDE_CONCEPT_COLORS.get(key, "default")}
         for key, evidence in record.get("concepts", {}).items()
         if key in concept_specs
     ]
     description_html = highlight_evidence(record["description"], concept_tags)
+    zh_text = (record.get("translations") or {}).get("中文", "")
+    zh_tags = [
+        {"key": key, "name": concept_specs[key]["name"], "evidence": sentence,
+         "color": NDE_CONCEPT_COLORS.get(key, "default")}
+        for key, sentence in record.get("concepts_zh", {}).items()
+        if key in concept_specs and sentence
+    ]
+    translation_zh_html = highlight_evidence(zh_text, zh_tags) if zh_text else ""
     qa_tags = tag_qa_rows(record.get("qa", []), phenomena)
     return render_template(
         "nde_experience.html", r=record, tags=tags, concept_tags=concept_tags,
-        description_html=description_html, qa_tags=qa_tags,
+        description_html=description_html, translation_zh_html=translation_zh_html,
+        highlight_legend=[
+            {"key": key, "name": concept_specs[key]["name"],
+             "color": NDE_CONCEPT_COLORS.get(key, "default")}
+            for key in record.get("concepts", {}) if key in concept_specs
+        ],
+        qa_tags=qa_tags,
     )
 
 

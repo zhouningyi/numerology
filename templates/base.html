@@ -136,12 +136,48 @@
   dialog { margin: auto; }
   dialog::backdrop { background: rgba(1, 4, 9, 0.6); backdrop-filter: blur(2px); }
 
+  /* [原文 | 中文] 切换 */
+  .lang-tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 6px;
+               overflow: hidden; margin-bottom: 8px; }
+  .lt-btn { background: var(--bg); color: var(--text-muted); border: none;
+            padding: 3px 14px; font-size: 12px; cursor: pointer; border-radius: 0; }
+  .lt-btn + .lt-btn { border-left: 1px solid var(--border); }
+  .lt-btn.active { background: rgba(88,166,255,0.18); color: var(--accent); }
+
   /* 概念证据高亮（暗色主题下的柔和标记） */
   mark.ev-mark {
     background: rgba(210, 153, 34, 0.28); color: inherit;
     border-radius: 3px; padding: 0 2px;
     border-bottom: 1px solid rgba(210, 153, 34, 0.6);
   }
+  /* 濒死体验概念证据：不同颜色只区分概念，不表示证据强弱。 */
+  mark.ev-mark[data-color="violet"] { background: rgba(188, 140, 255, .28); border-color: #bc8cff; }
+  mark.ev-mark[data-color="blue"] { background: rgba(88, 166, 255, .28); border-color: #58a6ff; }
+  mark.ev-mark[data-color="teal"] { background: rgba(57, 211, 173, .26); border-color: #39d3ad; }
+  mark.ev-mark[data-color="green"] { background: rgba(126, 231, 135, .26); border-color: #7ee787; }
+  mark.ev-mark[data-color="indigo"] { background: rgba(129, 140, 248, .28); border-color: #818cf8; }
+  mark.ev-mark[data-color="orange"] { background: rgba(247, 129, 102, .28); border-color: #f78166; }
+  mark.ev-mark[data-color="yellow"] { background: rgba(210, 153, 34, .30); border-color: #d29922; }
+  mark.ev-mark[data-color="purple"] { background: rgba(163, 113, 247, .28); border-color: #a371f7; }
+  mark.ev-mark[data-color="pink"] { background: rgba(255, 123, 159, .27); border-color: #ff7b9f; }
+  mark.ev-mark[data-color="red"] { background: rgba(248, 81, 73, .25); border-color: #f85149; }
+  mark.ev-mark[data-color="cyan"] { background: rgba(121, 192, 255, .25); border-color: #79c0ff; }
+  mark.ev-mark[data-color="lime"] { background: rgba(166, 227, 161, .26); border-color: #a6e3a1; }
+  .nde-highlight-legend { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 12px; }
+  .nde-highlight-chip { border:1px solid var(--border); border-radius:999px; padding:2px 8px; font-size:12px; }
+  .nde-highlight-chip[data-color="violet"] { background:rgba(188,140,255,.28); border-color:#bc8cff; }
+  .nde-highlight-chip[data-color="blue"] { background:rgba(88,166,255,.28); border-color:#58a6ff; }
+  .nde-highlight-chip[data-color="teal"] { background:rgba(57,211,173,.26); border-color:#39d3ad; }
+  .nde-highlight-chip[data-color="green"] { background:rgba(126,231,135,.26); border-color:#7ee787; }
+  .nde-highlight-chip[data-color="indigo"] { background:rgba(129,140,248,.28); border-color:#818cf8; }
+  .nde-highlight-chip[data-color="orange"] { background:rgba(247,129,102,.28); border-color:#f78166; }
+  .nde-highlight-chip[data-color="yellow"] { background:rgba(210,153,34,.30); border-color:#d29922; }
+  .nde-highlight-chip[data-color="purple"] { background:rgba(163,113,247,.28); border-color:#a371f7; }
+  .nde-highlight-chip[data-color="pink"] { background:rgba(255,123,159,.27); border-color:#ff7b9f; }
+  .nde-highlight-chip[data-color="red"] { background:rgba(248,81,73,.25); border-color:#f85149; }
+  .nde-highlight-chip[data-color="cyan"] { background:rgba(121,192,255,.25); border-color:#79c0ff; }
+  .nde-highlight-chip[data-color="lime"] { background:rgba(166,227,161,.26); border-color:#a6e3a1; }
+  .nde-source-label { font-size:12px; color:var(--text-muted); margin:8px 0 4px; }
 </style>
 <script>
   // 所有 dialog：点击遮罩（dialog 矩形之外）关闭
@@ -152,6 +188,18 @@
     const inside = event.clientX >= rect.left && event.clientX <= rect.right
       && event.clientY >= rect.top && event.clientY <= rect.bottom;
     if (!inside) dialog.close();
+  });
+
+  // [原文 | 中文] 语言切换：作用于最近的 .lang-switch 容器，默认显示中文
+  document.addEventListener('click', (event) => {
+    const btn = event.target.closest('.lt-btn');
+    if (!btn) return;
+    const box = btn.closest('.lang-switch');
+    if (!box) return;
+    box.querySelectorAll('.lt-btn').forEach(b => b.classList.toggle('active', b === btn));
+    box.querySelectorAll('.lang-pane').forEach(p => {
+      p.hidden = p.dataset.lang !== btn.dataset.target;
+    });
   });
 </script>
 <style>
