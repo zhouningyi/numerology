@@ -158,6 +158,19 @@
   .canon-seg.has-trans .canon-original { cursor: pointer; }
   .canon-seg .seg-trans-hint { font-size: 10px; opacity: .7; margin-left: 6px; }
   .canon-seg.pinned .seg-trans-hint { color: var(--wood); opacity: 1; }
+  /* 《周易》按卦辞/爻辞逐条对照，译文不依赖 hover，默认始终显示。 */
+  .canon-seg.yijing-seg .seg-trans { display: block; }
+
+  /* 句级对照：悬停原文/译文任一句，两侧对应句同步高亮 */
+  .sent-linked .sent { border-radius: 3px; padding: 1px 1px; cursor: default; }
+  .sent-linked .sent.sent-hl {
+    background: rgba(88, 166, 255, .20);
+    box-shadow: 0 1px 0 rgba(88, 166, 255, .55);
+  }
+  .canon-seg.yijing-seg .canon-original { cursor: default; }
+  /* 《华严经》按原文小段逐段对照，原文与译文默认同时展开。 */
+  .canon-seg.huayan-seg .seg-trans { display: block; }
+  .canon-seg.huayan-seg .canon-original { cursor: default; }
 
   /* [原文 | 中文] 切换 */
   .lang-tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 6px;
@@ -203,29 +216,44 @@
   .nde-source-label { font-size:12px; color:var(--text-muted); margin:8px 0 4px; }
   /* 濒死体验专题页：顶部上下文固定，下方案例独立滚动。 */
   .nde-reader { height:calc(100vh - 78px); min-height:360px; display:flex; flex-direction:column; overflow:hidden; }
-  .nde-reader-header { flex:0 0 238px; height:238px; overflow-y:auto; padding:2px 6px 10px 0; border-bottom:1px solid var(--border); background:var(--bg); }
+  .nde-reader-header { flex:0 0 auto; max-height:46vh; overflow-y:auto; padding:2px 6px 10px 0; border-bottom:1px solid var(--border); background:var(--bg); }
   .nde-reader-results { flex:1 1 auto; min-height:0; overflow-y:auto; padding:12px 6px 24px 0; overscroll-behavior:contain; }
   .nde-filter-label { font-size:12px; color:var(--text-muted); margin:8px 0 5px; }
+  .nde-tag-groups { display:grid; gap:7px; }
+  .nde-tag-group { display:flex; align-items:flex-start; gap:8px; }
+  .nde-tag-group-title { flex:0 0 42px; padding:4px 7px; border:1px solid var(--accent); border-radius:6px; color:var(--accent); font-size:12px; font-weight:700; text-align:center; }
+  .nde-tag-group .nde-filter-bar { flex:1 1 auto; }
   .nde-filter-bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-  .nde-filter-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid transparent; border-radius:999px; padding:4px 9px; font-size:12px; color:#0d1117; font-weight:600; text-decoration:none; }
+  .nde-filter-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:999px; padding:4px 9px; font-size:12px; color:var(--text); font-weight:600; text-decoration:none; transition:opacity .12s, background .12s; --chip-color:var(--border); }
   .nde-filter-chip:hover { text-decoration:none; filter:brightness(1.12); }
-  .nde-filter-chip.active { box-shadow:0 0 0 2px var(--text); }
-  .nde-filter-chip[data-color="violet"] { background:#bc8cff; }
-  .nde-filter-chip[data-color="blue"] { background:#58a6ff; }
-  .nde-filter-chip[data-color="teal"] { background:#39d3ad; }
-  .nde-filter-chip[data-color="green"] { background:#7ee787; }
-  .nde-filter-chip[data-color="indigo"] { background:#818cf8; }
-  .nde-filter-chip[data-color="orange"] { background:#f78166; }
-  .nde-filter-chip[data-color="yellow"] { background:#d29922; }
-  .nde-filter-chip[data-color="purple"] { background:#a371f7; }
-  .nde-filter-chip[data-color="pink"] { background:#ff7b9f; }
-  .nde-filter-chip[data-color="red"] { background:#f85149; }
-  .nde-filter-chip[data-color="cyan"] { background:#79c0ff; }
-  .nde-filter-chip[data-color="lime"] { background:#a6e3a1; }
-  .nde-filter-chip[data-color="default"] { background:#c9d1d9; }
+  .nde-filter-bar.has-selection .nde-filter-chip:not(.active) { opacity:.36; }
+  .nde-filter-chip.active { background:transparent !important; color:var(--text); border-color:var(--chip-color); box-shadow:0 0 0 1px var(--chip-color), 0 0 11px var(--chip-color); opacity:1; transform:none; }
+  .nde-filter-chip[data-color="violet"] { --chip-color:#bc8cff; background:rgba(188,140,255,.18); border-color:#bc8cff; }
+  .nde-filter-chip[data-color="blue"] { --chip-color:#58a6ff; background:rgba(88,166,255,.18); border-color:#58a6ff; }
+  .nde-filter-chip[data-color="teal"] { --chip-color:#39d3ad; background:rgba(57,211,173,.18); border-color:#39d3ad; }
+  .nde-filter-chip[data-color="green"] { --chip-color:#7ee787; background:rgba(126,231,135,.18); border-color:#7ee787; }
+  .nde-filter-chip[data-color="indigo"] { --chip-color:#818cf8; background:rgba(129,140,248,.18); border-color:#818cf8; }
+  .nde-filter-chip[data-color="orange"] { --chip-color:#f78166; background:rgba(247,129,102,.18); border-color:#f78166; }
+  .nde-filter-chip[data-color="yellow"] { --chip-color:#d29922; background:rgba(210,153,34,.18); border-color:#d29922; }
+  .nde-filter-chip[data-color="purple"] { --chip-color:#a371f7; background:rgba(163,113,247,.18); border-color:#a371f7; }
+  .nde-filter-chip[data-color="pink"] { --chip-color:#ff7b9f; background:rgba(255,123,159,.18); border-color:#ff7b9f; }
+  .nde-filter-chip[data-color="red"] { --chip-color:#f85149; background:rgba(248,81,73,.18); border-color:#f85149; }
+  .nde-filter-chip[data-color="cyan"] { --chip-color:#79c0ff; background:rgba(121,192,255,.18); border-color:#79c0ff; }
+  .nde-filter-chip[data-color="lime"] { --chip-color:#a6e3a1; background:rgba(166,227,161,.18); border-color:#a6e3a1; }
+  .nde-filter-chip[data-color="default"] { background:rgba(201,209,217,.12); }
+  /* NDE 列表卡：只保留外层一个边框；标签折叠入口放在标题行。 */
+  .nde-case-card { padding:12px 16px; }
+  .nde-case-title-row { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin-bottom:3px; }
+  .nde-case-title-row > a { margin-right:2px; }
+  .nde-case-tags { margin-left:auto; position:relative; }
+  .nde-case-tags summary { cursor:pointer; list-style:none; color:var(--accent); font-size:12px; }
+  .nde-case-tags summary::-webkit-details-marker { display:none; }
+  .nde-case-tags-body { display:flex; flex-wrap:wrap; gap:5px; padding:7px 0 2px; width:100%; }
+  .nde-case-meta { display:flex; flex-wrap:wrap; gap:5px 14px; color:var(--text-muted); font-size:12px; margin:3px 0 6px; }
+  .nde-case-content { padding-top:2px; }
   @media (max-width: 768px) {
     .nde-reader { height:calc(100vh - 70px); }
-    .nde-reader-header { flex-basis:270px; height:270px; }
+    .nde-reader-header { max-height:52vh; }
   }
 </style>
 <script>
@@ -247,9 +275,28 @@
     localStorage.setItem('theme', next);
   });
 
+  // 句级对照：悬停一句，同段内相同序号的原句/译句一起高亮
+  document.addEventListener('mouseover', (event) => {
+    const sent = event.target.closest('.sent-linked .sent');
+    if (!sent) return;
+    const article = sent.closest('.canon-seg');
+    if (!article) return;
+    article.querySelectorAll('.sent.sent-hl').forEach(s => s.classList.remove('sent-hl'));
+    article.querySelectorAll(`.sent[data-si="${sent.dataset.si}"]`)
+      .forEach(s => s.classList.add('sent-hl'));
+  });
+  document.addEventListener('mouseout', (event) => {
+    const sent = event.target.closest('.sent-linked .sent');
+    if (!sent) return;
+    const article = sent.closest('.canon-seg');
+    if (article && !article.contains(event.relatedTarget?.closest?.('.sent-linked .sent') || null)) {
+      article.querySelectorAll('.sent.sent-hl').forEach(s => s.classList.remove('sent-hl'));
+    }
+  });
+
   // 原文段点击固定/取消固定译文（避免悬停移开就消失）
   document.addEventListener('click', (event) => {
-    const original = event.target.closest('.canon-seg.has-trans .canon-original');
+    const original = event.target.closest('.canon-seg.has-trans:not(.yijing-seg):not(.huayan-seg) .canon-original');
     if (!original) return;
     if (window.getSelection && String(window.getSelection())) return;  // 选中文字时不切换
     original.closest('.canon-seg').classList.toggle('pinned');
@@ -301,7 +348,7 @@
     <a href="/docs" data-fast-nav>文档</a>
     <span style="border-left:1px solid var(--border);height:18px"></span>
     <span class="muted" style="font-size:11px;letter-spacing:1px">濒死探索</span>
-    <a href="/nde" data-fast-nav>现象分类</a>
+    <a href="/nde" data-fast-nav>濒死探索</a>
     <button id="theme-toggle" type="button" title="切换亮/暗主题"
             style="margin-left:auto;background:transparent;border:1px solid var(--border);
                    color:var(--text-muted);padding:2px 10px;font-size:13px;border-radius:6px">◐</button>
@@ -359,6 +406,35 @@
       document.body.classList.remove('nav-loading');
     }
   }
+
+  // 标签：普通点击单选/再次点击取消；Ctrl/Command 点击在当前集合中切换标签。
+  document.addEventListener('click', (event) => {
+    const chip = event.target.closest('.nde-filter-chip[data-tag]');
+    if (!chip) return;
+    event.preventDefault();
+    const url = new URL(chip.href, window.location.href);
+    const current = new URL(window.location.href).searchParams;
+    const selected = current.getAll('tag');
+    // 兼容旧的 concept 参数，但新链接统一写入 tag=concept:xxx。
+    current.getAll('concept').forEach((key) => {
+      if (!selected.includes(`concept:${key}`)) selected.push(`concept:${key}`);
+    });
+    const key = chip.dataset.tag;
+    const multi = event.ctrlKey || event.metaKey;
+    if (multi) {
+      const index = selected.indexOf(key);
+      if (index >= 0) selected.splice(index, 1);
+      else selected.push(key);
+    } else if (selected.length === 1 && selected[0] === key) {
+      selected.length = 0;
+    } else {
+      selected.splice(0, selected.length, key);
+    }
+    url.search = '';
+    url.searchParams.delete('page');
+    selected.forEach((item) => url.searchParams.append('tag', item));
+    window.location.href = url.pathname + url.search;
+  });
 
   document.querySelectorAll('nav a[data-fast-nav]').forEach((link) => {
     link.addEventListener('mouseenter', () => { fetchPage(link.href).catch(() => {}); });

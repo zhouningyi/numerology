@@ -142,19 +142,62 @@
   {% endif %}
   {% for s in original_segments %}
   {% set inline_items = inline_by_original[loop.index0] %}
-  <article class="canon-seg{% if inline_items %} has-trans{% endif %}"
+  <article class="canon-seg{% if book == 'yijing' %} yijing-seg{% endif %}{% if book == 'huayan_t0279' %} huayan-seg{% endif %}{% if inline_items %} has-trans{% endif %}"
            style="margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
     <div class="muted" style="font-size:11px;margin-bottom:4px">
       原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}
-      {% if inline_items %}<span class="seg-trans-hint">悬停看译文 · 点击固定</span>{% endif %}
+      {% if inline_items %}
+      <span class="seg-trans-hint">{% if book in ('yijing', 'huayan_t0279') %}译文默认展开{% else %}悬停看译文 · 点击固定{% endif %}</span>
+      {% endif %}
     </div>
+    {% set pair_aux = (inline_items | selectattr('pairs') | list | first) if inline_items else none %}
+    {% if pair_aux %}
+    <div class="canon-original sent-linked" style="font-size:15px;line-height:1.9">
+      {%- for p in pair_aux.pairs -%}
+      <span class="sent" data-si="{{ loop.index0 }}">{{ p[0] }}</span>
+      {%- endfor -%}
+    </div>
+    {% else %}
     <div class="canon-original" style="white-space:pre-wrap;font-size:15px;line-height:1.9">{{ s.text }}</div>
+    {% endif %}
     {% for aux in inline_items %}
-    <div class="seg-trans">
-      <div class="muted" style="font-size:11px;margin-bottom:4px">
+    <div class="seg-trans" {% if aux.unit_key %}id="unit-{{ aux.unit_key|replace('|', '-') }}"{% endif %}>
+      <div class="muted" style="font-size:11px;margin-bottom:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
         <span class="badge {{ layer_badges[aux.layer] }}">{% if aux.translation_source %}{{ aux.layer }}（{{ aux.translation_source }}）{% else %}{{ layer_labels[aux.layer] }}{% endif %}</span>
+        {% if aux.review_status == 'human_verified' %}
+        <span class="badge badge-aa">人工已复核</span>
+        {% elif aux.review_status == 'rejected' %}
+        <span class="badge badge-error">已驳回</span>
+        {% elif aux.review_status == 'model_agree' %}
+        <span class="badge badge-info">模型一致·待人工</span>
+        {% else %}
+        <span class="badge badge-warning">候选·待复核</span>
+        {% endif %}
+        {% if aux.alignment_status %}<span style="font-size:10px">{{ aux.alignment_status }}</span>{% endif %}
+        {% if aux.pairs %}<span style="font-size:10px" class="muted">句级对照：悬停原文任一句，对应译句同步高亮</span>{% endif %}
       </div>
+      {% if aux.pairs %}
+      <div class="sent-linked" style="font-size:14px;line-height:1.9">
+        {%- for p in aux.pairs -%}
+        <span class="sent" data-si="{{ loop.index0 }}">{{ p[1] }}</span>
+        {%- endfor -%}
+      </div>
+      {% else %}
       <div style="white-space:pre-wrap;font-size:14px;line-height:1.9">{{ aux.text }}</div>
+      {% endif %}
+      {% if aux.unit_key and aux.layer in ('现代白话', '现代释译') %}
+      <form class="review-form" method="post" action="/canon/{{ book }}/review"
+            style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <input type="hidden" name="unit_key" value="{{ aux.unit_key }}">
+        <input type="hidden" name="chapter" value="{{ chapter }}">
+        <input type="text" name="review_note" placeholder="备注（可选）"
+               value="{{ aux.review_note or '' }}"
+               style="flex:1;min-width:140px;font-size:12px;padding:3px 6px">
+        <button type="submit" name="action" value="verify" style="font-size:12px">通过</button>
+        <button type="submit" name="action" value="reject" style="font-size:12px">驳回</button>
+        <button type="submit" name="action" value="reset" style="font-size:12px">重置</button>
+      </form>
+      {% endif %}
     </div>
     {% endfor %}
   </article>
