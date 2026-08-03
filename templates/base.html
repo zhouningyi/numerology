@@ -142,6 +142,19 @@
     border-radius: 3px; padding: 0 2px;
     border-bottom: 1px solid rgba(210, 153, 34, 0.6);
   }
+</style>
+<script>
+  // 所有 dialog：点击遮罩（dialog 矩形之外）关闭
+  document.addEventListener('click', (event) => {
+    const dialog = event.target;
+    if (!(dialog instanceof HTMLDialogElement) || !dialog.open) return;
+    const rect = dialog.getBoundingClientRect();
+    const inside = event.clientX >= rect.left && event.clientX <= rect.right
+      && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    if (!inside) dialog.close();
+  });
+</script>
+<style>
 
   /* 顶部 Tab 使用局部切换；请求期间保留当前页面，避免点击后出现空白。 */
   body.nav-loading #page-content { opacity: .62; transition: opacity .12s ease; }

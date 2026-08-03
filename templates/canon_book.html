@@ -3,7 +3,7 @@
 {% block content %}
 <h1 style="font-size:22px;margin-bottom:2px">{{ title }} · 原著中心</h1>
 <p class="muted" style="font-size:13px;margin-bottom:12px">
-  <a href="/canon">← 返回古籍总览</a> · {{ corpus_group }} · {{ calculation_scope }} · 共 {{ stats.chapters }} 章；原文为中心，现代翻译默认展开。
+  <a href="/canon">← 返回古籍总览</a> · {{ corpus_group }} · {{ calculation_scope }} · 共 {{ stats.chapters }} 章；原文为中心，译文按对应段落显示。
 </p>
 
 {% if chapter is none %}
@@ -69,7 +69,7 @@
     点击章节号直接进入原著正文。互联网版本的书籍介绍、站点宣传和空书名号不计入原文。
   </p>
   <table>
-    <tr><th>章节</th><th>原书章号</th><th>内容</th><th>原文段数</th><th>原注/评注</th><th>翻译/释译</th><th>站点内容</th><th></th></tr>
+    <tr><th>章节</th><th>原书章号</th><th>内容</th><th>原文段数</th><th>原注/评注</th><th>翻译/释译</th><th>相关著作</th><th>站点内容</th><th></th></tr>
     {% for row in chapter_directory %}
     <tr>
       <td><a href="/canon/{{ book }}?chapter={{ row.number }}">第 {{ row.number }} 章</a></td>
@@ -78,14 +78,29 @@
       <td>{{ row.original_count }}</td>
       <td>{{ row.commentary_count }}</td>
       <td>{{ row.translation_count }}</td>
+      <td>{{ row.related_count }}</td>
       <td class="muted">{{ row.site_count }}</td>
       <td><a href="/canon/{{ book }}?chapter={{ row.number }}">打开</a></td>
     </tr>
     {% else %}
-    <tr><td colspan="8" class="muted">尚未导入本书原文，当前仅登记书目和处理规范。</td></tr>
+    <tr><td colspan="9" class="muted">尚未导入本书原文，当前仅登记书目和处理规范。</td></tr>
     {% endfor %}
   </table>
 </div>
+{% if related_sources %}
+<div class="card">
+  <h2>全书相关著作</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">
+    能按卦名对应的材料已挂到各卦的“相关著作”中；没有稳定单卦边界的传文保留在这里，不强行复制到 64 卦。
+  </p>
+  {% for source in related_sources %}
+  <div style="margin-bottom:6px">
+    <a href="{{ source.url }}">{{ source.title }}</a>
+    <span class="muted" style="font-size:12px"> · {{ source.mapping }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% else %}
 
 <form class="filter-bar" method="get">
@@ -105,6 +120,28 @@
   <a href="/canon/{{ book }}?chapter={{ chapter }}" style="font-size:13px">清除</a>
 </form>
 
+{% if unmatched_inline %}
+<div class="card" style="border-left:3px solid var(--wood)">
+  <h2>{% if pending_inline_alignment %}本章现代翻译 · 等待语义对齐{% else %}本章现代翻译/释译（整章）{% endif %}</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">
+    {% if pending_inline_alignment %}
+    现代译文仍按来源区块完整保留；模型对齐完成并人工复核后，才会挂回原文段落。
+    {% else %}
+    本章译文是整章连续行文，与原文段数不一致，系统不强行逐段配对；先读译文或对照下方原文均可。
+    {% endif %}
+  </p>
+  {% for s in unmatched_inline %}
+  <details class="canon-fold" open>
+    <summary><span class="badge {{ layer_badges[s.layer] }}">{% if s.layer == '现代白话' and s.translation_source %}白话（{{ s.translation_source }}）{% else %}{{ layer_labels[s.layer] }}{% endif %}</span>{% if s.marker %} · {{ s.marker }}{% endif %} · 本章范围</summary>
+    <div class="canon-fold-body">
+      {% if s.alignment_status %}<div class="muted" style="font-size:11px;margin-bottom:5px">{{ s.alignment_status }} · {{ s.alignment_method }}</div>{% endif %}
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ s.text }}</div>
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="card">
   <h2>原著正文 · 第 {{ chapter }} 章{% if book_chapter_label %}（原书{{ book_chapter_label }}）{% endif %}{% if chapter_title %} · {{ chapter_title }}{% endif %}</h2>
   {% if book_chapter_label %}
@@ -120,6 +157,11 @@
     当前尚未导入现代释译；原文已经按卷、品分段，后续生成项目自有现代释译。
   </p>
   {% endif %}
+  {% if pending_inline_alignment %}
+  <p class="muted" style="font-size:12px;margin:-2px 0 10px;color:var(--warning,#a66b00)">
+    当前现代译文只按卷/品保存，尚未通过高级模型语义对齐；以下不会假装成逐段对应。
+  </p>
+  {% endif %}
   {% for s in original_segments %}
   <article style="margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
     <div class="muted" style="font-size:11px;margin-bottom:4px">原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}</div>
@@ -127,8 +169,11 @@
     {% set inline_items = inline_by_original[loop.index0] %}
     {% for aux in inline_items %}
     <details class="canon-fold" open style="margin:8px 0 0;border-color:rgba(74,163,111,.35)">
-      <summary><span class="badge {{ layer_badges[aux.layer] }}">{{ layer_labels[aux.layer] }}</span> · 默认展开</summary>
+      <summary><span class="badge {{ layer_badges[aux.layer] }}">{% if aux.layer == '现代白话' and aux.translation_source %}白话（{{ aux.translation_source }}）{% else %}{{ layer_labels[aux.layer] }}{% endif %}</span>{% if aux.marker %} · {{ aux.marker }}{% endif %}</summary>
       <div class="canon-fold-body" style="background:rgba(74,163,111,.05)">
+        {% if aux.alignment_status %}
+        <div class="muted" style="font-size:11px;margin-bottom:5px">{{ aux.alignment_status }} · {{ aux.alignment_method }}</div>
+        {% endif %}
         <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ aux.text }}</div>
       </div>
     </details>
@@ -139,31 +184,16 @@
   {% endfor %}
 </div>
 
-{% if unmatched_inline %}
-<div class="card">
-  <h2>本章级现代翻译/释译 · 默认展开</h2>
-  <p class="muted" style="font-size:12px;margin-bottom:8px">
-    本章译文段数与原文段数不一致，系统不强行逐段配对；以下保留原有范围，避免制造虚假的段落对应关系。
-  </p>
-  {% for s in unmatched_inline %}
-  <details class="canon-fold" open>
-    <summary><span class="badge {{ layer_badges[s.layer] }}">{{ layer_labels[s.layer] }}</span> · 本章范围</summary>
-    <div class="canon-fold-body"><div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ s.text }}</div></div>
-  </details>
-  {% endfor %}
-</div>
-{% endif %}
-
 <div class="card">
   <h2>辅助材料 · 点击展开</h2>
   <p class="muted" style="font-size:12px;margin-bottom:8px">
     {% if auxiliary_by_layer.get('现代白话') or auxiliary_by_layer.get('现代释译') %}
-    白话译文/现代释译与原著正文分开；原注、评注和站点内容均不自动视为原著规则。
+    白话译文/现代释译与原著正文分开；相关著作、原注、评注和站点内容均不自动视为原著规则。
     {% else %}
-    当前没有现代白话译文；原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
+    当前没有现代白话译文；相关著作、原注、评注和站点内容均与原著正文分开，不自动视为原著规则。
     {% endif %}
   </p>
-  {% for auxiliary_layer in ('原注', '评注', '站点内容') %}
+  {% for auxiliary_layer in ('原注', '评注', '相关著作', '站点内容') %}
   {% set items = auxiliary_by_layer.get(auxiliary_layer, []) %}
   {% if items %}
   <details class="canon-fold">
