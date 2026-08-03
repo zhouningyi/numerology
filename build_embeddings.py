@@ -27,6 +27,7 @@ TRANSLATIONS = Path("data/processed/nderf/translations.jsonl")
 HUAYAN_LAYERS = [
     ("原文", Path("data/processed/canon/layers/huayan_t0279_layers.jsonl")),
     ("现代释译", Path("data/processed/canon/layers/huayan_t0279_modern_layers.jsonl")),
+    ("现代释译", Path("data/processed/canon/layers/huayan_t0279_generated_layers.jsonl")),
 ]
 # 嵌入模型上限 8192 tokens；中文每字可达 1-2 token，4000 字符留足余量
 MAX_CHARS = 4000
