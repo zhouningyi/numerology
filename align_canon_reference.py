@@ -128,7 +128,13 @@ def align_segment(client, model, effort, orig_sents, ref_sents, cursor):
 def process_chapter(client, model, effort, chapter, segments, ref_text, done, out, lock, stats):
     ref_sents = split_sentences(ref_text)
     cursor = 0
+    # 期望游标：按原文字数累计比例推算参考位置——命中游标在偈颂等
+    # 译本处理差异处会停住，用期望值兜底避免后续窗口整体错位。
+    total_chars = sum(len(s.get("text", "")) for s in segments) or 1
+    consumed_chars = 0
     for segment in segments:
+        expected = int(len(ref_sents) * consumed_chars / total_chars)
+        consumed_chars += len(segment.get("text", ""))
         key = (str(chapter), str(segment.get("segment_index")))
         if key in done:
             continue
@@ -137,7 +143,8 @@ def process_chapter(client, model, effort, chapter, segments, ref_text, done, ou
             continue
         try:
             pairs, sources, cursor = align_segment(
-                client, model, effort, orig_sents, ref_sents, cursor
+                client, model, effort, orig_sents, ref_sents,
+                max(cursor, expected),
             )
         except Exception as exc:  # noqa: BLE001 —— 单段失败跳过，下段继续
             with lock:
