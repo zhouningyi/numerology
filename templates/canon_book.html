@@ -120,28 +120,6 @@
   <a href="/canon/{{ book }}?chapter={{ chapter }}" style="font-size:13px">清除</a>
 </form>
 
-{% if unmatched_inline %}
-<div class="card" style="border-left:3px solid var(--wood)">
-  <h2>{% if pending_inline_alignment %}本章现代翻译 · 等待语义对齐{% else %}本章现代翻译/释译（整章）{% endif %}</h2>
-  <p class="muted" style="font-size:12px;margin-bottom:8px">
-    {% if pending_inline_alignment %}
-    现代译文仍按来源区块完整保留；模型对齐完成并人工复核后，才会挂回原文段落。
-    {% else %}
-    本章译文是整章连续行文，与原文段数不一致，系统不强行逐段配对；先读译文或对照下方原文均可。
-    {% endif %}
-  </p>
-  {% for s in unmatched_inline %}
-  <details class="canon-fold" open>
-    <summary><span class="badge {{ layer_badges[s.layer] }}">{% if s.layer == '现代白话' and s.translation_source %}白话（{{ s.translation_source }}）{% else %}{{ layer_labels[s.layer] }}{% endif %}</span>{% if s.marker %} · {{ s.marker }}{% endif %} · 本章范围</summary>
-    <div class="canon-fold-body">
-      {% if s.alignment_status %}<div class="muted" style="font-size:11px;margin-bottom:5px">{{ s.alignment_status }} · {{ s.alignment_method }}</div>{% endif %}
-      <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ s.text }}</div>
-    </div>
-  </details>
-  {% endfor %}
-</div>
-{% endif %}
-
 <div class="card">
   <h2>原著正文 · 第 {{ chapter }} 章{% if book_chapter_label %}（原书{{ book_chapter_label }}）{% endif %}{% if chapter_title %} · {{ chapter_title }}{% endif %}</h2>
   {% if book_chapter_label %}
@@ -163,26 +141,49 @@
   </p>
   {% endif %}
   {% for s in original_segments %}
-  <article style="margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
-    <div class="muted" style="font-size:11px;margin-bottom:4px">原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}</div>
+  {% set inline_items = inline_by_original[loop.index0] %}
+  <article class="canon-seg{% if inline_items %} has-trans{% endif %}"
+           style="margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+    <div class="muted" style="font-size:11px;margin-bottom:4px">
+      原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}
+      {% if inline_items %}<span class="seg-trans-hint">悬停看译文 · 点击固定</span>{% endif %}
+    </div>
     <div class="canon-original" style="white-space:pre-wrap;font-size:15px;line-height:1.9">{{ s.text }}</div>
-    {% set inline_items = inline_by_original[loop.index0] %}
     {% for aux in inline_items %}
-    <details class="canon-fold" open style="margin:8px 0 0;border-color:rgba(74,163,111,.35)">
-      <summary><span class="badge {{ layer_badges[aux.layer] }}">{% if aux.layer == '现代白话' and aux.translation_source %}白话（{{ aux.translation_source }}）{% else %}{{ layer_labels[aux.layer] }}{% endif %}</span>{% if aux.marker %} · {{ aux.marker }}{% endif %}</summary>
-      <div class="canon-fold-body" style="background:rgba(74,163,111,.05)">
-        {% if aux.alignment_status %}
-        <div class="muted" style="font-size:11px;margin-bottom:5px">{{ aux.alignment_status }} · {{ aux.alignment_method }}</div>
-        {% endif %}
-        <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ aux.text }}</div>
+    <div class="seg-trans">
+      <div class="muted" style="font-size:11px;margin-bottom:4px">
+        <span class="badge {{ layer_badges[aux.layer] }}">{% if aux.translation_source %}{{ aux.layer }}（{{ aux.translation_source }}）{% else %}{{ layer_labels[aux.layer] }}{% endif %}</span>
       </div>
-    </details>
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.9">{{ aux.text }}</div>
+    </div>
     {% endfor %}
   </article>
   {% else %}
   <p class="muted">该章节没有可显示的原文段落。</p>
   {% endfor %}
 </div>
+
+{% if unmatched_inline %}
+<div class="card" style="border-left:3px solid var(--wood)">
+  <h2>{% if pending_inline_alignment %}本章现代翻译 · 等待语义对齐{% else %}本章现代翻译/释译（整章）{% endif %}</h2>
+  <p class="muted" style="font-size:12px;margin-bottom:8px">
+    {% if pending_inline_alignment %}
+    现代译文仍按来源区块完整保留；模型对齐完成并人工复核后，才会挂回原文段落。
+    {% else %}
+    本章译文是整章连续行文，与原文段数不一致，系统不强行逐段配对；先读译文或对照上方原文均可。
+    {% endif %}
+  </p>
+  {% for s in unmatched_inline %}
+  <details class="canon-fold" open>
+    <summary><span class="badge {{ layer_badges[s.layer] }}">{% if s.layer == '现代白话' and s.translation_source %}白话（{{ s.translation_source }}）{% elif s.layer == '现代释译' and s.translation_source %}现代释译（{{ s.translation_source }}）{% else %}{{ layer_labels[s.layer] }}{% endif %}</span>{% if s.marker %} · {{ s.marker }}{% endif %} · 本章范围</summary>
+    <div class="canon-fold-body">
+      {% if s.alignment_status %}<div class="muted" style="font-size:11px;margin-bottom:5px">{{ s.alignment_status }} · {{ s.alignment_method }}</div>{% endif %}
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.8">{{ s.text }}</div>
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
 
 <div class="card">
   <h2>辅助材料 · 点击展开</h2>
