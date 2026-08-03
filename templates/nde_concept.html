@@ -11,7 +11,7 @@
 </p>
 {% endif %}
 <p class="muted" style="font-size:12px;margin-bottom:6px">
-  当前页案例默认展开；英文原文中的彩色标记是模型概念证据句，颜色只区分概念，不代表真实性或强度。
+  点击每篇的"全文"可展开/折叠；彩色标记是模型概念证据句，颜色只区分概念，不代表真实性或强度。
 </p>
 {% if highlight_legend %}
 <div class="nde-highlight-legend" aria-label="本页重点颜色图例">
@@ -30,7 +30,7 @@
   <blockquote style="border-left:3px solid var(--yin);padding:3px 10px;margin:4px 0;font-size:13px;color:var(--text)">
     {{ r.concepts[key] }}
   </blockquote>
-  <details class="canon-fold lang-switch" open style="margin-top:4px">
+  <details class="canon-fold lang-switch" style="margin-top:4px">
     <summary style="cursor:pointer;font-size:13px" class="muted">全文（重点已着色）</summary>
     <div style="padding:8px 0 0">
       {% if r.translation_zh_html %}

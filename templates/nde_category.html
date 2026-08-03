@@ -6,7 +6,7 @@
   <a href="/nde">← 返回现象分类</a> · {{ spec.description }} · 共 {{ total }} 篇 · 每页 {{ page_size }} 篇
 </p>
 <p class="muted" style="font-size:12px;margin-bottom:6px">
-  当前页案例默认展开；英文原文中的彩色标记是模型概念证据句，颜色只区分概念，不代表真实性或强度。
+  点击每篇的"全文"可展开/折叠；彩色标记是模型概念证据句，颜色只区分概念，不代表真实性或强度。
 </p>
 {% if highlight_legend %}
 <div class="nde-highlight-legend" aria-label="本页重点颜色图例">
@@ -25,7 +25,7 @@
   <div style="font-size:13px;margin-bottom:4px">
     <span class="muted">问卷证据：</span>{{ r.categories[key] }}
   </div>
-  <details class="canon-fold lang-switch" open style="margin-top:4px">
+  <details class="canon-fold lang-switch" style="margin-top:4px">
     <summary style="cursor:pointer;font-size:13px">全文（重点已着色）</summary>
     <div style="padding:8px 0 0">
       {% if r.translation_zh_html %}
