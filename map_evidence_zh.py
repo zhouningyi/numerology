@@ -28,6 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 TRANSLATIONS = Path("data/processed/nderf/translations.jsonl")
+CONCEPTS_V2 = Path("data/processed/nderf/concepts_v2.jsonl")
 OUTPUT = Path("data/processed/nderf/evidence_zh.jsonl")
 
 SYSTEM_PROMPT = """下面给你一篇濒死体验中文译文的编号句子列表，以及若干英文证据句（键为概念）。
@@ -61,7 +62,7 @@ def load_mapped() -> dict[str, dict]:
     return mapped
 
 
-def map_one(client, model: str, record: dict) -> dict[str, str]:
+def map_one(client, model: str, effort: str | None, record: dict) -> dict[str, str]:
     sentences = split_sentences(record["zh"])
     if not sentences:
         return {}
@@ -70,15 +71,20 @@ def map_one(client, model: str, record: dict) -> dict[str, str]:
         "中文句子列表：\n" + numbered +
         "\n\n英文证据句：\n" + json.dumps(record["concepts"], ensure_ascii=False)
     )
-    response = client.chat.completions.create(
-        model=model,
-        response_format={"type": "json_object"},
-        messages=[
+    kwargs = {
+        "model": model,
+        "response_format": {"type": "json_object"},
+        "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": payload},
         ],
-        temperature=0,
-    )
+    }
+    if model.startswith("gpt-5"):
+        if effort:
+            kwargs["reasoning_effort"] = effort
+    else:
+        kwargs["temperature"] = 0
+    response = client.chat.completions.create(**kwargs)
     raw = json.loads(response.choices[0].message.content)
     result: dict[str, str] = {}
     for key in record["concepts"]:
@@ -99,18 +105,33 @@ def map_one(client, model: str, record: dict) -> dict[str, str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", default=None,
-                        help="缺省：普通模式 gpt-4o-mini，repair 模式 gpt-4o")
+    parser.add_argument("--model", default="gpt-5-mini")
+    parser.add_argument("--reasoning-effort", default="minimal",
+                        help="选句任务较简单，minimal 档足够且最快")
+    parser.add_argument("--workers", type=int, default=12)
     parser.add_argument("--repair", action="store_true",
-                        help="用高级模型重做圈注不全的案例")
+                        help="重做圈注数少于概念数的案例（升级 gpt-5）")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    model = args.model or ("gpt-4o" if args.repair else "gpt-4o-mini")
+    model = args.model if not args.repair else (
+        args.model if args.model != "gpt-5-mini" else "gpt-5"
+    )
 
     load_dotenv()
     with TRANSLATIONS.open(encoding="utf-8") as handle:
         records = [json.loads(line) for line in handle]
+    # 概念以 v2 严格重标为准
+    concepts_v2 = {}
+    if CONCEPTS_V2.exists():
+        with CONCEPTS_V2.open(encoding="utf-8") as handle:
+            for line in handle:
+                row = json.loads(line)
+                concepts_v2[row["slug"]] = row.get("concepts", {})
+    for record in records:
+        if record["slug"] in concepts_v2:
+            record["concepts"] = concepts_v2[record["slug"]]
+
     mapped = load_mapped()
     if args.repair:
         todo = [
@@ -125,37 +146,47 @@ def main() -> None:
         ]
     if args.limit:
         todo = todo[: args.limit]
-    est_tokens = sum(len(r["zh"]) + 300 for r in todo) / 3
-    price_in, price_out = (2.5, 10.0) if model.startswith("gpt-4o") and "mini" not in model else (0.15, 0.6)
     logger.info(
-        f"模式={'repair' if args.repair else 'normal'} 模型={model} 待处理 {len(todo)} 篇；"
-        f"预估费用约 ${est_tokens/1e6*price_in + est_tokens*0.1/1e6*price_out:.2f}"
+        f"模式={'repair' if args.repair else 'normal'} 模型={model} "
+        f"档位={args.reasoning_effort} 并发={args.workers} 待处理 {len(todo)} 篇"
     )
     if args.dry_run:
         return
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from threading import Lock
 
     from openai import OpenAI
 
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     count = fail = 0
-    with OUTPUT.open("a", encoding="utf-8") as out:
-        for record in todo:
+    lock = Lock()
+    with OUTPUT.open("a", encoding="utf-8") as out, ThreadPoolExecutor(
+        max_workers=args.workers
+    ) as pool:
+        futures = {
+            pool.submit(map_one, client, model, args.reasoning_effort, r): r
+            for r in todo
+        }
+        for future in as_completed(futures):
+            record = futures[future]
             try:
-                concepts_zh = map_one(client, model, record)
-                out.write(json.dumps(
-                    {"slug": record["slug"], "concepts_zh": concepts_zh,
-                     "model": model},
-                    ensure_ascii=False,
-                ) + "\n")
-                count += 1
-                if count % 100 == 0:
-                    out.flush()
-                    logger.info(f"进度 {count}/{len(todo)}（失败 {fail}）")
+                concepts_zh = future.result()
+                with lock:
+                    out.write(json.dumps(
+                        {"slug": record["slug"], "concepts_zh": concepts_zh,
+                         "model": model},
+                        ensure_ascii=False,
+                    ) + "\n")
+                    count += 1
+                    if count % 200 == 0:
+                        out.flush()
+                        logger.info(f"进度 {count}/{len(todo)}（失败 {fail}）")
             except Exception as exc:  # noqa: BLE001 —— 单篇失败不中断批量
-                fail += 1
-                logger.warning(f"{record['slug']} 失败: {exc}")
-                time.sleep(2)
+                with lock:
+                    fail += 1
+                logger.warning(f"{record['slug']} 失败: {str(exc)[:120]}")
     logger.info(f"完成：映射 {count} 篇，失败 {fail} -> {OUTPUT}")
 
 

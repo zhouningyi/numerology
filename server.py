@@ -1312,13 +1312,21 @@ def load_nde_concepts() -> dict:
 
 
 NDE_EVIDENCE_ZH_PATH = BASE_DIR / "data" / "processed" / "nderf" / "evidence_zh.jsonl"
+NDE_CONCEPTS_V2_PATH = BASE_DIR / "data" / "processed" / "nderf" / "concepts_v2.jsonl"
 
 
 def load_nde_experiences() -> list[dict]:
-    """案例记录合并翻译、概念标注与中文证据映射（各自独立增量文件）。"""
+    """案例记录合并翻译、概念标注与中文证据映射（各自独立增量文件）。
+
+    概念以 v2（严格判据重标）为准；v2 未覆盖的案例回退首轮标注。
+    """
     records = _load_jsonl_cached(NDE_EXPERIENCES_PATH)
     translations = {
         row["slug"]: row for row in _load_jsonl_cached(NDE_TRANSLATIONS_PATH)
+    }
+    concepts_v2 = {
+        row["slug"]: row.get("concepts", {})
+        for row in _load_jsonl_cached(NDE_CONCEPTS_V2_PATH)
     }
     evidence_zh = {
         row["slug"]: row.get("concepts_zh", {})
@@ -1326,13 +1334,17 @@ def load_nde_experiences() -> list[dict]:
     }
     for record in records:
         extra = translations.get(record["slug"])
-        if extra:
-            record["translations"] = {"中文": extra.get("zh", "")}
+        record["translations"] = (
+            {"中文": extra.get("zh", "")} if extra and extra.get("zh") else {}
+        )
+        slug = record["slug"]
+        if slug in concepts_v2:
+            record["concepts"] = concepts_v2[slug]
+        elif extra:
             record["concepts"] = extra.get("concepts", {})
         else:
-            record.setdefault("translations", {})
-            record.setdefault("concepts", {})
-        record["concepts_zh"] = evidence_zh.get(record["slug"], {})
+            record["concepts"] = {}
+        record["concepts_zh"] = evidence_zh.get(slug, {})
     return records
 
 
