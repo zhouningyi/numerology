@@ -66,6 +66,8 @@ _SECTION_ALIASES = {
     "彖传": "彖传",
     "象": "象传",
     "象传": "象传",
+    "大象": "大象",
+    "小象": "小象",
     "文言": "文言传",
     "文言传": "文言传",
     "用九": "用九",
@@ -186,18 +188,28 @@ def missing_prov_if(item: dict) -> bool:
 
 
 def normalize_section_key(key: str | None) -> str | None:
-    """周易结构键规范化：文言传（节要）→ 文言传。"""
+    """周易结构键规范化：文言传（节要）→ 文言传；初九_小象 保留。"""
     if not key:
         return None
     text = _SECTION_PAREN_RE.sub("", str(key)).strip()
     text = re.sub(r"\s+", "", text)
+    # 爻级小象：初九_小象 / 初九象
+    yao_xiang = re.fullmatch(
+        r"(初九|九二|九三|九四|九五|上九|初六|六二|六三|六四|六五|上六|用九|用六)"
+        r"(?:_?小?象)",
+        text,
+    )
+    if yao_xiang:
+        return f"{yao_xiang.group(1)}_小象"
     if text in _YAO_KEYS:
         return text
     if text in _SECTION_ALIASES:
         return _SECTION_ALIASES[text]
-    # 以爻名开头的键
+    # 以爻名开头的键（保留纯爻优先，便于白话六爻挂接）
     for yao in _YAO_KEYS:
         if text.startswith(yao):
+            if "象" in text[len(yao):]:
+                return f"{yao}_小象"
             return yao
     return text or None
 
@@ -278,14 +290,19 @@ def resolve_inline_alignment(
             method = "section_key"
             used_slots: dict[str, int] = defaultdict(int)
             for item, key in keyed_items:
-                slots = keyed_original.get(key) or []
+                # 白话“象传”优先挂大象；无大象时回退到第一条象传
+                candidates = list(keyed_original.get(key) or [])
+                if key == "象传" and not candidates:
+                    candidates = list(keyed_original.get("大象") or [])
+                if key == "大象" and not candidates:
+                    candidates = list(keyed_original.get("象传") or [])
+                # 白话爻辞不挂小象；小象单独键
                 slot_i = used_slots[key]
-                if slot_i < len(slots):
-                    inline_by_original[slots[slot_i]].append(item)
+                if slot_i < len(candidates):
+                    inline_by_original[candidates[slot_i]].append(item)
                     used_slots[key] += 1
-                elif slots:
-                    # 额外白话挂到该键最后一个原文段（拆译）
-                    inline_by_original[slots[-1]].append(item)
+                elif candidates:
+                    inline_by_original[candidates[-1]].append(item)
                 else:
                     unmatched.append(item)
         else:
@@ -326,6 +343,11 @@ def audit_nde(base: Path | None = None) -> dict:
     experiences = _read_jsonl(base / "experiences.jsonl")
     translations = _read_jsonl(base / "translations.jsonl")
     evidence_zh = _read_jsonl(base / "evidence_zh.jsonl")
+    concepts_v2_rows = _read_jsonl(base / "concepts_v2.jsonl")
+    concepts_v2 = {
+        row["slug"]: row.get("concepts") or {}
+        for row in concepts_v2_rows if row.get("slug")
+    }
 
     from numerology.nde.parser import classify, load_phenomena
 
@@ -357,16 +379,29 @@ def audit_nde(base: Path | None = None) -> dict:
                 })
 
     tr_by_slug = {r["slug"]: r for r in translations if "slug" in r}
-    ev_by_slug = {r["slug"]: r.get("concepts_zh") or {} for r in evidence_zh if "slug" in r}
-    concepted = [r for r in translations if r.get("concepts")]
+    # evidence 追加文件以最后一条为准
+    ev_by_slug: dict[str, dict] = {}
+    for row in evidence_zh:
+        if row.get("slug"):
+            ev_by_slug[row["slug"]] = row.get("concepts_zh") or {}
+
+    # 与 map_evidence_zh 一致：有 v2 概念时以 v2 为准
+    def active_concepts(record: dict) -> dict:
+        slug = record.get("slug")
+        if slug in concepts_v2:
+            return concepts_v2[slug] or {}
+        return record.get("concepts") or {}
+
+    concepted = [r for r in translations if active_concepts(r)]
     incomplete_evidence = 0
     missing_evidence = 0
     for row in concepted:
+        concepts = active_concepts(row)
         zh = ev_by_slug.get(row["slug"])
         if zh is None:
             missing_evidence += 1
             continue
-        if len(zh) < len(row["concepts"]):
+        if len(zh) < len(concepts):
             incomplete_evidence += 1
 
     gift_yes_est = 0
@@ -453,20 +488,40 @@ def audit_yijing(layers_dir: Path | None = None) -> dict:
         moderns = [s for s in segs if s.get("layer") == "现代白话"]
         o_keys = [normalize_section_key(s.get("section_key")) for s in originals]
         m_keys = [normalize_section_key(s.get("section_key")) for s in moderns]
-        o_set = {k for k in o_keys if k}
-        m_set = {k for k in m_keys if k}
+        # join 用可比键：小象不要求白话对应；象传↔大象互通
+        def joinable(keys: list[str | None]) -> set[str]:
+            out: set[str] = set()
+            for key in keys:
+                if not key:
+                    continue
+                if key.endswith("_小象"):
+                    continue
+                if key in {"象传", "大象"}:
+                    out.add("大象")
+                else:
+                    out.add(key)
+            return out
+
+        o_join = joinable(o_keys)
+        m_join = joinable(m_keys)
         if originals and moderns:
-            if o_keys == m_keys:
+            if o_join and o_join == m_join:
                 exact += 1
                 status = "exact"
-            elif o_set & m_set:
+            elif o_join & m_join:
                 partial += 1
                 status = "partial"
             else:
                 none += 1
                 status = "none"
-            yao_orig = [k for k in o_keys if k in _YAO_KEYS and k not in {"用九", "用六"}]
-            yao_mod = [k for k in m_keys if k in _YAO_KEYS and k not in {"用九", "用六"}]
+            yao_orig = [
+                k for k in o_keys
+                if k in _YAO_KEYS and k not in {"用九", "用六"}
+            ]
+            yao_mod = [
+                k for k in m_keys
+                if k in _YAO_KEYS and k not in {"用九", "用六"}
+            ]
             join_rows.append({
                 "chapter": chapter,
                 "status": status,
@@ -475,6 +530,7 @@ def audit_yijing(layers_dir: Path | None = None) -> dict:
                 "yao_join": len(set(yao_orig) & set(yao_mod)),
                 "yao_original": len(set(yao_orig)),
                 "yao_modern": len(set(yao_mod)),
+                "joinable_overlap": len(o_join & m_join),
             })
             if len(set(yao_orig)) < 6:
                 structure_gaps.append({
@@ -646,11 +702,30 @@ def run_all_audits(
     return report
 
 
+def _coerce_segment_index(value) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    text = str(value).strip()
+    if text.startswith("gen-"):
+        text = text[4:]
+    try:
+        return int(text)
+    except (TypeError, ValueError):
+        return None
+
+
 def normalize_generated_huayan_rows(rows: list[dict]) -> list[dict]:
     """把华严 generated 层降到可审计候选态。"""
     output = []
     for row in rows:
         item = dict(row)
+        # 跳过其他流水线的试验产物
+        if item.get("layer") and item.get("layer") != "现代释译":
+            continue
+        if "pairs" in item and not item.get("text"):
+            continue
         missing = missing_prov_if(item)
         if missing:
             item["review_status"] = REVIEW_CANDIDATE
@@ -669,10 +744,18 @@ def normalize_generated_huayan_rows(rows: list[dict]) -> list[dict]:
                 item["confidence"] = CONFIDENCE_LOW
                 item["alignment_status"] = item.get("alignment_status") or STATUS_LABELS[REVIEW_CANDIDATE]
             item = apply_quality_fields(item, pipeline="translate_huayan_segments")
-        # 统一挂接字段
-        if item.get("original_segment_index") is None and item.get("segment_index") is not None:
-            if not item.get("original_segment_indices"):
-                item["original_segment_index"] = item["segment_index"]
-                item["original_segment_indices"] = [item["segment_index"]]
+        # 统一挂接字段（兼容 segment_index="gen-12" 历史形态）
+        original = item.get("original_segment_index")
+        if original is None and item.get("original_segment_indices"):
+            original = item["original_segment_indices"][0]
+        if original is None:
+            original = _coerce_segment_index(item.get("segment_index"))
+        original = _coerce_segment_index(original)
+        if original is not None:
+            item["original_segment_index"] = original
+            item["original_segment_indices"] = [original]
+            item["segment_index"] = original
+        if item.get("review_status") != REVIEW_HUMAN_VERIFIED:
+            item["confidence"] = CONFIDENCE_LOW
         output.append(item)
     return output

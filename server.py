@@ -23,6 +23,14 @@ from numerology.corpus_quality import (
     apply_quality_fields,
     resolve_inline_alignment,
 )
+from numerology.corpus_review import (
+    append_review,
+    apply_reviews_to_rows,
+    build_review_record,
+    find_row_by_unit_key,
+    load_reviews,
+    unit_key_from_row,
+)
 from numerology.nde.parser import load_phenomena
 from numerology.nde.search import EmbeddingIndex, MATRIX_PATH as NDE_MATRIX_PATH
 from translate_nderf import load_dotenv
@@ -612,6 +620,11 @@ def load_canon_layers(book: str) -> list[dict]:
     related_path = CANON_LAYERS_DIR / f"{book}_related_layers.jsonl"
     if related_path.exists():
         rows.extend(_load_jsonl_cached(related_path))
+    # 人工复核覆盖（sidecar，重跑 pipeline 不丢）
+    rows = apply_reviews_to_rows(book, rows)
+    for row in rows:
+        if row.get("layer") in {"现代白话", "现代释译"}:
+            row["unit_key"] = unit_key_from_row(book, row)
     return rows
 
 
@@ -1242,6 +1255,38 @@ def canon_rules(school):
     )
 
 
+@app.route("/canon/<book>/review", methods=["POST"])
+def canon_translation_review(book: str):
+    """写回一条现代白话/现代释译的人工复核结果。"""
+    if book not in CANON_BOOKS:
+        abort(404)
+    action = (request.form.get("action") or "").strip()
+    unit = (request.form.get("unit_key") or "").strip()
+    note = (request.form.get("review_note") or "").strip()
+    chapter = request.form.get("chapter", type=int)
+    if action not in {"verify", "reject", "reset"} or not unit:
+        abort(400)
+    segments = load_canon_layers(book)
+    # load 已叠加旧复核；找底稿时用未覆盖的 identity 字段匹配
+    row = find_row_by_unit_key(book, segments, unit)
+    if row is None:
+        abort(404)
+    try:
+        record = build_review_record(book, row, action, note=note)
+    except ValueError:
+        abort(400)
+    append_review(book, record)
+    # 清 jsonl 缓存，使下一次请求读到新复核
+    for path in list(_JSONL_CACHE.keys()):
+        if book in path.name:
+            _JSONL_CACHE.pop(path, None)
+    # 复核文件本身不在 jsonl cache 里，但 load_reviews 每次读盘；无需额外清
+    target = f"/canon/{book}"
+    if chapter is not None:
+        target += f"?chapter={chapter}"
+    return redirect(f"{target}#unit-{unit.replace('|', '-')}")
+
+
 @app.route("/canon/rules/<school>/<rule_id>", methods=["POST"])
 def canon_rule_review(school, rule_id):
     """写回一条规则的人工校勘结果（verified_stems / 状态 / 备注）。"""
@@ -1355,7 +1400,27 @@ def load_nde_experiences() -> list[dict]:
         else:
             record["concepts"] = {}
         record["concepts_zh"] = evidence_zh.get(slug, {})
+        record["nde_meta"] = extract_nde_metadata(record)
     return records
+
+
+def extract_nde_metadata(record: dict) -> dict:
+    """从标准问卷提取列表卡片需要的一行登记元数据。"""
+    values = {}
+    for pair in record.get("qa", []):
+        question = (pair.get("q") or "").strip().lower()
+        answer = (pair.get("a") or "").strip()
+        if not answer:
+            continue
+        if question == "gender" and "gender" not in values:
+            values["gender"] = answer.splitlines()[0].strip()
+        elif question == "date nde occurred" and "date" not in values:
+            values["date"] = answer.splitlines()[0].strip()
+    return {
+        "date": values.get("date", "未登记"),
+        "gender": values.get("gender", "未登记"),
+        "registration": record.get("classification") or "NDERF案例",
+    }
 
 
 def prepare_nde_rows(
@@ -1452,56 +1517,12 @@ def build_nde_tag_groups(
     return groups
 
 
-@app.route("/nde")
-def nde_dashboard():
-    """濒死探索总览：按现象大类索引全部案例。"""
-    experiences = load_nde_experiences()
+def _render_nde_explorer():
+    """统一的濒死标签入口：全部案例、标签组与文章流在同一页。"""
     phenomena = load_phenomena()
-    category_counts = {}
-    for record in experiences:
-        for key in record.get("categories", {}):
-            category_counts[key] = category_counts.get(key, 0) + 1
-    classification_counts = {}
-    for record in experiences:
-        cls = record.get("classification") or "未标注"
-        classification_counts[cls] = classification_counts.get(cls, 0) + 1
-    categories = [
-        {"key": key, "name": spec["name"], "description": spec["description"],
-         "count": category_counts.get(key, 0)}
-        for key, spec in phenomena.items()
-    ]
-    categories.sort(key=lambda c: -c["count"])
-    concept_specs = load_nde_concepts()
-    concept_counts = {}
-    for record in experiences:
-        for key in record.get("concepts", {}):
-            concept_counts[key] = concept_counts.get(key, 0) + 1
-    concepts = [
-        {"key": key, "name": spec["name"], "description": spec["description"],
-         "parallel": spec.get("parallel", ""), "count": concept_counts.get(key, 0)}
-        for key, spec in concept_specs.items()
-    ]
-    concepts.sort(key=lambda c: -c["count"])
-    translated = sum(1 for r in experiences if r.get("translations"))
-    return render_template(
-        "nde.html", total=len(experiences), categories=categories,
-        concepts=concepts, translated=translated,
-        classification_counts=sorted(
-            classification_counts.items(), key=lambda kv: -kv[1]
-        )[:12],
-    )
-
-
-@app.route("/nde/category/<key>")
-def nde_category(key):
-    phenomena = load_phenomena()
-    if key not in phenomena:
-        abort(404)
     page = max(request.args.get("page", 1, type=int), 1)
     per_page = NDE_PAGE_SIZE
-    all_matched = [
-        r for r in load_nde_experiences() if key in r.get("categories", {})
-    ]
+    all_matched = load_nde_experiences()
     concept_specs = load_nde_concepts()
     tag_groups = build_nde_tag_groups(phenomena, concept_specs, all_matched)
     valid_tags = {
@@ -1540,12 +1561,30 @@ def nde_category(key):
         selected_concepts,
     )
     return render_template(
-        "nde_category.html", spec=phenomena[key], key=key, rows=rows,
+        "nde_category.html", scope_name="濒死探索",
+        scope_description="NDERF 公开案例的统一标签阅读入口",
+        scope_key=None, phenomena=phenomena, concept_specs=concept_specs,
+        tag_base_url="/nde", rows=rows,
         total=total, page=page, total_pages=total_pages,
         all_total=len(all_matched), highlight_legend=highlight_legend,
         page_size=per_page, tag_groups=tag_groups,
         selected_tags=selected_tags, selected_concepts=selected_concepts,
     )
+
+
+@app.route("/nde")
+def nde_dashboard():
+    """濒死探索入口：标签组固定在页眉，文章直接从下方开始。"""
+    return _render_nde_explorer()
+
+
+@app.route("/nde/category/<key>")
+def nde_category(key):
+    """兼容旧现象入口，将旧路径转成统一标签筛选。"""
+    phenomena = load_phenomena()
+    if key not in phenomena:
+        abort(404)
+    return redirect(f"/nde?tag=category:{key}")
 
 
 _EMBED_INDEX: tuple[float, EmbeddingIndex] | None = None
@@ -1594,25 +1633,11 @@ def nde_search():
 
 @app.route("/nde/concept/<key>")
 def nde_concept(key):
-    """概念标签页：表达某一世界观理解的案例索引（含原文证据句）。"""
+    """兼容旧概念入口，将旧路径转成统一标签筛选。"""
     concepts = load_nde_concepts()
     if key not in concepts:
         abort(404)
-    page = max(request.args.get("page", 1, type=int), 1)
-    per_page = NDE_PAGE_SIZE
-    matched = [
-        r for r in load_nde_experiences() if key in r.get("concepts", {})
-    ]
-    total = len(matched)
-    total_pages = math.ceil(total / per_page) if total else 1
-    rows, highlight_legend = prepare_nde_rows(
-        matched[(page - 1) * per_page : page * per_page], concepts
-    )
-    return render_template(
-        "nde_concept.html", spec=concepts[key], key=key, rows=rows,
-        total=total, page=page, total_pages=total_pages,
-        highlight_legend=highlight_legend, page_size=per_page,
-    )
+    return redirect(f"/nde?tag=concept:{key}")
 
 
 def highlight_evidence(text: str, evidences: list[dict]) -> str:

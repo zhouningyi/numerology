@@ -296,27 +296,65 @@ def split_yijing_segments(segments: list[dict]) -> list[dict]:
                 groups.append(current)
         # 卦爻正文和现代“六爻”译文继续细拆到初九、九二等，
         # 让页面可以做到一爻原文对应一爻译文；文言传不在这里强行拆分。
+        # 拆分后保留“象传/彖传”等非爻段；丢弃无正文的光杆“六爻：”。
         expanded_groups: list[list[str]] = []
         for group in groups:
             joined = "\n".join(group).strip()
             yao_parts = [part.strip() for part in YIJING_YAO_SPLIT_RE.split(joined) if part.strip()]
-            if not joined.startswith("文言曰") and len(yao_parts) >= 2:
-                expanded_groups.extend([[part] for part in yao_parts if YIJING_YAO_HEAD_RE.match(part)])
+            has_yao = any(YIJING_YAO_HEAD_RE.match(part) for part in yao_parts)
+            if (
+                not joined.startswith("文言曰")
+                and len(yao_parts) >= 2
+                and has_yao
+            ):
+                for part in yao_parts:
+                    if YIJING_YAO_HEAD_RE.match(part):
+                        expanded_groups.append([part])
+                        continue
+                    first = part.splitlines()[0].strip() if part else ""
+                    # 光杆六爻标题（爻体已被拆到后续 part）不单独占段
+                    if re.fullmatch(r"六爻\s*[：:]?", first) and len(part.splitlines()) == 1:
+                        continue
+                    if (
+                        YIJING_MODERN_HEADER_RE.match(first)
+                        or first.startswith(("彖曰", "象曰", "文言曰"))
+                        or part.strip()
+                    ):
+                        expanded_groups.append([part])
             else:
                 expanded_groups.append(group)
         groups = expanded_groups
+        last_yao: str | None = None
+        seen_yao = False
         for group_index, group in enumerate(groups):
             item = dict(segment)
             item["text"] = "\n".join(group)
-            item["section_key"] = _yijing_section_key(item["text"], item["layer"])
+            item["section_key"] = _yijing_section_key(
+                item["text"], item["layer"], last_yao=last_yao, seen_yao=seen_yao,
+            )
+            # 跟踪最近爻题，供后续“象曰”标为小象
+            yao_here = YIJING_YAO_HEAD_RE.match(item["text"].strip().splitlines()[0] if item["text"].strip() else "")
+            if yao_here:
+                last_yao = yao_here.group("label")
+                seen_yao = True
             output.append(item)
     for index, segment in enumerate(output):
         segment["segment_index"] = index
     return output
 
 
-def _yijing_section_key(text: str, layer: str) -> str | None:
-    """返回可用于原文—译文对照的保守结构键（已规范化）。"""
+def _yijing_section_key(
+    text: str,
+    layer: str,
+    *,
+    last_yao: str | None = None,
+    seen_yao: bool = False,
+) -> str | None:
+    """返回可用于原文—译文对照的保守结构键（已规范化）。
+
+    原文象曰：卦辞/彖后、未入爻前 → 大象；紧随爻辞 → {爻}_小象。
+    白话“象传”统一映射为大象，供与原文大象 join；小象不要求白话一一对应。
+    """
     from numerology.corpus_quality import normalize_section_key
 
     first = text.strip().splitlines()[0].strip() if text.strip() else ""
@@ -325,8 +363,15 @@ def _yijing_section_key(text: str, layer: str) -> str | None:
         match = YIJING_MODERN_HEADER_RE.match(first)
         if match:
             raw = re.split(r"[：:]", first, maxsplit=1)[0].strip()
+            # 网站“象传”对应大象（卦级），不是逐爻小象
+            if normalize_section_key(raw) == "象传":
+                return "大象"
+    if raw is None and first.startswith("象曰"):
+        if last_yao and seen_yao:
+            return normalize_section_key(f"{last_yao}_小象")
+        return "大象"
     if raw is None:
-        for key, prefix in (("彖传", "彖曰"), ("象传", "象曰"), ("文言传", "文言曰")):
+        for key, prefix in (("彖传", "彖曰"), ("文言传", "文言曰")):
             if first.startswith(prefix):
                 raw = key
                 break

@@ -134,3 +134,37 @@ def test_yijing_structural_sections_align_with_translation():
         "象曰：天行健。",
         "文言曰：元者，善之长也。",
     ]
+
+
+def test_yijing_distinguishes_daxiang_and_xiaoxiang():
+    """卦级象曰→大象；爻后象曰→爻_小象；白话象传→大象。"""
+    segments = [
+        {"book": "yijing", "chapter": 2, "layer": "原文", "confidence": "low", "marker": None,
+         "text": "坤：元亨。\n彖曰：至哉坤元。\n象曰：地势坤。\n初六：履霜坚冰至。\n象曰：履霜坚冰，阴始凝也。"},
+        {"book": "yijing", "chapter": 2, "layer": "现代白话", "confidence": "high", "marker": None,
+         "text": "卦辞：坤象征地。\n彖传：坤元广大。\n象传：地势顺厚。\n初六：踩到霜就知坚冰将至。"},
+    ]
+    result = split_yijing_segments(segments)
+    originals = [s for s in result if s["layer"] == "原文"]
+    moderns = [s for s in result if s["layer"] == "现代白话"]
+    assert [s["section_key"] for s in originals] == [
+        "卦辞", "彖传", "大象", "初六", "初六_小象",
+    ]
+    assert "大象" in [s["section_key"] for s in moderns]
+    assert "初六" in [s["section_key"] for s in moderns]
+
+
+def test_yijing_splits_each_yao_for_stepwise_translation():
+    segments = [
+        {"book": "yijing", "chapter": 1, "layer": "原文", "confidence": "low", "marker": None,
+         "text": "乾：元亨利贞。\n初九：潜龙勿用。\n九二：见龙在田，利见大人。"},
+        {"book": "yijing", "chapter": 1, "layer": "现代白话", "confidence": "high", "marker": None,
+         "text": "卦辞：乾卦象征天道刚健。\n六爻：初九，潜龙尚未出世。九二，龙已现于田野，宜见大人。"},
+    ]
+    result = split_yijing_segments(segments)
+    originals = [s for s in result if s["layer"] == "原文"]
+    translations = [s for s in result if s["layer"] == "现代白话"]
+    assert [s["section_key"] for s in originals] == ["卦辞", "初九", "九二"]
+    assert [s["section_key"] for s in translations] == ["卦辞", "初九", "九二"]
+    assert originals[1]["text"].startswith("初九")
+    assert translations[2]["text"].startswith("九二")

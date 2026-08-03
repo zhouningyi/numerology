@@ -242,6 +242,77 @@ def materialize(rows: list[dict]) -> None:
             }, ensure_ascii=False) + "\n")
 
 
+def list_missing(max_chars: int = 700) -> dict:
+    """统计尚未成功翻译的原文单元。
+
+    同时报告：
+    - translation_candidates 断点缺口（本脚本补跑入口）
+    - generated_layers 已物化覆盖（可能来自历史批量层）
+    """
+    originals = load_originals()
+    units = build_units(originals, None, None, max_chars, {})
+    done = load_done()
+    missing = []
+    for unit in units:
+        key = (unit["original_segment_index"], unit["unit_index"], unit["max_chars"])
+        row = done.get(key)
+        if not row or not row.get("translation"):
+            missing.append({
+                "original_segment_index": unit["original_segment_index"],
+                "unit_index": unit["unit_index"],
+                "volume": unit.get("volume"),
+                "chapter": unit.get("chapter"),
+                "chars": len(unit["source_text"]),
+                "preview": unit["source_text"][:40],
+            })
+    by_volume: dict[int, int] = {}
+    for item in missing:
+        vol = int(item.get("volume") or 0)
+        by_volume[vol] = by_volume.get(vol, 0) + 1
+
+    generated_covered: set[int] = set()
+    if LAYER_PATH.exists() and LAYER_PATH.stat().st_size:
+        for line in LAYER_PATH.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get("original_segment_indices"):
+                generated_covered.update(int(i) for i in row["original_segment_indices"])
+            elif row.get("original_segment_index") is not None:
+                generated_covered.add(int(row["original_segment_index"]))
+            elif row.get("segment_index") is not None:
+                generated_covered.add(int(row["segment_index"]))
+    original_ids = {
+        int(row["segment_index"])
+        for row in originals
+        if row.get("segment_index") is not None
+    }
+    layer_missing = sorted(original_ids - generated_covered)
+    return {
+        "total_units": len(units),
+        "candidate_missing_units": len(missing),
+        "candidate_done_with_translation": sum(
+            1 for row in done.values() if row.get("translation")
+        ),
+        "missing_by_volume": dict(sorted(by_volume.items())[:20]),
+        "missing_sample": missing[:20],
+        "generated_layers": {
+            "path": str(LAYER_PATH),
+            "original_segments": len(original_ids),
+            "covered": len(generated_covered & original_ids),
+            "missing": len(layer_missing),
+            "missing_sample": layer_missing[:20],
+        },
+        "hint": (
+            "补跑候选：--only-missing --limit N --materialize；"
+            "generated_layers 覆盖缺口才是阅读页缺译的直接来源"
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="qwen3:30b-a3b")
@@ -251,24 +322,43 @@ def main() -> None:
     parser.add_argument("--max-chars", type=int, default=700)
     parser.add_argument("--materialize", action="store_true")
     parser.add_argument("--retry", action="store_true", help="重做已有同参数结果")
+    parser.add_argument("--only-missing", action="store_true",
+                        help="只处理尚无成功译文的单元（默认即跳过已完成；此开关打印缺段摘要）")
+    parser.add_argument("--list-missing", action="store_true",
+                        help="只列出缺段统计，不调用模型")
     args = parser.parse_args()
     if args.max_chars < 100:
         raise SystemExit("--max-chars 不能小于 100")
+
+    if args.list_missing:
+        print(json.dumps(list_missing(args.max_chars), ensure_ascii=False, indent=2))
+        return
 
     units = build_units(
         load_originals(), args.chapter, args.start_segment, args.max_chars,
         load_reference(),
     )
+    done = load_done()
+    if args.only_missing:
+        units = [
+            unit for unit in units
+            if not done.get(
+                (unit["original_segment_index"], unit["unit_index"], unit["max_chars"]),
+                {},
+            ).get("translation")
+        ]
+        print(json.dumps({
+            "only_missing": True, "pending_units": len(units),
+        }, ensure_ascii=False))
     if args.limit:
         units = units[:args.limit]
-    done = load_done()
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     results = dict(done)
     new_count = 0
     with OUTPUT_PATH.open("a", encoding="utf-8") as handle:
         for unit in units:
             key = (unit["original_segment_index"], unit["unit_index"], unit["max_chars"])
-            if key in done and not args.retry:
+            if key in done and not args.retry and done[key].get("translation"):
                 continue
             started = time.time()
             try:

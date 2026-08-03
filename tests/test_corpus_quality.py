@@ -94,6 +94,18 @@ def test_resolve_inline_uses_normalized_section_key_and_rejects_equal_length():
     assert result2["inline_by_original"][0][0]["text"] == "文"
 
 
+def test_xiangzhuan_modern_joins_daxiang_original():
+    originals = [
+        {"segment_index": 1, "section_key": "大象", "text": "象曰：天行健。"},
+        {"segment_index": 2, "section_key": "初九_小象", "text": "象曰：潜龙勿用。"},
+    ]
+    inline = [{"section_key": "象传", "text": "天的运行刚健", "layer": "现代白话"}]
+    result = resolve_inline_alignment(originals, inline)
+    assert result["method"] == "section_key"
+    assert result["inline_by_original"][0][0]["text"] == "天的运行刚健"
+    assert result["inline_by_original"][1] == []
+
+
 def test_aftereffects_gifts_accepts_yes_and_rejects_no_acquire():
     yes_qa = [{
         "q": "Did you have any psychic, paranormal or other special gifts following the experience that you did not have prior to the experience?",

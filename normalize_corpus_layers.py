@@ -22,10 +22,13 @@ LAYERS = Path("data/processed/canon/layers")
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> None:
+    """原子写回，避免并发读到半截文件。"""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    tmp.replace(path)
 
 
 def _backup(path: Path) -> Path | None:

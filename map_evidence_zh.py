@@ -103,6 +103,45 @@ def map_one(client, model: str, effort: str | None, record: dict) -> dict[str, s
     return result
 
 
+def compact_evidence_file() -> dict:
+    """把追加式 evidence_zh 压成每 slug 一条（保留最后一次）。"""
+    mapped = load_mapped()
+    if not OUTPUT.exists() and not mapped:
+        return {"slugs": 0, "written": False}
+    bak = OUTPUT.with_suffix(".jsonl.bak")
+    if OUTPUT.exists():
+        import shutil
+        shutil.copy2(OUTPUT, bak)
+    with OUTPUT.open("w", encoding="utf-8") as handle:
+        for slug, concepts_zh in sorted(mapped.items()):
+            handle.write(json.dumps(
+                {"slug": slug, "concepts_zh": concepts_zh, "compacted": True},
+                ensure_ascii=False,
+            ) + "\n")
+    return {"slugs": len(mapped), "written": True, "backup": str(bak)}
+
+
+def build_todo(records: list[dict], mapped: dict[str, dict], mode: str) -> list[dict]:
+    """mode: missing | incomplete | all_gaps | repair(legacy=incomplete)。"""
+    todo = []
+    for record in records:
+        if not record.get("zh") or not record.get("concepts"):
+            continue
+        slug = record["slug"]
+        have = mapped.get(slug)
+        n_concepts = len(record["concepts"])
+        if mode == "missing":
+            if have is None:
+                todo.append(record)
+        elif mode in {"incomplete", "repair"}:
+            if have is not None and len(have) < n_concepts:
+                todo.append(record)
+        else:  # all_gaps
+            if have is None or len(have) < n_concepts:
+                todo.append(record)
+    return todo
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="gpt-5-mini")
@@ -111,12 +150,30 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=12)
     parser.add_argument("--repair", action="store_true",
                         help="重做圈注数少于概念数的案例（升级 gpt-5）")
+    parser.add_argument(
+        "--mode",
+        choices=["missing", "incomplete", "all_gaps", "repair"],
+        default=None,
+        help="missing=完全无中文圈注；incomplete=键不全；all_gaps=二者；默认无参=missing",
+    )
+    parser.add_argument("--compact", action="store_true",
+                        help="仅压实 evidence_zh.jsonl（每 slug 保留最后一条）")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    model = args.model if not args.repair else (
-        args.model if args.model != "gpt-5-mini" else "gpt-5"
-    )
+
+    if args.compact:
+        print(json.dumps(compact_evidence_file(), ensure_ascii=False))
+        return
+
+    mode = args.mode
+    if mode is None:
+        mode = "repair" if args.repair else "missing"
+    model = args.model
+    if mode in {"incomplete", "repair", "all_gaps"} and args.model == "gpt-5-mini":
+        # 补缺/修复默认升一档，可用 --model 覆盖
+        if args.repair or mode in {"incomplete", "all_gaps"}:
+            model = "gpt-5" if args.repair else args.model
 
     load_dotenv()
     with TRANSLATIONS.open(encoding="utf-8") as handle:
@@ -133,24 +190,18 @@ def main() -> None:
             record["concepts"] = concepts_v2[record["slug"]]
 
     mapped = load_mapped()
-    if args.repair:
-        todo = [
-            r for r in records
-            if r.get("zh") and r.get("concepts")
-            and len(mapped.get(r["slug"], {})) < len(r["concepts"])
-        ]
-    else:
-        todo = [
-            r for r in records
-            if r["slug"] not in mapped and r.get("zh") and r.get("concepts")
-        ]
+    todo = build_todo(records, mapped, mode)
     if args.limit:
         todo = todo[: args.limit]
     logger.info(
-        f"模式={'repair' if args.repair else 'normal'} 模型={model} "
-        f"档位={args.reasoning_effort} 并发={args.workers} 待处理 {len(todo)} 篇"
+        f"模式={mode} 模型={model} 档位={args.reasoning_effort} "
+        f"并发={args.workers} 待处理 {len(todo)} 篇 "
+        f"(已有圈注 slug={len(mapped)})"
     )
     if args.dry_run:
+        print(json.dumps({
+            "mode": mode, "todo": len(todo), "mapped_slugs": len(mapped),
+        }, ensure_ascii=False))
         return
 
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -176,7 +227,7 @@ def main() -> None:
                 with lock:
                     out.write(json.dumps(
                         {"slug": record["slug"], "concepts_zh": concepts_zh,
-                         "model": model},
+                         "model": model, "mode": mode},
                         ensure_ascii=False,
                     ) + "\n")
                     count += 1
