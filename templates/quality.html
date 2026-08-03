@@ -3,9 +3,76 @@
 {% block content %}
 <div class="quality-page">
 <h1 style="margin-bottom:6px">数据质量审计</h1>
+
+<div class="card" style="margin-bottom:14px">
+  <h2>翻译 / 映射质量（濒死 · 周易 · 华严）</h2>
+  {% if not corpus_report %}
+  <p class="muted">尚无语料映射审计。运行：</p>
+  <pre style="margin-top:8px;color:var(--text-muted)">python3 audit_corpus_mapping.py</pre>
+  <p class="muted" style="margin-top:8px;font-size:12px">
+    规范化历史层：<code>python3 normalize_corpus_layers.py</code> ·
+    重分类濒死现象：<code>python3 reclassify_nde.py</code>
+  </p>
+  {% else %}
+  <p class="muted" style="font-size:12px;margin-bottom:10px">
+    {{ corpus_report.checked_at }} · 规则 {{ corpus_report.rule_version }} ·
+    共 {{ corpus_report.flag_count }} 条标记
+    （{% for k,v in corpus_report.severity_counts.items() %}{{ k }}={{ v }}{% if not loop.last %} · {% endif %}{% endfor %}）
+  </p>
+  <table>
+    <tr><th>域</th><th>摘要</th><th>标记</th></tr>
+    {% set nde = corpus_report.domains.nde %}
+    <tr>
+      <td>濒死</td>
+      <td class="muted" style="font-size:12px">
+        案例 {{ nde.counts.experiences }} · 译文 {{ nde.counts.translations }}
+        · 译文率 {{ '%.1f'|format(nde.coverage.translation_rate * 100) }}%
+        · 中文证据率 {{ '%.1f'|format(nde.coverage.evidence_zh_rate * 100) }}%
+        · aftereffects {{ nde.counts.categories.get('aftereffects_gifts', 0) }}
+      </td>
+      <td>{{ nde.flags|length }}</td>
+    </tr>
+    {% set yj = corpus_report.domains.yijing %}
+    <tr>
+      <td>周易</td>
+      <td class="muted" style="font-size:12px">
+        段 {{ yj.counts.segments }} · 卦 {{ yj.counts.hexagrams }}
+        · join exact/partial/none = {{ yj.counts.join_exact }}/{{ yj.counts.join_partial }}/{{ yj.counts.join_none }}
+        · 东坡相关 {{ yj.counts.related_records }}
+      </td>
+      <td>{{ yj.flags|length }}</td>
+    </tr>
+    {% set hy = corpus_report.domains.huayan %}
+    <tr>
+      <td>华严</td>
+      <td class="muted" style="font-size:12px">
+        原文 {{ hy.layers.original.count }} · 网页白话 {{ hy.layers.modern_web.count }}
+        · 对齐 {{ hy.layers.aligned.count }} · 自译 {{ hy.layers.generated.count }}
+        · 自译覆盖 {{ hy.generated_coverage.covered }}/{{ hy.generated_coverage.original_segments }}
+        · 非法 high {{ hy.layers.generated.illegal_high }}
+      </td>
+      <td>{{ hy.flags|length }}</td>
+    </tr>
+  </table>
+  {% if corpus_report.flags %}
+  <table style="margin-top:10px">
+    <tr><th>级别</th><th>域</th><th>规则</th><th>说明</th></tr>
+    {% for flag in corpus_report.flags %}
+    <tr>
+      <td><span class="badge badge-{{ flag.severity }}">{{ severity_labels.get(flag.severity, flag.severity) }}</span></td>
+      <td>{{ flag.domain }}</td>
+      <td><code>{{ flag.code }}</code></td>
+      <td class="muted" style="font-size:12px">{{ flag.message }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  {% endif %}
+</div>
+
 {% if not run %}
 <div class="card">
-  <p>还没有持久化审计结果。先运行：</p>
+  <p>还没有人物/事件持久化审计结果。先运行：</p>
   <pre style="margin-top:10px;color:var(--text-muted)">python3 audit_data.py --persist</pre>
 </div>
 {% else %}

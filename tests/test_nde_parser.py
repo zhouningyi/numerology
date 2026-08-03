@@ -56,6 +56,24 @@ def test_negative_prefixes_are_rejected():
     assert "tunnel" in classify(qa)
 
 
+def test_negative_prefix_beats_positive_contains():
+    """否定应答优先于 positive_contains，避免 No…acquire 误阳。"""
+    qa = [{
+        "q": "Did you have any psychic, paranormal or other special gifts",
+        "a": "No, I did not acquire any gifts",
+    }]
+    assert "aftereffects_gifts" not in classify(qa)
+
+
+def test_no_longer_is_not_negative_answer():
+    from numerology.nde.parser import _is_negative_answer
+    assert _is_negative_answer("No, I did not")
+    assert _is_negative_answer("Uncertain")
+    assert not _is_negative_answer("No longer attached to my body")
+    assert not _is_negative_answer("Yes, I left my body")
+
+
+
 def test_html_to_lines_strips_scripts():
     lines = html_to_lines("<script>var x=1;</script><p>keep me</p>")
     assert lines == ["keep me"]

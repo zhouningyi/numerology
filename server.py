@@ -18,6 +18,11 @@ from flask import (
 )
 
 from process_canon_layers import BOOKS as CANON_BOOKS
+from numerology.corpus_quality import (
+    STATUS_LABELS as CORPUS_STATUS_LABELS,
+    apply_quality_fields,
+    resolve_inline_alignment,
+)
 from numerology.nde.parser import load_phenomena
 from numerology.nde.search import EmbeddingIndex, MATRIX_PATH as NDE_MATRIX_PATH
 from translate_nderf import load_dotenv
@@ -416,6 +421,17 @@ def person_detail(person_id):
     )
 
 
+def load_corpus_mapping_report() -> dict | None:
+    """读取濒死/周易/华严映射审计 latest 报告。"""
+    path = BASE_DIR / "data" / "audits" / "corpus_mapping_latest.json"
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 # ── 数据质量审计 ────────────────────────────────────────────────
 @app.route("/quality")
 def quality_dashboard():
@@ -426,6 +442,7 @@ def quality_dashboard():
     severity = request.args.get("severity", "")
     flag_code = request.args.get("flag_code", "")
     entity_type = request.args.get("entity_type", "")
+    corpus_report = load_corpus_mapping_report()
 
     runs = db.execute(
         "SELECT * FROM quality_audit_runs ORDER BY id DESC LIMIT 20"
@@ -446,6 +463,8 @@ def quality_dashboard():
             entity_type=entity_type, flag_codes=[],
             quality_labels=QUALITY_LABELS, entity_labels=ENTITY_LABELS,
             severity_labels=SEVERITY_LABELS,
+            corpus_report=corpus_report,
+            corpus_status_labels=CORPUS_STATUS_LABELS,
         )
 
     base_where = ["f.audit_run_id = ?"]
@@ -498,12 +517,15 @@ def quality_dashboard():
     ]
     total_pages = math.ceil(total / per_page) if total else 1
     db.close()
+    corpus_report = load_corpus_mapping_report()
     return render_template(
         "quality.html", run=run, runs=runs, counts=counts, flags=flags,
         total=total, page=page, total_pages=total_pages, severity=severity,
         flag_code=flag_code, entity_type=entity_type, flag_codes=flag_codes,
         quality_labels=QUALITY_LABELS, entity_labels=ENTITY_LABELS,
         severity_labels=SEVERITY_LABELS,
+        corpus_report=corpus_report,
+        corpus_status_labels=CORPUS_STATUS_LABELS,
     )
 
 
@@ -556,11 +578,15 @@ def _load_jsonl_cached(path: Path, slim=None) -> list[dict]:
 def load_canon_layers(book: str) -> list[dict]:
     rows = list(_load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl"))
     # 对齐完成后优先使用逐段模型结果；没有结果才显示卷/品级现代译文。
+    # 网页白话 / 模型对齐白话 / 项目自译 分栏保留，状态经 apply_quality_fields 降级。
     aligned_path = CANON_LAYERS_DIR / f"{book}_aligned_layers.jsonl"
     modern_path = CANON_LAYERS_DIR / f"{book}_modern_layers.jsonl"
     generated_path = CANON_LAYERS_DIR / f"{book}_generated_layers.jsonl"
     if aligned_path.exists() and aligned_path.stat().st_size:
-        aligned_rows = _load_jsonl_cached(aligned_path)
+        aligned_rows = [
+            apply_quality_fields(item, pipeline="align_canon_models")
+            for item in _load_jsonl_cached(aligned_path)
+        ]
         rows.extend(aligned_rows)
         aligned_keys = {
             (item.get("volume"), item.get("chapter"), item.get("source_file"))
@@ -568,14 +594,21 @@ def load_canon_layers(book: str) -> list[dict]:
         }
         if modern_path.exists():
             rows.extend(
-                item for item in _load_jsonl_cached(modern_path)
+                apply_quality_fields(item, pipeline="process_huayan_modern", force_candidate=True)
+                for item in _load_jsonl_cached(modern_path)
                 if (item.get("volume"), item.get("chapter"), item.get("source_file")) not in aligned_keys
             )
     elif modern_path.exists():
-        rows.extend(_load_jsonl_cached(modern_path))
+        rows.extend(
+            apply_quality_fields(item, pipeline="process_huayan_modern", force_candidate=True)
+            for item in _load_jsonl_cached(modern_path)
+        )
     # 项目自己的“小段独立翻译”与网站白话分开保存，均挂回原文段下方。
     if generated_path.exists() and generated_path.stat().st_size:
-        rows.extend(_load_jsonl_cached(generated_path))
+        rows.extend(
+            apply_quality_fields(item, pipeline="translate_huayan_segments")
+            for item in _load_jsonl_cached(generated_path)
+        )
     related_path = CANON_LAYERS_DIR / f"{book}_related_layers.jsonl"
     if related_path.exists():
         rows.extend(_load_jsonl_cached(related_path))
@@ -1016,8 +1049,8 @@ def canon_book(book):
         s for s in chapter_segments
         if s["layer"] == "原文" and (not confidence or s["confidence"] == confidence)
     ]
-    # 现代译文/释译只有在段落数相同、且顺序可确认时才内嵌到对应原文下方。
-    # 评注本常把整章译成一个大段，不能把它假装对应到每一段原文。
+    # 现代译文/释译：段号优先 → 规范化 section_key；禁止“段数相等即顺序对齐”。
+    # 华严：阅读时优先挂项目自译（现代释译），网页/对齐白话仍在 auxiliary 分栏。
     inline_layers = {"现代白话", "现代释译"}
     inline_items = [
         s for s in chapter_segments
@@ -1025,59 +1058,18 @@ def canon_book(book):
         and (not confidence or s["confidence"] == confidence)
         and (not layer or layer in inline_layers)
     ]
-    inline_by_original = [[] for _ in original_segments]
-    unmatched_inline = []
-    # 个人研究译本可能与原文段数不同；若处理层提供了原文全局段号，
-    # 优先使用它展示“一个原文段下挂一个译文组”，空缺段落保持空白。
-    original_positions = {
-        s.get("segment_index"): index
-        for index, s in enumerate(original_segments)
-        if s.get("segment_index") is not None
-    }
-    mapped_inline = [
-        s for s in inline_items
-        if s.get("original_segment_indices") or s.get("original_segment_index") is not None
-    ]
-    pending_unmapped = [
-        item for item in inline_items
-        if str(item.get("alignment_status", "")).startswith("待")
-        and not (item.get("original_segment_indices") or item.get("original_segment_index") is not None)
-    ]
-    inline_alignment_pending = bool(pending_unmapped)
-    if mapped_inline and original_positions:
-        for item in mapped_inline:
-            targets = item.get("original_segment_indices") or [item.get("original_segment_index")]
-            positions = [original_positions.get(index) for index in targets]
-            positions = [position for position in positions if position is not None]
-            if not positions or len(positions) != len(targets):
-                unmatched_inline.append(item)
-            else:
-                for position in positions:
-                    inline_by_original[position].append(item)
-        unmatched_inline.extend(
+    if book == "huayan_t0279":
+        generated_translations = [
             item for item in inline_items
-            if item not in mapped_inline
-        )
-    # 周易等结构化语料优先按保守的 section_key 对齐；无键时才使用等长顺序对齐。
-    elif inline_items:
-        keyed_original = {s.get("section_key"): i for i, s in enumerate(original_segments) if s.get("section_key")}
-        keyed_items = [s for s in inline_items if s.get("section_key")]
-        if keyed_items and len(keyed_items) == len(inline_items) and keyed_original:
-            used = set()
-            for item in inline_items:
-                index = keyed_original.get(item.get("section_key"))
-                if index is None or index in used:
-                    unmatched_inline.append(item)
-                else:
-                    inline_by_original[index].append(item)
-                    used.add(index)
-        elif len(inline_items) == len(original_segments):
-            for index, item in enumerate(inline_items):
-                inline_by_original[index].append(item)
-        else:
-            unmatched_inline = inline_items
-    if pending_unmapped:
-        unmatched_inline = [item for item in unmatched_inline if item in pending_unmapped]
+            if item["layer"] == "现代释译"
+        ]
+        if generated_translations:
+            inline_items = generated_translations
+    alignment_result = resolve_inline_alignment(original_segments, inline_items)
+    inline_by_original = alignment_result["inline_by_original"]
+    unmatched_inline = alignment_result["unmatched_inline"]
+    pending_unmapped = alignment_result["pending_unmapped"]
+    inline_alignment_pending = bool(pending_unmapped)
     auxiliary_by_layer = {}
     for auxiliary_layer in ("原注", "评注", "现代白话", "现代释译", "相关著作", "站点内容"):
         auxiliary_by_layer[auxiliary_layer] = [
@@ -1108,10 +1100,9 @@ def canon_book(book):
         calculation_scope=CANON_BOOKS[book].get("calculation_scope", "可进入命理研究流程"),
         layer_labels=LAYER_LABELS, layer_badges=LAYER_BADGES, alignment=alignment,
         related_sources=load_related_sources(book),
-        pending_inline_alignment=any(
-            str(item.get("alignment_status", "")).startswith("待")
-            for item in inline_items
-        ),
+        pending_inline_alignment=bool(pending_unmapped),
+        corpus_status_labels=CORPUS_STATUS_LABELS,
+        inline_align_method=alignment_result.get("method"),
     )
 
 
@@ -1306,6 +1297,25 @@ NDE_CONCEPT_COLORS = {
     "purpose_order": "lime",
 }
 
+# 濒死探索的标签组：标签组只负责组织阅读界面，小标签仍然可以独立筛选。
+# “亡灵”是现象标签的专题组，不把它误当作对体验真实性的判断。
+NDE_TAG_GROUP_DEFS = (
+    {"key": "phenomenon", "name": "现象", "kind": "category"},
+    {"key": "idea", "name": "理念", "kind": "concept"},
+    {
+        "key": "spirit", "name": "亡灵", "kind": "category",
+        "keys": {"beings", "deceased", "religious_figure", "god_awareness"},
+    },
+)
+NDE_CATEGORY_COLORS = {
+    "obe": "teal", "tunnel": "violet", "bright_light": "yellow",
+    "beings": "purple", "deceased": "indigo", "religious_figure": "orange",
+    "god_awareness": "orange", "other_world": "blue", "life_review": "green",
+    "boundary": "red", "time_distortion": "blue", "heightened_senses": "lime",
+    "special_knowledge": "orange", "future_scenes": "pink", "distressing": "red",
+    "aftereffects_gifts": "cyan",
+}
+
 
 def load_nde_concepts() -> dict:
     return yaml.safe_load(NDE_CONCEPTS_PATH.read_text(encoding="utf-8"))["concepts"]
@@ -1348,8 +1358,11 @@ def load_nde_experiences() -> list[dict]:
     return records
 
 
-def prepare_nde_rows(rows: list[dict], concept_specs: dict) -> tuple[list[dict], list[dict]]:
+def prepare_nde_rows(
+    rows: list[dict], concept_specs: dict, focus_concepts: list[str] | None = None
+) -> tuple[list[dict], list[dict]]:
     """为列表页准备原文证据高亮；不修改缓存中的原始记录。"""
+    focus = set(focus_concepts or [])
     prepared = []
     legend = {}
     for source in rows:
@@ -1362,7 +1375,7 @@ def prepare_nde_rows(rows: list[dict], concept_specs: dict) -> tuple[list[dict],
                 "color": NDE_CONCEPT_COLORS.get(key, "default"),
             }
             for key, evidence in record.get("concepts", {}).items()
-            if key in concept_specs and evidence
+            if key in concept_specs and evidence and (not focus or key in focus)
         ]
         record["description_html"] = highlight_evidence(
             record.get("description", ""), concept_tags
@@ -1376,7 +1389,7 @@ def prepare_nde_rows(rows: list[dict], concept_specs: dict) -> tuple[list[dict],
                 "color": NDE_CONCEPT_COLORS.get(key, "default"),
             }
             for key, sentence in record.get("concepts_zh", {}).items()
-            if key in concept_specs and sentence
+            if key in concept_specs and sentence and (not focus or key in focus)
         ]
         record["translation_zh_html"] = (
             highlight_evidence(zh_text, zh_tags) if zh_text else ""
@@ -1388,6 +1401,55 @@ def prepare_nde_rows(rows: list[dict], concept_specs: dict) -> tuple[list[dict],
             }
         prepared.append(record)
     return prepared, list(legend.values())
+
+
+def build_nde_tag_groups(
+    phenomena: dict, concept_specs: dict, rows: list[dict]
+) -> list[dict]:
+    """建立固定页眉中的标签组；数量只统计当前现象分类内的案例。"""
+    groups = []
+    for definition in NDE_TAG_GROUP_DEFS:
+        kind = definition["kind"]
+        if kind == "concept":
+            specs = concept_specs
+            keys = list(specs)
+            colors = NDE_CONCEPT_COLORS
+        else:
+            specs = phenomena
+            keys = list(definition.get("keys") or specs)
+            # “现象”组展示一般现象；亡灵专题组单独展示相关现象。
+            if definition["key"] == "phenomenon":
+                spirit_keys = next(
+                    group.get("keys", set()) for group in NDE_TAG_GROUP_DEFS
+                    if group["key"] == "spirit"
+                )
+                keys = [key for key in keys if key not in spirit_keys]
+            colors = NDE_CATEGORY_COLORS
+        items = []
+        for tag_key in keys:
+            spec = specs.get(tag_key)
+            if not spec:
+                continue
+            count = sum(
+                tag_key in (record.get("concepts", {}) if kind == "concept" else record.get("categories", {}))
+                for record in rows
+            )
+            if not count:
+                continue
+            items.append({
+                "key": tag_key,
+                "value": f"{kind}:{tag_key}",
+                "name": spec["name"],
+                "color": colors.get(tag_key, "default"),
+                "count": count,
+            })
+        if items:
+            groups.append({
+                "key": definition["key"],
+                "name": definition["name"],
+                "tags": items,
+            })
+    return groups
 
 
 @app.route("/nde")
@@ -1437,18 +1499,52 @@ def nde_category(key):
         abort(404)
     page = max(request.args.get("page", 1, type=int), 1)
     per_page = NDE_PAGE_SIZE
-    matched = [
+    all_matched = [
         r for r in load_nde_experiences() if key in r.get("categories", {})
     ]
+    concept_specs = load_nde_concepts()
+    tag_groups = build_nde_tag_groups(phenomena, concept_specs, all_matched)
+    valid_tags = {
+        item["value"]: item
+        for group in tag_groups for item in group["tags"]
+    }
+    selected_tags = []
+    for value in request.args.getlist("tag"):
+        if value in valid_tags and value not in selected_tags:
+            selected_tags.append(value)
+    # 兼容之前已经分享出去的 ?concept=... 链接。
+    for concept in request.args.getlist("concept"):
+        value = f"concept:{concept}"
+        if concept in concept_specs and value in valid_tags and value not in selected_tags:
+            selected_tags.append(value)
+    selected_concepts = [
+        value.split(":", 1)[1]
+        for value in selected_tags if value.startswith("concept:")
+    ]
+    selected_categories = [
+        value.split(":", 1)[1]
+        for value in selected_tags if value.startswith("category:")
+    ]
+    matched = (
+        [
+            r for r in all_matched
+            if all(concept in r.get("concepts", {}) for concept in selected_concepts)
+            and all(category in r.get("categories", {}) for category in selected_categories)
+        ]
+        if selected_tags else all_matched
+    )
     total = len(matched)
     total_pages = math.ceil(total / per_page) if total else 1
     rows, highlight_legend = prepare_nde_rows(
-        matched[(page - 1) * per_page : page * per_page], load_nde_concepts()
+        matched[(page - 1) * per_page : page * per_page], concept_specs,
+        selected_concepts,
     )
     return render_template(
         "nde_category.html", spec=phenomena[key], key=key, rows=rows,
         total=total, page=page, total_pages=total_pages,
-        highlight_legend=highlight_legend, page_size=per_page,
+        all_total=len(all_matched), highlight_legend=highlight_legend,
+        page_size=per_page, tag_groups=tag_groups,
+        selected_tags=selected_tags, selected_concepts=selected_concepts,
     )
 
 

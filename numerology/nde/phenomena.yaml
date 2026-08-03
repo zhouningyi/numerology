@@ -94,6 +94,11 @@ categories:
   aftereffects_gifts:
     name: 后续特殊能力
     description: 体验后自述出现通灵、预感等特殊能力
+    # 问卷问法随年代变化；阳性以 Yes / 明确获得能力为主，否定前缀由 classify 统一处理
     match:
       - question_contains: special gifts
-        positive_contains: [": yes", acquire]
+        positive_contains: ["yes", "acquire", "acquired", "developed", "psychic", "ability", "abilities", "gift"]
+      - question_contains: psychic, paranormal or other special
+        positive_contains: ["yes", "acquire", "acquired", "developed", "psychic", "ability", "abilities", "gift"]
+      - question_contains: special abilities
+        positive_contains: ["yes", "acquire", "acquired", "developed", "psychic", "ability", "abilities", "gift"]

@@ -17,7 +17,19 @@ NDE_DIR = Path(__file__).parent
 PHENOMENA_PATH = NDE_DIR / "phenomena.yaml"
 
 _TAG_RE = re.compile(r"<script.*?</script>|<style.*?</style>", re.S)
-_NEGATIVE_PREFIXES = ("no", "uncertain", "none", "don't know", "i did not", "unknown")
+# 词边界否定：no 后须是结束或标点/空白，且排除 "no longer"
+_NEGATIVE_RE = re.compile(
+    r"^(?:"
+    r"no(?! longer)(?=$|[\s,.:;!\-])|"
+    r"uncertain(?=$|[\s,.:;!\-])|"
+    r"none(?=$|[\s,.:;!\-])|"
+    r"n/?a(?=$|[\s,.:;!\-])|"
+    r"don't know|do not know|"
+    r"i did not|i didn't|"
+    r"unknown(?=$|[\s,.:;!\-])"
+    r")",
+    re.I,
+)
 
 
 def load_phenomena() -> dict:
@@ -86,13 +98,25 @@ def parse_experience(url: str, raw_html: str) -> dict | None:
     }
 
 
+def _is_negative_answer(answer: str) -> bool:
+    """整句是否以否定应答起头（词边界，避免 no longer 误杀）。"""
+    normalized = answer.strip().lower()
+    if not normalized:
+        return True
+    return bool(_NEGATIVE_RE.match(normalized))
+
+
 def _is_positive(answer: str, positive_contains: list[str] | None) -> bool:
+    """阳性判定：否定应答优先；有 positive_contains 时再要求命中关键词。"""
     normalized = answer.strip().lower()
     if not normalized:
         return False
+    # 否定应答始终优先，避免 “No, I did not acquire gifts” 因 acquire 误判
+    if _is_negative_answer(normalized):
+        return False
     if positive_contains:
         return any(term.lower() in normalized for term in positive_contains)
-    return not normalized.startswith(_NEGATIVE_PREFIXES)
+    return True
 
 
 def classify(qa: list[dict], phenomena: dict | None = None) -> dict[str, str]:

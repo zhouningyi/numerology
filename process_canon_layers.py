@@ -84,6 +84,12 @@ YIJING_TRANSMISSION_RE = re.compile(r"(?=(?:彖曰|象曰|文言曰)\s*[：:])")
 YIJING_YAO_RE = re.compile(
     r"(?=(?:初九|九二|九三|九四|九五|上九|初六|六二|六三|六四|六五|上六|用九|用六)\s*[：:曰])"
 )
+YIJING_YAO_HEAD_RE = re.compile(
+    r"^(?P<label>初九|九二|九三|九四|九五|上九|初六|六二|六三|六四|六五|上六|用九|用六)\s*[：:，,曰]"
+)
+YIJING_YAO_SPLIT_RE = re.compile(
+    r"(?=(?:初九|九二|九三|九四|九五|上九|初六|六二|六三|六四|六五|上六|用九|用六)\s*[：:，,曰])"
+)
 YIJING_MODERN_HEADER_RE = re.compile(
     r"^(?:卦辞|六爻|彖传|象传|文言传)(?:（[^）]+）)?\s*[：:]"
 )
@@ -288,16 +294,21 @@ def split_yijing_segments(segments: list[dict]) -> list[dict]:
                 current.append(line)
             if current:
                 groups.append(current)
+        # 卦爻正文和现代“六爻”译文继续细拆到初九、九二等，
+        # 让页面可以做到一爻原文对应一爻译文；文言传不在这里强行拆分。
+        expanded_groups: list[list[str]] = []
+        for group in groups:
+            joined = "\n".join(group).strip()
+            yao_parts = [part.strip() for part in YIJING_YAO_SPLIT_RE.split(joined) if part.strip()]
+            if not joined.startswith("文言曰") and len(yao_parts) >= 2:
+                expanded_groups.extend([[part] for part in yao_parts if YIJING_YAO_HEAD_RE.match(part)])
+            else:
+                expanded_groups.append(group)
+        groups = expanded_groups
         for group_index, group in enumerate(groups):
             item = dict(segment)
             item["text"] = "\n".join(group)
             item["section_key"] = _yijing_section_key(item["text"], item["layer"])
-            if (
-                segment["layer"] == "原文"
-                and group_index == 1
-                and len(YIJING_YAO_RE.findall(item["text"])) >= 2
-            ):
-                item["section_key"] = "六爻"
             output.append(item)
     for index, segment in enumerate(output):
         segment["segment_index"] = index
@@ -305,20 +316,27 @@ def split_yijing_segments(segments: list[dict]) -> list[dict]:
 
 
 def _yijing_section_key(text: str, layer: str) -> str | None:
-    """返回可用于原文—译文对照的保守结构键。"""
+    """返回可用于原文—译文对照的保守结构键（已规范化）。"""
+    from numerology.corpus_quality import normalize_section_key
+
     first = text.strip().splitlines()[0].strip() if text.strip() else ""
+    raw: str | None = None
     if layer in {"现代白话", "现代释译"}:
         match = YIJING_MODERN_HEADER_RE.match(first)
         if match:
-            return re.split(r"[：:]", first, maxsplit=1)[0].strip()
-    for key, prefix in (("彖传", "彖曰"), ("象传", "象曰"), ("文言传", "文言曰")):
-        if first.startswith(prefix):
-            return key
-    if re.match(r"^(?:初九|九二|九三|九四|九五|上九|初六|六二|六三|六四|六五|上六|用九|用六)\s*[：:曰]", first):
-        return re.split(r"[：:曰]", first, maxsplit=1)[0].strip()
-    if layer == "原文":
-        return "卦辞" if not first.startswith(("彖曰", "象曰", "文言曰")) else None
-    return None
+            raw = re.split(r"[：:]", first, maxsplit=1)[0].strip()
+    if raw is None:
+        for key, prefix in (("彖传", "彖曰"), ("象传", "象曰"), ("文言传", "文言曰")):
+            if first.startswith(prefix):
+                raw = key
+                break
+    if raw is None:
+        yao_match = YIJING_YAO_HEAD_RE.match(first)
+        if yao_match:
+            raw = yao_match.group("label")
+    if raw is None and layer == "原文":
+        raw = "卦辞" if not first.startswith(("彖曰", "象曰", "文言曰")) else None
+    return normalize_section_key(raw)
 
 
 def build_txt_from_jsonl(book: str) -> Path | None:
@@ -379,6 +397,11 @@ def process_book(book: str, config: dict) -> tuple[Path, Counter]:
     for segment in segments:
         segment["chapter_title"] = chapter_titles.get(segment["chapter"])
         segment["book_chapter_label"] = book_labels.get(segment["chapter"])
+        if book == "dongpo_yizhuan" and segment["layer"] == "现代白话":
+            # 东坡易传的现代文字是本卦级解读摘要，不是逐句翻译；
+            # 即使恰好只有一个原文段，也不能据段数相等自动挂接。
+            segment["alignment_status"] = "待语义对齐"
+            segment["alignment_method"] = "本卦级解释，不是逐字翻译"
     LAYERS_DIR.mkdir(parents=True, exist_ok=True)
     out = LAYERS_DIR / f"{book}_layers.jsonl"
     with out.open("w", encoding="utf-8") as handle:
@@ -417,6 +440,9 @@ def main() -> None:
     args = parser.parse_args()
 
     for book in args.books:
+        if book == "huayan_t0279":
+            print("华严经请使用 process_huayan.py，跳过通用命理网页分层器")
+            continue
         built = build_txt_from_jsonl(book)
         if built is None and not (PROCESSED_DIR / f"{book}_online.txt").exists():
             print(f"跳过 {BOOKS[book]['title']}：无 raw 快照也无 processed 文本")
