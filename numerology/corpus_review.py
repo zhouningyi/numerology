@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -196,3 +197,112 @@ def find_row_by_unit_key(book: str, rows: list[dict], key: str) -> dict | None:
         if unit_key_from_row(book, row) == key:
             return row
     return None
+
+
+def _original_lookup(originals: list[dict]) -> dict[int, dict]:
+    return {
+        int(row["segment_index"]): row
+        for row in originals
+        if row.get("segment_index") is not None
+    }
+
+
+def build_review_queue(
+    book: str,
+    rows: list[dict],
+    *,
+    originals: list[dict] | None = None,
+    status: str | None = "candidate",
+    chapter: int | None = None,
+    volume: int | None = None,
+    limit: int | None = 50,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """从已加载语料构建人工复核队列（含原文摘录与阅读链接）。"""
+    originals = originals or []
+    by_original = _original_lookup(originals)
+    items: list[dict] = []
+    status_counts: Counter = Counter()
+    chapter_counts: Counter = Counter()
+
+    for row in rows:
+        if row.get("layer") not in ALLOWED_LAYERS:
+            continue
+        key = unit_key_from_row(book, row) or row.get("unit_key")
+        if not key:
+            continue
+        review = row.get("review_status") or REVIEW_CANDIDATE
+        status_counts[review] += 1
+        ch = row.get("chapter")
+        if ch is not None:
+            chapter_counts[int(ch)] += 1
+        if status and review != status:
+            continue
+        if chapter is not None and row.get("chapter") != chapter:
+            continue
+        if volume is not None and row.get("volume") != volume:
+            continue
+        original_index = row.get("original_segment_index")
+        if original_index is None and row.get("original_segment_indices"):
+            original_index = row["original_segment_indices"][0]
+        original = by_original.get(int(original_index)) if original_index is not None else None
+        original_text = (
+            (original or {}).get("text")
+            or row.get("source_text")
+            or ""
+        )
+        items.append({
+            "unit_key": key,
+            "book": book,
+            "layer": row.get("layer"),
+            "review_status": review,
+            "confidence": row.get("confidence"),
+            "chapter": row.get("chapter"),
+            "volume": row.get("volume"),
+            "chapter_title": row.get("chapter_title") or (original or {}).get("chapter_title"),
+            "book_chapter_label": row.get("book_chapter_label") or (original or {}).get("book_chapter_label"),
+            "original_segment_index": original_index,
+            "translation_unit_index": row.get("translation_unit_index", 0),
+            "marker": row.get("marker"),
+            "translation_source": row.get("translation_source"),
+            "alignment_status": row.get("alignment_status"),
+            "review_note": row.get("review_note") or "",
+            "reviewed_at": row.get("reviewed_at"),
+            "original_preview": (original_text or "")[:220],
+            "translation_preview": (row.get("text") or "")[:220],
+            "original_text": original_text,
+            "translation_text": row.get("text") or "",
+            "url": (
+                f"/canon/{book}?chapter={row.get('chapter')}#unit-{key.replace('|', '-')}"
+                if row.get("chapter") is not None
+                else f"/canon/{book}"
+            ),
+        })
+
+    items.sort(key=lambda item: (
+        item.get("volume") is None,
+        item.get("volume") or 0,
+        item.get("chapter") is None,
+        item.get("chapter") or 0,
+        item.get("original_segment_index") is None,
+        item.get("original_segment_index") or 0,
+        item.get("translation_unit_index") or 0,
+    ))
+    total = len(items)
+    page_items = items[offset: offset + limit] if limit is not None else items[offset:]
+    return {
+        "book": book,
+        "status_filter": status,
+        "chapter_filter": chapter,
+        "volume_filter": volume,
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "status_counts": dict(status_counts),
+        "chapter_counts": dict(sorted(chapter_counts.items())[:40]),
+        # 不用 items：Jinja 会优先命中 dict.items 方法
+        "entries": page_items,
+        "items": page_items,  # CLI 兼容
+    }
+
+

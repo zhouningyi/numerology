@@ -78,3 +78,41 @@ def test_build_review_record_actions():
     assert verified["review_status"] == REVIEW_HUMAN_VERIFIED
     rejected = build_review_record("huayan_t0279", row, "reject")
     assert rejected["review_status"] == REVIEW_REJECTED
+
+
+def test_build_review_queue_filters_and_pairs_original():
+    from numerology.corpus_review import build_review_queue
+
+    originals = [
+        {"segment_index": 5, "layer": "原文", "text": "如是我聞：", "chapter": 1},
+        {"segment_index": 6, "layer": "原文", "text": "一时佛在。", "chapter": 1},
+    ]
+    rows = [
+        {
+            "layer": "现代释译",
+            "original_segment_index": 5,
+            "translation_unit_index": 0,
+            "text": "我这样听说：",
+            "chapter": 1,
+            "volume": 1,
+            "review_status": "candidate",
+        },
+        {
+            "layer": "现代释译",
+            "original_segment_index": 6,
+            "translation_unit_index": 0,
+            "text": "那时佛在。",
+            "chapter": 1,
+            "volume": 1,
+            "review_status": "human_verified",
+            "confidence": "high",
+        },
+    ]
+    queue = build_review_queue(
+        "huayan_t0279", rows, originals=originals, status="candidate", limit=10,
+    )
+    assert queue["total"] == 1
+    assert queue["items"][0]["original_preview"].startswith("如是")
+    assert "/canon/huayan_t0279?chapter=1" in queue["items"][0]["url"]
+    assert queue["status_counts"]["candidate"] == 1
+    assert queue["status_counts"]["human_verified"] == 1

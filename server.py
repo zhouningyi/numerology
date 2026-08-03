@@ -26,6 +26,7 @@ from numerology.corpus_quality import (
 from numerology.corpus_review import (
     append_review,
     apply_reviews_to_rows,
+    build_review_queue,
     build_review_record,
     find_row_by_unit_key,
     load_reviews,
@@ -440,6 +441,31 @@ def load_corpus_mapping_report() -> dict | None:
         return None
 
 
+def load_original_segments(book: str) -> list[dict]:
+    rows = _load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl")
+    return [row for row in rows if row.get("layer") == "原文"]
+
+
+def review_queue_books() -> list[str]:
+    """有现代译文层的书目。"""
+    books = []
+    for path in sorted(CANON_LAYERS_DIR.glob("*_generated_layers.jsonl")):
+        books.append(path.name.removesuffix("_generated_layers.jsonl"))
+    for path in sorted(CANON_LAYERS_DIR.glob("*_aligned_layers.jsonl")):
+        slug = path.name.removesuffix("_aligned_layers.jsonl")
+        if slug not in books:
+            books.append(slug)
+    for path in sorted(CANON_LAYERS_DIR.glob("*_modern_layers.jsonl")):
+        slug = path.name.removesuffix("_modern_layers.jsonl")
+        if slug not in books:
+            books.append(slug)
+    # 周易等网页白话在主 layers 里
+    for slug in ("yijing", "dongpo_yizhuan"):
+        if slug not in books and (CANON_LAYERS_DIR / f"{slug}_layers.jsonl").exists():
+            books.append(slug)
+    return books or ["huayan_t0279"]
+
+
 # ── 数据质量审计 ────────────────────────────────────────────────
 @app.route("/quality")
 def quality_dashboard():
@@ -473,6 +499,7 @@ def quality_dashboard():
             severity_labels=SEVERITY_LABELS,
             corpus_report=corpus_report,
             corpus_status_labels=CORPUS_STATUS_LABELS,
+            review_books=review_queue_books(),
         )
 
     base_where = ["f.audit_run_id = ?"]
@@ -534,6 +561,49 @@ def quality_dashboard():
         severity_labels=SEVERITY_LABELS,
         corpus_report=corpus_report,
         corpus_status_labels=CORPUS_STATUS_LABELS,
+        review_books=review_queue_books(),
+    )
+
+
+@app.route("/quality/review")
+def quality_review_queue():
+    """译文人工复核队列：原文/译文对照 + 通过/驳回。"""
+    book = request.args.get("book") or "huayan_t0279"
+    status = request.args.get("status") or "candidate"
+    chapter = request.args.get("chapter", type=int)
+    volume = request.args.get("volume", type=int)
+    limit = min(max(request.args.get("limit", 20, type=int), 5), 100)
+    offset = max(request.args.get("offset", 0, type=int), 0)
+    books = review_queue_books()
+    if book not in books and book not in CANON_BOOKS:
+        abort(404)
+    segments = load_canon_layers(book)
+    originals = load_original_segments(book)
+    status_filter = None if status == "all" else status
+    queue = build_review_queue(
+        book,
+        segments,
+        originals=originals,
+        status=status_filter,
+        chapter=chapter,
+        volume=volume,
+        limit=limit,
+        offset=offset,
+    )
+    # 保留查询串供复核后回到队列
+    request_query = request.query_string.decode("utf-8")
+    return render_template(
+        "review_queue.html",
+        book=book,
+        books=books,
+        status=status,
+        chapter=chapter,
+        volume=volume,
+        limit=limit,
+        offset=offset,
+        queue=queue,
+        corpus_status_labels=CORPUS_STATUS_LABELS,
+        request_query=f"/quality/review?{request_query}" if request_query else "/quality/review",
     )
 
 
@@ -1258,12 +1328,13 @@ def canon_rules(school):
 @app.route("/canon/<book>/review", methods=["POST"])
 def canon_translation_review(book: str):
     """写回一条现代白话/现代释译的人工复核结果。"""
-    if book not in CANON_BOOKS:
+    if book not in CANON_BOOKS and book not in review_queue_books():
         abort(404)
     action = (request.form.get("action") or "").strip()
     unit = (request.form.get("unit_key") or "").strip()
     note = (request.form.get("review_note") or "").strip()
     chapter = request.form.get("chapter", type=int)
+    next_url = (request.form.get("next") or "").strip()
     if action not in {"verify", "reject", "reset"} or not unit:
         abort(400)
     segments = load_canon_layers(book)
@@ -1280,7 +1351,9 @@ def canon_translation_review(book: str):
     for path in list(_JSONL_CACHE.keys()):
         if book in path.name:
             _JSONL_CACHE.pop(path, None)
-    # 复核文件本身不在 jsonl cache 里，但 load_reviews 每次读盘；无需额外清
+    # 允许回到队列页（仅站内相对路径）
+    if next_url.startswith("/quality/review"):
+        return redirect(f"{next_url}#unit-{unit.replace('|', '-')}")
     target = f"/canon/{book}"
     if chapter is not None:
         target += f"?chapter={chapter}"
@@ -1352,6 +1425,33 @@ NDE_TAG_GROUP_DEFS = (
         "keys": {"beings", "deceased", "religious_figure", "god_awareness"},
     },
 )
+NDE_ADVANCED_TAG_DEFS = (
+    {"key": "experience", "name": "体验事件", "members": "all"},
+    {"key": "sensory", "name": "感官环境", "members": {
+        "category:bright_light", "category:tunnel", "category:heightened_senses",
+        "concept:light_conscious",
+    }},
+    {"key": "entity", "name": "实体关系", "members": {
+        "category:beings", "category:deceased", "category:religious_figure",
+    }},
+    {"key": "world", "name": "时空世界", "members": {
+        "category:time_distortion", "category:other_world", "category:future_scenes",
+        "category:boundary", "concept:scale_illusion", "concept:time_illusion",
+        "concept:multiple_realms",
+    }},
+    {"key": "mind", "name": "意识知识", "members": {
+        "category:obe", "category:special_knowledge", "concept:direct_knowing",
+        "concept:consciousness_independent", "concept:interpenetration",
+    }},
+    {"key": "affect", "name": "情绪价值", "members": {
+        "category:distressing", "category:life_review", "concept:oneness",
+        "concept:love_fundamental", "concept:no_judgment", "concept:more_real",
+        "concept:purpose_order",
+    }},
+    {"key": "return", "name": "边界回返", "members": {
+        "category:boundary", "category:aftereffects_gifts",
+    }},
+)
 NDE_CATEGORY_COLORS = {
     "obe": "teal", "tunnel": "violet", "bright_light": "yellow",
     "beings": "purple", "deceased": "indigo", "religious_figure": "orange",
@@ -1416,17 +1516,50 @@ def extract_nde_metadata(record: dict) -> dict:
             values["gender"] = answer.splitlines()[0].strip()
         elif question == "date nde occurred" and "date" not in values:
             values["date"] = answer.splitlines()[0].strip()
+    raw_title = (record.get("title") or "").strip()
+    slug = record.get("slug", "")
+    reporter = record.get("reporter_name") or raw_title
+    if not reporter or reporter == slug:
+        reporter = re.sub(r"^\d+[_-]?", "", slug)
+        reporter = re.sub(r"_(?:probable|possible|nde|ndes|adc|anesthesia).*\Z", "", reporter, flags=re.I)
+        reporter = reporter.replace("_", " ").strip()
+        reporter = reporter.title() if reporter and not reporter.isupper() else reporter
+    if not reporter or reporter.isdigit() or reporter.lower() in {"ad", "nde"}:
+        reporter = "未登记"
+    raw_date = values.get("date", "")
+    normalized_date = normalize_nde_date(raw_date)
     return {
-        "date": values.get("date", "未登记"),
+        "reporter": reporter,
+        "country": record.get("country") or "未登记",
+        "date": normalized_date,
         "gender": values.get("gender", "未登记"),
         "registration": record.get("classification") or "NDERF案例",
+        "id": slug or "未登记",
     }
 
 
+def normalize_nde_date(value: str) -> str:
+    """把可确定的案例日期统一为 YYYY-MM-DD；只有年份时不虚构月日。"""
+    value = (value or "").strip()
+    if not value:
+        return "未登记"
+    for pattern in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d", "%d %B %Y", "%d %b %Y"):
+        try:
+            return datetime.strptime(value, pattern).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    match = re.fullmatch(r"(19|20)\d{2}", value)
+    return value if match else value
+
+
 def prepare_nde_rows(
-    rows: list[dict], concept_specs: dict, focus_concepts: list[str] | None = None
+    rows: list[dict], concept_specs: dict, focus_concepts: list[str] | None = None,
+    focus_only: bool | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """为列表页准备原文证据高亮；不修改缓存中的原始记录。"""
+    if focus_only is None:
+        # 兼容调用方传入具体标签列表即表示“只高亮这些标签”。
+        focus_only = focus_concepts is not None
     focus = set(focus_concepts or [])
     prepared = []
     legend = {}
@@ -1440,7 +1573,7 @@ def prepare_nde_rows(
                 "color": NDE_CONCEPT_COLORS.get(key, "default"),
             }
             for key, evidence in record.get("concepts", {}).items()
-            if key in concept_specs and evidence and (not focus or key in focus)
+            if key in concept_specs and evidence and (not focus_only or key in focus)
         ]
         record["description_html"] = highlight_evidence(
             record.get("description", ""), concept_tags
@@ -1454,7 +1587,7 @@ def prepare_nde_rows(
                 "color": NDE_CONCEPT_COLORS.get(key, "default"),
             }
             for key, sentence in record.get("concepts_zh", {}).items()
-            if key in concept_specs and sentence and (not focus or key in focus)
+            if key in concept_specs and sentence and (not focus_only or key in focus)
         ]
         record["translation_zh_html"] = (
             highlight_evidence(zh_text, zh_tags) if zh_text else ""
@@ -1499,8 +1632,6 @@ def build_nde_tag_groups(
                 tag_key in (record.get("concepts", {}) if kind == "concept" else record.get("categories", {}))
                 for record in rows
             )
-            if not count:
-                continue
             items.append({
                 "key": tag_key,
                 "value": f"{kind}:{tag_key}",
@@ -1525,14 +1656,20 @@ def _render_nde_explorer():
     all_matched = load_nde_experiences()
     concept_specs = load_nde_concepts()
     tag_groups = build_nde_tag_groups(phenomena, concept_specs, all_matched)
+    tag_options = [item for group in tag_groups for item in group["tags"]]
+    tag_options = list({item["value"]: item for item in tag_options}.values())
     valid_tags = {
         item["value"]: item
-        for group in tag_groups for item in group["tags"]
+        for item in tag_options
     }
     selected_tags = []
     for value in request.args.getlist("tag"):
         if value in valid_tags and value not in selected_tags:
             selected_tags.append(value)
+    selected_facets = [
+        value for value in request.args.getlist("facet")
+        if any(definition["key"] == value for definition in NDE_ADVANCED_TAG_DEFS)
+    ]
     # 兼容之前已经分享出去的 ?concept=... 链接。
     for concept in request.args.getlist("concept"):
         value = f"concept:{concept}"
@@ -1546,19 +1683,59 @@ def _render_nde_explorer():
         value.split(":", 1)[1]
         for value in selected_tags if value.startswith("category:")
     ]
+    focus_concepts = set(selected_concepts)
+    for definition in NDE_ADVANCED_TAG_DEFS:
+        if definition["key"] not in selected_facets:
+            continue
+        if definition["members"] == "all":
+            focus_concepts.update(concept_specs)
+        else:
+            focus_concepts.update(
+                member.split(":", 1)[1]
+                for member in definition["members"]
+                if member.startswith("concept:")
+            )
     matched = (
         [
             r for r in all_matched
             if all(concept in r.get("concepts", {}) for concept in selected_concepts)
             and all(category in r.get("categories", {}) for category in selected_categories)
+            and all(
+                definition["members"] == "all"
+                or any(
+                    (member.split(":", 1)[1] in (r.get("concepts", {}) if member.startswith("concept:") else r.get("categories", {})))
+                    for member in definition["members"]
+                )
+                for definition in NDE_ADVANCED_TAG_DEFS
+                if definition["key"] in selected_facets
+            )
         ]
-        if selected_tags else all_matched
+        if selected_tags or selected_facets else all_matched
     )
     total = len(matched)
+    if selected_facets:
+        selected_members = {
+            member
+            for definition in NDE_ADVANCED_TAG_DEFS
+            if definition["key"] in selected_facets
+            and definition["members"] != "all"
+            for member in definition["members"]
+        }
+        visible_tag_options = [
+            item for item in tag_options
+            if item["value"] in selected_members
+            or item["value"] in selected_tags
+            or any(
+                definition["key"] in selected_facets and definition["members"] == "all"
+                for definition in NDE_ADVANCED_TAG_DEFS
+            )
+        ]
+    else:
+        visible_tag_options = tag_options
     total_pages = math.ceil(total / per_page) if total else 1
     rows, highlight_legend = prepare_nde_rows(
         matched[(page - 1) * per_page : page * per_page], concept_specs,
-        selected_concepts,
+        sorted(focus_concepts), focus_only=bool(selected_tags or selected_facets),
     )
     return render_template(
         "nde_category.html", scope_name="濒死探索",
@@ -1568,7 +1745,9 @@ def _render_nde_explorer():
         total=total, page=page, total_pages=total_pages,
         all_total=len(all_matched), highlight_legend=highlight_legend,
         page_size=per_page, tag_groups=tag_groups,
-        selected_tags=selected_tags, selected_concepts=selected_concepts,
+        tag_options=visible_tag_options, advanced_tags=NDE_ADVANCED_TAG_DEFS,
+        selected_tags=selected_tags, selected_facets=selected_facets,
+        selected_concepts=selected_concepts,
     )
 
 

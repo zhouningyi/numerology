@@ -4,6 +4,7 @@
 <h1 style="font-size:22px;margin-bottom:2px">{{ title }} · 原著中心</h1>
 <p class="muted" style="font-size:13px;margin-bottom:12px">
   <a href="/canon">← 返回古籍总览</a> · {{ corpus_group }} · {{ calculation_scope }} · 共 {{ stats.chapters }} 章；原文为中心，译文按对应段落显示。
+  · <a href="/quality/review?book={{ book }}&status=candidate{% if chapter %}&chapter={{ chapter }}{% endif %}">本章/本书复核队列</a>
 </p>
 
 {% if chapter is none %}

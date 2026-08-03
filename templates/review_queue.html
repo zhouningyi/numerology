@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}译文复核队列 - 命理统计{% endblock %}
+{% block content %}
+<div class="quality-page">
+<h1 style="margin-bottom:6px">译文人工复核队列</h1>
+<p class="muted" style="font-size:13px;margin-bottom:12px">
+  <a href="/quality">← 质量审计</a> ·
+  模型产出均为 candidate；只有点「通过」后才升为 human_verified / high。
+  复核写入 sidecar，重跑翻译不会丢失。
+</p>
+
+<div class="card">
+  <form class="filter-bar" method="get" action="/quality/review">
+    <select name="book">
+      {% for b in books %}
+      <option value="{{ b }}" {% if b == book %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+    <select name="status">
+      <option value="candidate" {% if status == 'candidate' %}selected{% endif %}>候选</option>
+      <option value="model_agree" {% if status == 'model_agree' %}selected{% endif %}>模型一致</option>
+      <option value="human_verified" {% if status == 'human_verified' %}selected{% endif %}>已通过</option>
+      <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>已驳回</option>
+      <option value="all" {% if status == 'all' %}selected{% endif %}>全部</option>
+    </select>
+    <label class="muted">章
+      <input type="number" name="chapter" value="{{ chapter or '' }}" style="width:70px">
+    </label>
+    <label class="muted">卷
+      <input type="number" name="volume" value="{{ volume or '' }}" style="width:70px">
+    </label>
+    <label class="muted">每页
+      <input type="number" name="limit" value="{{ limit }}" min="5" max="100" style="width:70px">
+    </label>
+    <button type="submit">筛选</button>
+  </form>
+  <p class="muted" style="font-size:12px;margin-top:8px">
+    状态计数：
+    {% for k,v in queue.status_counts.items() %}
+      <span class="badge badge-info" style="margin-right:4px">{{ corpus_status_labels.get(k, k) }} {{ v }}</span>
+    {% else %}
+      无译文层
+    {% endfor %}
+    · 当前筛选 {{ queue.total }} 条 · 显示 {{ queue.entries|length }} 条
+  </p>
+</div>
+
+{% for item in queue.entries %}
+<div class="card" id="unit-{{ item.unit_key|replace('|', '-') }}" style="border-left:3px solid var(--accent)">
+  <div class="muted" style="font-size:12px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <span class="badge badge-wood">{{ item.layer }}</span>
+    {% if item.review_status == 'human_verified' %}
+    <span class="badge badge-aa">人工已复核</span>
+    {% elif item.review_status == 'rejected' %}
+    <span class="badge badge-error">已驳回</span>
+    {% else %}
+    <span class="badge badge-warning">{{ corpus_status_labels.get(item.review_status, item.review_status) }}</span>
+    {% endif %}
+    <span>卷 {{ item.volume or '—' }} · 章 {{ item.chapter or '—' }}
+      {% if item.chapter_title %} · {{ item.chapter_title }}{% endif %}
+    </span>
+    <span>O{{ item.original_segment_index }}{% if item.marker %} · {{ item.marker }}{% endif %}</span>
+    <a href="{{ item.url }}">在阅读页打开</a>
+  </div>
+  <div class="grid grid-2" style="gap:12px">
+    <div>
+      <div class="stat-label" style="margin-bottom:4px">原文</div>
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.8;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px">{{ item.original_text or item.original_preview }}</div>
+    </div>
+    <div>
+      <div class="stat-label" style="margin-bottom:4px">译文 · {{ item.translation_source or '—' }}</div>
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.8;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px">{{ item.translation_text or item.translation_preview }}</div>
+    </div>
+  </div>
+  <form class="review-form" method="post" action="/canon/{{ book }}/review"
+        style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+    <input type="hidden" name="unit_key" value="{{ item.unit_key }}">
+    {% if item.chapter is not none %}<input type="hidden" name="chapter" value="{{ item.chapter }}">{% endif %}
+    <input type="hidden" name="next" value="{{ request_query }}">
+    <input type="text" name="review_note" placeholder="备注（可选）" value="{{ item.review_note }}"
+           style="flex:1;min-width:160px;font-size:12px;padding:4px 7px">
+    <button type="submit" name="action" value="verify">通过</button>
+    <button type="submit" name="action" value="reject">驳回</button>
+    <button type="submit" name="action" value="reset">重置</button>
+  </form>
+</div>
+{% else %}
+<div class="card"><p class="muted">当前筛选下没有条目。</p></div>
+{% endfor %}
+
+{% if queue.total > limit %}
+<p class="muted" style="font-size:12px;margin:12px 0">
+  {% set next_offset = offset + limit %}
+  {% set prev_offset = offset - limit %}
+  {% if offset > 0 %}
+  <a href="/quality/review?book={{ book }}&status={{ status }}&limit={{ limit }}&offset={{ prev_offset }}{% if chapter %}&chapter={{ chapter }}{% endif %}{% if volume %}&volume={{ volume }}{% endif %}">← 上一页</a>
+  {% endif %}
+  · offset {{ offset }} / {{ queue.total }}
+  {% if next_offset < queue.total %}
+  · <a href="/quality/review?book={{ book }}&status={{ status }}&limit={{ limit }}&offset={{ next_offset }}{% if chapter %}&chapter={{ chapter }}{% endif %}{% if volume %}&volume={{ volume }}{% endif %}">下一页 →</a>
+  {% endif %}
+</p>
+{% endif %}
+
+<div class="card">
+  <h2>命令行</h2>
+  <pre style="font-size:12px;color:var(--text-muted)">python3 list_review_queue.py --book {{ book }} --status candidate --limit 20
+python3 translate_huayan_segments.py --fill-layer-gaps --limit 10 --materialize</pre>
+</div>
+</div>
+{% endblock %}

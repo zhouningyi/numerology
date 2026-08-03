@@ -6,6 +6,9 @@
 
 <div class="card" style="margin-bottom:14px">
   <h2>翻译 / 映射质量（濒死 · 周易 · 华严）</h2>
+  <p style="margin-bottom:10px;font-size:13px">
+    <a href="/quality/review?book=huayan_t0279&status=candidate">打开译文复核队列 →</a>
+  </p>
   {% if not corpus_report %}
   <p class="muted">尚无语料映射审计。运行：</p>
   <pre style="margin-top:8px;color:var(--text-muted)">python3 audit_corpus_mapping.py</pre>
@@ -67,6 +70,12 @@
     {% endfor %}
   </table>
   {% endif %}
+  <p style="margin-top:12px;font-size:13px">
+    <a href="/quality/review?book=huayan_t0279&status=candidate">打开译文复核队列 →</a>
+    {% if review_books %}
+    <span class="muted">（{{ review_books|join(' · ') }}）</span>
+    {% endif %}
+  </p>
   {% endif %}
 </div>
 

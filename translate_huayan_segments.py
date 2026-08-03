@@ -191,55 +191,137 @@ def build_units(rows: list[dict], chapter: int | None, start_segment: int | None
     return units
 
 
-def materialize(rows: list[dict]) -> None:
-    """将候选写成原文中心页面可读取的现代释译层。
-
-    模型产出永远是 candidate；confidence 不得标 high。
-    """
+def _layer_row_from_candidate(row: dict) -> dict:
     from numerology.corpus_quality import (
         REVIEW_CANDIDATE,
         STATUS_LABELS,
         build_provenance,
     )
 
+    return {
+        "book": BOOK,
+        "layer": "现代释译",
+        "confidence": "low",
+        "review_status": REVIEW_CANDIDATE,
+        "alignment_status": STATUS_LABELS[REVIEW_CANDIDATE],
+        "alignment_method": "一原文单元一译文请求",
+        "translation_source": f"本地模型（{row['model']}）",
+        "marker": f"O{row['original_segment_index']} · T{row['unit_index'] + 1}/{row['unit_count']}",
+        "volume": row.get("volume"),
+        "chapter": row.get("chapter"),
+        "chapter_title": row.get("chapter_title"),
+        "book_chapter_label": row.get("book_chapter_label"),
+        "source_file": row.get("source_file"),
+        "source_text": row["source_text"],
+        "reference_used": bool(row.get("reference_text")),
+        "text": row["translation"],
+        "segment_index": row["original_segment_index"],
+        "original_segment_index": row["original_segment_index"],
+        "original_segment_indices": [row["original_segment_index"]],
+        "translation_unit_index": row["unit_index"],
+        "prompt_version": row["prompt_version"],
+        "model": row["model"],
+        "provenance": build_provenance(
+            pipeline="translate_huayan_segments",
+            model=row["model"],
+            prompt_version=row["prompt_version"],
+            source=f"本地模型（{row['model']}）",
+            extra={
+                "unit_index": row["unit_index"],
+                "unit_count": row["unit_count"],
+                "max_chars": row.get("max_chars"),
+            },
+        ),
+    }
+
+
+def _layer_merge_key(row: dict) -> tuple:
+    original = row.get("original_segment_index")
+    if original is None and row.get("original_segment_indices"):
+        original = row["original_segment_indices"][0]
+    if original is None:
+        original = row.get("segment_index")
+    unit = row.get("translation_unit_index", 0)
+    return (original, unit)
+
+
+def load_generated_layer_rows() -> list[dict]:
+    if not LAYER_PATH.exists() or LAYER_PATH.stat().st_size == 0:
+        return []
+    rows = []
+    for line in LAYER_PATH.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return rows
+
+
+def generated_covered_indices() -> set[int]:
+    covered: set[int] = set()
+    for row in load_generated_layer_rows():
+        if row.get("original_segment_indices"):
+            covered.update(int(i) for i in row["original_segment_indices"])
+        elif row.get("original_segment_index") is not None:
+            covered.add(int(row["original_segment_index"]))
+        else:
+            seg = row.get("segment_index")
+            if isinstance(seg, int):
+                covered.add(seg)
+            elif isinstance(seg, str) and seg.startswith("gen-"):
+                try:
+                    covered.add(int(seg[4:]))
+                except ValueError:
+                    pass
+    return covered
+
+
+def materialize(rows: list[dict], *, merge: bool = True) -> dict:
+    """将候选写成原文中心页面可读取的现代释译层。
+
+    默认 merge=True：与现有 generated_layers 合并，避免补跑冲掉历史 2000+ 段。
+    模型产出永远是 candidate；confidence 不得标 high。
+    """
     LAYER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with LAYER_PATH.open("w", encoding="utf-8") as handle:
-        for row in rows:
-            handle.write(json.dumps({
-                "book": BOOK,
-                "layer": "现代释译",
-                "confidence": "low",
-                "review_status": REVIEW_CANDIDATE,
-                "alignment_status": STATUS_LABELS[REVIEW_CANDIDATE],
-                "alignment_method": "一原文单元一译文请求",
-                "translation_source": f"本地模型（{row['model']}）",
-                "marker": f"O{row['original_segment_index']} · T{row['unit_index'] + 1}/{row['unit_count']}",
-                "volume": row.get("volume"),
-                "chapter": row.get("chapter"),
-                "chapter_title": row.get("chapter_title"),
-                "book_chapter_label": row.get("book_chapter_label"),
-                "source_file": row.get("source_file"),
-                "source_text": row["source_text"],
-                "reference_used": bool(row.get("reference_text")),
-                "text": row["translation"],
-                "segment_index": row["original_segment_index"],
-                "original_segment_index": row["original_segment_index"],
-                "original_segment_indices": [row["original_segment_index"]],
-                "translation_unit_index": row["unit_index"],
-                "prompt_version": row["prompt_version"],
-                "model": row["model"],
-                "provenance": build_provenance(
-                    pipeline="translate_huayan_segments",
-                    model=row["model"],
-                    prompt_version=row["prompt_version"],
-                    source=f"本地模型（{row['model']}）",
-                    extra={
-                        "unit_index": row["unit_index"],
-                        "unit_count": row["unit_count"],
-                        "max_chars": row.get("max_chars"),
-                    },
-                ),
-            }, ensure_ascii=False) + "\n")
+    merged: dict[tuple, dict] = {}
+    if merge:
+        for row in load_generated_layer_rows():
+            merged[_layer_merge_key(row)] = row
+    new_count = 0
+    for row in rows:
+        if not row.get("translation"):
+            continue
+        layer_row = _layer_row_from_candidate(row)
+        key = _layer_merge_key(layer_row)
+        if key not in merged:
+            new_count += 1
+        merged[key] = layer_row
+    ordered = sorted(
+        merged.values(),
+        key=lambda item: (
+            item.get("volume") is None,
+            item.get("volume") or 0,
+            item.get("chapter") is None,
+            item.get("chapter") or 0,
+            item.get("original_segment_index") is None,
+            item.get("original_segment_index") or 0,
+            item.get("translation_unit_index") or 0,
+        ),
+    )
+    tmp = LAYER_PATH.with_suffix(LAYER_PATH.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as handle:
+        for row in ordered:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    tmp.replace(LAYER_PATH)
+    return {
+        "path": str(LAYER_PATH),
+        "total": len(ordered),
+        "upserted": len([r for r in rows if r.get("translation")]),
+        "new_keys": new_count,
+        "merge": merge,
+    }
 
 
 def list_missing(max_chars: int = 700) -> dict:
@@ -307,8 +389,8 @@ def list_missing(max_chars: int = 700) -> dict:
             "missing_sample": layer_missing[:20],
         },
         "hint": (
-            "补跑候选：--only-missing --limit N --materialize；"
-            "generated_layers 覆盖缺口才是阅读页缺译的直接来源"
+            "补阅读层缺口：--fill-layer-gaps --limit N --materialize；"
+            "默认合并写入，勿加 --replace-layer"
         ),
     }
 
@@ -321,9 +403,19 @@ def main() -> None:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--max-chars", type=int, default=700)
     parser.add_argument("--materialize", action="store_true")
+    parser.add_argument(
+        "--replace-layer",
+        action="store_true",
+        help="物化时整文件覆盖 generated_layers（默认合并，防止冲掉历史层）",
+    )
     parser.add_argument("--retry", action="store_true", help="重做已有同参数结果")
     parser.add_argument("--only-missing", action="store_true",
                         help="只处理尚无成功译文的单元（默认即跳过已完成；此开关打印缺段摘要）")
+    parser.add_argument(
+        "--fill-layer-gaps",
+        action="store_true",
+        help="只补 generated_layers 尚未覆盖的原文段（阅读页缺译的直接来源）",
+    )
     parser.add_argument("--list-missing", action="store_true",
                         help="只列出缺段统计，不调用模型")
     args = parser.parse_args()
@@ -339,7 +431,18 @@ def main() -> None:
         load_reference(),
     )
     done = load_done()
-    if args.only_missing:
+    if args.fill_layer_gaps:
+        covered = generated_covered_indices()
+        units = [
+            unit for unit in units
+            if unit["original_segment_index"] not in covered
+        ]
+        print(json.dumps({
+            "fill_layer_gaps": True,
+            "layer_covered": len(covered),
+            "pending_units": len(units),
+        }, ensure_ascii=False))
+    elif args.only_missing:
         units = [
             unit for unit in units
             if not done.get(
@@ -359,6 +462,10 @@ def main() -> None:
         for unit in units:
             key = (unit["original_segment_index"], unit["unit_index"], unit["max_chars"])
             if key in done and not args.retry and done[key].get("translation"):
+                # fill-layer-gaps 时：候选已有译文但仍未进 layer，仍要参与 materialize
+                if not args.fill_layer_gaps:
+                    continue
+                results[key] = done[key]
                 continue
             started = time.time()
             try:
@@ -399,10 +506,28 @@ def main() -> None:
                 "status": row["status"],
                 "seconds": row["seconds"],
             }, ensure_ascii=False))
+    materialize_info = None
     if args.materialize:
-        materialize([row for row in results.values() if row.get("translation")])
-    print(json.dumps({"requested": len(units), "new": new_count,
-                      "output": str(OUTPUT_PATH), "materialized": args.materialize}, ensure_ascii=False))
+        # fill-layer-gaps：只物化本批 units 对应候选，合并进现有层
+        if args.fill_layer_gaps:
+            batch_keys = {
+                (u["original_segment_index"], u["unit_index"], u["max_chars"])
+                for u in units
+            }
+            to_write = [
+                row for key, row in results.items()
+                if key in batch_keys and row.get("translation")
+            ]
+        else:
+            to_write = [row for row in results.values() if row.get("translation")]
+        materialize_info = materialize(to_write, merge=not args.replace_layer)
+    print(json.dumps({
+        "requested": len(units),
+        "new": new_count,
+        "output": str(OUTPUT_PATH),
+        "materialized": args.materialize,
+        "materialize_info": materialize_info,
+    }, ensure_ascii=False))
 
 
 if __name__ == "__main__":
