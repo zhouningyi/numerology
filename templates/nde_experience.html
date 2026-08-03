@@ -19,7 +19,12 @@
 
 <div class="card">
   <h2>体验叙述（英文原文）</h2>
-  <div style="white-space:pre-wrap;font-size:14.5px;line-height:1.9">{{ r.description }}</div>
+  {% if concept_tags %}
+  <p class="muted" style="font-size:12px;margin-bottom:8px">
+    正文中<mark class="ev-mark">高亮</mark>的句子是概念标注的证据（悬停查看概念名）；证据由模型摘句，个别可能因改写未能定位。
+  </p>
+  {% endif %}
+  <div style="white-space:pre-wrap;font-size:14.5px;line-height:1.9">{{ description_html|safe }}</div>
   {% if r.translations %}
   {% for lang, text in r.translations.items() %}
   <h2 style="margin-top:14px">译文（{{ lang }}）</h2>
@@ -35,8 +40,13 @@
   <table>
     <tr><th style="width:45%">问题</th><th>回答</th></tr>
     {% for pair in r.qa %}
-    <tr>
-      <td class="muted" style="font-size:13px">{{ pair.q }}</td>
+    <tr {% if loop.index0 in qa_tags %}style="background:rgba(88,166,255,0.06)"{% endif %}>
+      <td class="muted" style="font-size:13px">
+        {{ pair.q }}
+        {% for name in qa_tags.get(loop.index0, []) %}
+        <span class="badge badge-a" style="font-size:10px">{{ name }}</span>
+        {% endfor %}
+      </td>
       <td style="font-size:13px;white-space:pre-wrap">{{ pair.a }}</td>
     </tr>
     {% endfor %}

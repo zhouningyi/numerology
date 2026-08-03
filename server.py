@@ -559,7 +559,17 @@ def load_canon_layers(book: str) -> list[dict]:
     aligned_path = CANON_LAYERS_DIR / f"{book}_aligned_layers.jsonl"
     modern_path = CANON_LAYERS_DIR / f"{book}_modern_layers.jsonl"
     if aligned_path.exists() and aligned_path.stat().st_size:
-        rows.extend(_load_jsonl_cached(aligned_path))
+        aligned_rows = _load_jsonl_cached(aligned_path)
+        rows.extend(aligned_rows)
+        aligned_keys = {
+            (item.get("volume"), item.get("chapter"), item.get("source_file"))
+            for item in aligned_rows
+        }
+        if modern_path.exists():
+            rows.extend(
+                item for item in _load_jsonl_cached(modern_path)
+                if (item.get("volume"), item.get("chapter"), item.get("source_file")) not in aligned_keys
+            )
     elif modern_path.exists():
         rows.extend(_load_jsonl_cached(modern_path))
     related_path = CANON_LAYERS_DIR / f"{book}_related_layers.jsonl"
@@ -1024,14 +1034,14 @@ def canon_book(book):
         s for s in inline_items
         if s.get("original_segment_indices") or s.get("original_segment_index") is not None
     ]
-    inline_alignment_pending = any(
-        str(item.get("alignment_status", "")).startswith("待")
-        for item in inline_items
-    )
-    if inline_alignment_pending:
-        unmatched_inline = inline_items
-    elif mapped_inline and len(mapped_inline) == len(inline_items) and original_positions:
-        for item in inline_items:
+    pending_unmapped = [
+        item for item in inline_items
+        if str(item.get("alignment_status", "")).startswith("待")
+        and not (item.get("original_segment_indices") or item.get("original_segment_index") is not None)
+    ]
+    inline_alignment_pending = bool(pending_unmapped)
+    if mapped_inline and original_positions:
+        for item in mapped_inline:
             targets = item.get("original_segment_indices") or [item.get("original_segment_index")]
             positions = [original_positions.get(index) for index in targets]
             positions = [position for position in positions if position is not None]
@@ -1040,6 +1050,10 @@ def canon_book(book):
             else:
                 for position in positions:
                     inline_by_original[position].append(item)
+        unmatched_inline.extend(
+            item for item in inline_items
+            if item not in mapped_inline
+        )
     # 周易等结构化语料优先按保守的 section_key 对齐；无键时才使用等长顺序对齐。
     elif inline_items:
         keyed_original = {s.get("section_key"): i for i, s in enumerate(original_segments) if s.get("section_key")}
@@ -1058,6 +1072,8 @@ def canon_book(book):
                 inline_by_original[index].append(item)
         else:
             unmatched_inline = inline_items
+    if pending_unmapped:
+        unmatched_inline = [item for item in unmatched_inline if item in pending_unmapped]
     auxiliary_by_layer = {}
     for auxiliary_layer in ("原注", "评注", "现代白话", "现代释译", "相关著作", "站点内容"):
         auxiliary_by_layer[auxiliary_layer] = [
@@ -1414,6 +1430,66 @@ def nde_concept(key):
     )
 
 
+def highlight_evidence(text: str, evidences: list[dict]) -> str:
+    """在叙述原文中高亮概念证据句（尽力匹配：全句 → 归一化 → 前缀）。
+
+    返回已转义的 HTML；匹配不到的证据句不高亮（模型摘句可能有轻微改写）。
+    """
+    from markupsafe import escape
+
+    spans = []  # (start, end, name)
+    lowered = text.lower()
+    for item in evidences:
+        needle = (item.get("evidence") or "").strip().strip('"')
+        if len(needle) < 8:
+            continue
+        pos = lowered.find(needle.lower())
+        if pos < 0:  # 退化为前 40 字符前缀匹配
+            prefix = needle[:40].lower()
+            pos = lowered.find(prefix)
+            needle_len = len(prefix) if pos >= 0 else 0
+        else:
+            needle_len = len(needle)
+        if pos >= 0 and needle_len:
+            spans.append((pos, pos + needle_len, item["name"]))
+    spans.sort()
+    merged, last_end = [], -1
+    for start, end, name in spans:
+        if start >= last_end:  # 忽略重叠区间
+            merged.append((start, end, name))
+            last_end = end
+    parts, cursor = [], 0
+    for start, end, name in merged:
+        parts.append(str(escape(text[cursor:start])))
+        parts.append(
+            f'<mark class="ev-mark" title="概念证据：{escape(name)}">'
+            f"{escape(text[start:end])}</mark>"
+        )
+        cursor = end
+    parts.append(str(escape(text[cursor:])))
+    return "".join(parts)
+
+
+def tag_qa_rows(qa: list[dict], phenomena: dict) -> dict[int, list[str]]:
+    """标出触发了现象分类的问卷行 → {行号: [现象名…]}。"""
+    from numerology.nde.parser import _is_positive
+
+    tagged: dict[int, list[str]] = {}
+    for key, spec in phenomena.items():
+        for rule in spec["match"]:
+            needle = rule["question_contains"].lower()
+            for i, pair in enumerate(qa):
+                if needle in pair["q"].lower() and _is_positive(
+                    pair["a"], rule.get("positive_contains")
+                ):
+                    tagged.setdefault(i, []).append(spec["name"])
+                    break
+            else:
+                continue
+            break
+    return tagged
+
+
 @app.route("/nde/experience/<slug>")
 def nde_experience(slug):
     if not re.fullmatch(r"[A-Za-z0-9_\-]+", slug):
@@ -1435,8 +1511,11 @@ def nde_experience(slug):
         for key, evidence in record.get("concepts", {}).items()
         if key in concept_specs
     ]
+    description_html = highlight_evidence(record["description"], concept_tags)
+    qa_tags = tag_qa_rows(record.get("qa", []), phenomena)
     return render_template(
-        "nde_experience.html", r=record, tags=tags, concept_tags=concept_tags
+        "nde_experience.html", r=record, tags=tags, concept_tags=concept_tags,
+        description_html=description_html, qa_tags=qa_tags,
     )
 
 

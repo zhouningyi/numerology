@@ -136,6 +136,13 @@
   dialog { margin: auto; }
   dialog::backdrop { background: rgba(1, 4, 9, 0.6); backdrop-filter: blur(2px); }
 
+  /* 概念证据高亮（暗色主题下的柔和标记） */
+  mark.ev-mark {
+    background: rgba(210, 153, 34, 0.28); color: inherit;
+    border-radius: 3px; padding: 0 2px;
+    border-bottom: 1px solid rgba(210, 153, 34, 0.6);
+  }
+
   /* 顶部 Tab 使用局部切换；请求期间保留当前页面，避免点击后出现空白。 */
   body.nav-loading #page-content { opacity: .62; transition: opacity .12s ease; }
   .canon-fold { margin: 7px 0; border: 1px solid var(--border); border-radius: 6px; background: rgba(88,166,255,.03); }
