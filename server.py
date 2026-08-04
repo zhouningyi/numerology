@@ -654,6 +654,33 @@ def _load_jsonl_cached(path: Path, slim=None) -> list[dict]:
     return rows
 
 
+def _coerce_chapter_fields(row: dict) -> dict:
+    """统一 chapter / volume / segment 为 int，避免 str/int 混用炸排序。"""
+    item = dict(row)
+    for key in ("chapter", "volume", "segment_index", "original_segment_index",
+                "source_paragraph_index", "translation_unit_index"):
+        value = item.get(key)
+        if value is None or isinstance(value, int):
+            continue
+        if isinstance(value, str) and value.isdigit():
+            item[key] = int(value)
+        elif isinstance(value, str) and value.startswith("gen-"):
+            tail = value[4:]
+            if tail.isdigit():
+                item[key] = int(tail)
+    indices = item.get("original_segment_indices")
+    if isinstance(indices, list):
+        cleaned = []
+        for value in indices:
+            if isinstance(value, int):
+                cleaned.append(value)
+            elif isinstance(value, str) and value.isdigit():
+                cleaned.append(int(value))
+        if cleaned:
+            item["original_segment_indices"] = cleaned
+    return item
+
+
 def load_canon_layers(book: str) -> list[dict]:
     rows = list(_load_jsonl_cached(CANON_LAYERS_DIR / f"{book}_layers.jsonl"))
     # 对齐完成后优先使用逐段模型结果；没有结果才显示卷/品级现代译文。
@@ -693,10 +720,13 @@ def load_canon_layers(book: str) -> list[dict]:
         rows.extend(_load_jsonl_cached(related_path))
     # 人工复核覆盖（sidecar，重跑 pipeline 不丢）
     rows = apply_reviews_to_rows(book, rows)
+    normalized = []
     for row in rows:
-        if row.get("layer") in {"现代白话", "现代释译"}:
-            row["unit_key"] = unit_key_from_row(book, row)
-    return rows
+        item = _coerce_chapter_fields(row)
+        if item.get("layer") in {"现代白话", "现代释译"}:
+            item["unit_key"] = unit_key_from_row(book, item)
+        normalized.append(item)
+    return normalized
 
 
 BOOK_SPECS_PATH = BASE_DIR / "numerology" / "canon" / "book_specs.yaml"
@@ -1104,7 +1134,10 @@ def canon_book(book):
     chapter = request.args.get("chapter", type=int)
     layer = request.args.get("layer", "")
     confidence = request.args.get("confidence", "")
-    chapters = sorted({s["chapter"] for s in segments if s["chapter"] is not None})
+    chapters = sorted({
+        s["chapter"] for s in segments
+        if isinstance(s.get("chapter"), int)
+    })
     chapter_directory = []
     for number in chapters:
         chapter_segments = [s for s in segments if s["chapter"] == number]
