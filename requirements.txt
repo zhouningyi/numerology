@@ -5,3 +5,4 @@ scipy>=1.10.0
 flask>=2.3.0
 markdown>=3.4.0
 openai>=1.0.0
+zhconv>=1.4

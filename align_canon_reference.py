@@ -78,10 +78,45 @@ def _chat_json(client, model: str, effort: str, system: str, user: str) -> dict:
     return json.loads(response.choices[0].message.content)
 
 
-def align_segment(client, model, effort, orig_sents, ref_sents, cursor):
+from zhconv import convert as _zh_convert
+
+
+def _bigrams(text: str) -> set:
+    # 原文为繁体、洪译为简体：先归一化到简体再取二元组，否则重叠被大幅低估
+    stripped = _zh_convert(re.sub(r"[，。！？；、：\s]", "", text), "zh-cn")
+    return {stripped[i : i + 2] for i in range(len(stripped) - 1)}
+
+
+def find_anchor(seg_text: str, ref_sents: list[str], ref_bigrams: list[set],
+                start: int, est_sents: int) -> int:
+    """在 ref_sents[start:] 中用二元组重叠找本段最可能的起始句号。
+
+    专名与术语在古文→白话间大量保留，是可靠的词汇锚点；
+    单调约束（只向后搜）避免华严套语（"佛子"式重复）误配到前文。
+    """
+    seg_grams = _bigrams(seg_text)
+    if not seg_grams:
+        return start
+    width = max(6, est_sents)
+    stride = max(1, width // 2)
+    # 前跳限界：套语/偈颂误配到远处会连累单调游标，宁可就近降级补译
+    search_end = min(len(ref_sents), start + est_sents * 8 + 300)
+    best_score, best_pos = -1, start
+    pos = start
+    while pos < search_end:
+        window_grams = set().union(*ref_bigrams[pos : pos + width]) if ref_bigrams[pos : pos + width] else set()
+        score = len(seg_grams & window_grams)
+        if score > best_score:
+            best_score, best_pos = score, pos
+        pos += stride
+    return best_pos
+
+
+def align_segment(client, model, effort, orig_sents, ref_sents, cursor,
+                  window_sents: int = WINDOW_SENTS):
     """返回 (pairs, sources, new_cursor)。译文句逐字取自 ref_sents。"""
     window_start = max(0, cursor - CURSOR_BACKOFF)
-    window = ref_sents[window_start : window_start + WINDOW_SENTS]
+    window = ref_sents[window_start : window_start + window_sents]
     orig_block = "\n".join(f"{i + 1}. {s}" for i, s in enumerate(orig_sents))
     ref_block = "\n".join(
         f"{window_start + j + 1}. {s}" for j, s in enumerate(window)
@@ -104,6 +139,13 @@ def align_segment(client, model, effort, orig_sents, ref_sents, cursor):
             ]
             if indexes and isinstance(indexes[-1], int):
                 max_used = max(max_used, indexes[-1])
+        # 本地校验：命中句与原句需有词汇重叠（繁简归一后），
+        # 防止模型在窗口内硬配不相关内容
+        if picked:
+            joined = "".join(picked)
+            overlap = len(_bigrams(orig) & _bigrams(joined))
+            if overlap < (1 if len(orig) <= 12 else 2):
+                picked = []
         if picked:
             pairs.append([orig, "".join(picked)])
             sources.append("ref")
@@ -127,24 +169,26 @@ def align_segment(client, model, effort, orig_sents, ref_sents, cursor):
 
 def process_chapter(client, model, effort, chapter, segments, ref_text, done, out, lock, stats):
     ref_sents = split_sentences(ref_text)
+    ref_bigrams = [_bigrams(s) for s in ref_sents]
+    avg_ref_len = max(10, sum(len(s) for s in ref_sents) // max(1, len(ref_sents)))
     cursor = 0
-    # 期望游标：按原文字数累计比例推算参考位置——命中游标在偈颂等
-    # 译本处理差异处会停住，用期望值兜底避免后续窗口整体错位。
-    total_chars = sum(len(s.get("text", "")) for s in segments) or 1
-    consumed_chars = 0
     for segment in segments:
-        expected = int(len(ref_sents) * consumed_chars / total_chars)
-        consumed_chars += len(segment.get("text", ""))
         key = (str(chapter), str(segment.get("segment_index")))
         if key in done:
             continue
         orig_sents = split_sentences(segment["text"])
         if not orig_sents:
             continue
+        # 词汇锚点定位：从上次位置向后搜二元组重叠峰值，长章/套语下仍稳
+        est_sents = int(len(segment["text"]) * 2.4 / avg_ref_len) + 2
+        anchor = find_anchor(
+            segment["text"], ref_sents, ref_bigrams,
+            max(0, cursor - CURSOR_BACKOFF), est_sents,
+        )
         try:
             pairs, sources, cursor = align_segment(
-                client, model, effort, orig_sents, ref_sents,
-                max(cursor, expected),
+                client, model, effort, orig_sents, ref_sents, anchor,
+                window_sents=max(WINDOW_SENTS, est_sents + 30),
             )
         except Exception as exc:  # noqa: BLE001 —— 单段失败跳过，下段继续
             with lock:
