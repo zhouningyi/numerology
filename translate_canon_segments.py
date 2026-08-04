@@ -68,11 +68,16 @@ def load_references(book: str) -> dict[str, str]:
     with path.open(encoding="utf-8") as handle:
         for line in handle:
             row = json.loads(line)
+            # 卷号是稳定的先后依据；补爬块的 segment_index 编号体系与旧块不同
+            try:
+                volume = int(str(row.get("volume") or 0))
+            except ValueError:
+                volume = 0
             blocks[str(row.get("chapter"))].append(
-                (int(str(row.get("segment_index") or 0)), row.get("text", ""))
+                (volume, int(str(row.get("segment_index") or 0)), row.get("text", ""))
             )
     return {
-        chapter: "\n".join(text for _, text in sorted(items))
+        chapter: "\n".join(text for _, _, text in sorted(items))
         for chapter, items in blocks.items()
     }
 
