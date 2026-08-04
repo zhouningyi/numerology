@@ -23,6 +23,7 @@ from numerology.corpus_quality import (
     apply_quality_fields,
     resolve_inline_alignment,
 )
+from numerology.translation_display import select_inline_translations
 from numerology.corpus_review import (
     append_review,
     apply_reviews_to_rows,
@@ -1133,7 +1134,7 @@ def canon_book(book):
         if s["layer"] == "原文" and (not confidence or s["confidence"] == confidence)
     ]
     # 现代译文/释译：段号优先 → 规范化 section_key；禁止“段数相等即顺序对齐”。
-    # 华严：阅读时优先挂项目自译（现代释译），网页/对齐白话仍在 auxiliary 分栏。
+    # 华严：在白话/释译之间按质量择优，丢掉网页垃圾与伪繁简，不再整层盖掉 aligned。
     inline_layers = {"现代白话", "现代释译"}
     inline_items = [
         s for s in chapter_segments
@@ -1142,12 +1143,7 @@ def canon_book(book):
         and (not layer or layer in inline_layers)
     ]
     if book == "huayan_t0279":
-        generated_translations = [
-            item for item in inline_items
-            if item["layer"] == "现代释译"
-        ]
-        if generated_translations:
-            inline_items = generated_translations
+        inline_items = select_inline_translations(original_segments, inline_items)
     alignment_result = resolve_inline_alignment(original_segments, inline_items)
     inline_by_original = alignment_result["inline_by_original"]
     unmatched_inline = alignment_result["unmatched_inline"]

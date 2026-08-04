@@ -27,9 +27,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 LAYERS_DIR = Path("data/processed/canon/layers")
-PROMPT_VERSION = "ref-align-v4"
+PROMPT_VERSION = "ref-align-v5"
 WINDOW_SENTS = 90     # 每次给模型看的译文句窗口
 CURSOR_BACKOFF = 3    # 游标回退量，容忍轻微乱序
+
+# 参考译文里偶发的网页装饰；选句前剔除
+_REF_JUNK_RE = re.compile(
+    r"(\[详情\]|放大字体|缩小|关闭|【原典】|作者：洪启嵩|\[投稿\]|"
+    r"白话华严经\s*第.*?卷|华严经是大乘佛教修学.*)",
+)
 
 ALIGN_PROMPT = """给你两组编号句子：佛经原文句（古文）和出版译本的译文句（现代文）。
 译文与原文顺序一致。任务：为每个原文句找出对应的译文句编号。
@@ -112,6 +118,15 @@ def find_anchor(seg_text: str, ref_sents: list[str], ref_bigrams: list[set],
     return best_pos
 
 
+def _is_junk_ref_sentence(text: str) -> bool:
+    from numerology.translation_display import contains_web_junk
+    return contains_web_junk(text or "") or bool(_REF_JUNK_RE.search(text or ""))
+
+
+def clean_ref_sentences(ref_sents: list[str]) -> list[str]:
+    return [s for s in ref_sents if s and not _is_junk_ref_sentence(s)]
+
+
 def align_segment(client, model, effort, orig_sents, ref_sents, cursor,
                   window_sents: int = WINDOW_SENTS):
     """返回 (pairs, sources, new_cursor)。译文句逐字取自 ref_sents。"""
@@ -135,7 +150,9 @@ def align_segment(client, model, effort, orig_sents, ref_sents, cursor,
             picked = [
                 ref_sents[j - 1]
                 for j in indexes
-                if isinstance(j, int) and window_start + 1 <= j <= window_start + len(window)
+                if isinstance(j, int)
+                and window_start + 1 <= j <= window_start + len(window)
+                and not _is_junk_ref_sentence(ref_sents[j - 1])
             ]
             if indexes and isinstance(indexes[-1], int):
                 max_used = max(max_used, indexes[-1])
@@ -143,9 +160,16 @@ def align_segment(client, model, effort, orig_sents, ref_sents, cursor,
         # 防止模型在窗口内硬配不相关内容
         if picked:
             joined = "".join(picked)
-            overlap = len(_bigrams(orig) & _bigrams(joined))
-            if overlap < (1 if len(orig) <= 12 else 2):
+            if _is_junk_ref_sentence(joined):
                 picked = []
+            else:
+                overlap = len(_bigrams(orig) & _bigrams(joined))
+                if overlap < (1 if len(orig) <= 12 else 2):
+                    picked = []
+                # 伪繁简：几乎只是原文转简体，不算译本命中
+                from numerology.translation_display import is_simplified_only
+                if picked and is_simplified_only(orig, joined):
+                    picked = []
         if picked:
             pairs.append([orig, "".join(picked)])
             sources.append("ref")
@@ -168,7 +192,7 @@ def align_segment(client, model, effort, orig_sents, ref_sents, cursor,
 
 
 def process_chapter(client, model, effort, chapter, segments, ref_text, done, out, lock, stats):
-    ref_sents = split_sentences(ref_text)
+    ref_sents = clean_ref_sentences(split_sentences(ref_text))
     ref_bigrams = [_bigrams(s) for s in ref_sents]
     avg_ref_len = max(10, sum(len(s) for s in ref_sents) // max(1, len(ref_sents)))
     cursor = 0
@@ -195,7 +219,10 @@ def process_chapter(client, model, effort, chapter, segments, ref_text, done, ou
                 stats["fail"] += 1
             logger.warning(f"ch{chapter}#{segment.get('segment_index')} 失败: {str(exc)[:100]}")
             continue
-        ref_ratio = sources.count("ref") / len(sources)
+        ref_ratio = sources.count("ref") / max(1, len(sources))
+        text = "\n".join(p[1] for p in pairs if p[1])
+        if not text.strip():
+            continue
         record = {
             "book": segment.get("book"),
             "chapter": segment.get("chapter"),
@@ -204,17 +231,20 @@ def process_chapter(client, model, effort, chapter, segments, ref_text, done, ou
             "volume": segment.get("volume"),
             "source_file": segment.get("source_file"),
             "layer": "现代释译",
-            "confidence": "high",
+            # 模型对齐不得直接 high；须人工 verified
+            "confidence": "low",
+            "review_status": "candidate",
             "marker": None,
             "translation_source": "洪启嵩译（模型仅对齐）",
             "alignment_method": f"句级对齐提取，逐字取自译本；补译占比 {1 - ref_ratio:.0%}",
-            "alignment_status": "已对齐",
+            "alignment_status": "候选（待复核）",
             "prompt_version": PROMPT_VERSION,
-            "text": "\n".join(p[1] for p in pairs if p[1]),
+            "text": text,
             "pairs": pairs,
             "pair_sources": sources,
-            "segment_index": f"gen-{segment.get('segment_index')}",
+            "segment_index": segment.get("segment_index"),
             "original_segment_index": segment.get("segment_index"),
+            "original_segment_indices": [segment.get("segment_index")],
         }
         with lock:
             out.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -246,7 +276,11 @@ def main() -> None:
     references = load_references(args.book)
     by_chapter = defaultdict(list)
     for r in rows:
-        if r.get("layer") == "原文" and len(r.get("text", "")) >= args.min_chars:
+        text = r.get("text", "")
+        # 短开经句（如「如是我聞：」）也必须对齐，不能因 min_chars 丢掉
+        if r.get("layer") == "原文" and (
+            len(text) >= args.min_chars or len(text.strip()) >= 2
+        ):
             by_chapter[str(r.get("chapter"))].append(r)
     chapters = [
         c for c in by_chapter
