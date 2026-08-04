@@ -1,33 +1,63 @@
 {% extends "base.html" %}
-{% block title %}{{ spec.name }} · 濒死探索{% endblock %}
+{% block title %}{{ scope_name }}{% endblock %}
 {% block content %}
-<h1 style="font-size:22px;margin-bottom:2px">{{ spec.name }}</h1>
+<div class="nde-reader">
+<div class="nde-reader-header">
+<h1 style="font-size:22px;margin-bottom:2px">{{ scope_name }}</h1>
 <p class="muted" style="font-size:13px;margin-bottom:12px">
-  <a href="/nde">← 返回现象分类</a> · {{ spec.description }} · 共 {{ total }} 篇 · 每页 {{ page_size }} 篇
+  {{ scope_description }} ·
+  {% if selected_tags or selected_facets %}筛选后 {{ total }} / {{ all_total }} 篇{% else %}共 {{ total }} 篇{% endif %} · 每页 {{ page_size }} 篇
 </p>
 <p class="muted" style="font-size:12px;margin-bottom:6px">
   点击每篇的"全文"可展开/折叠；彩色标记是模型概念证据句，颜色只区分概念，不代表真实性或强度。
 </p>
-{% if highlight_legend %}
-<div class="nde-highlight-legend" aria-label="本页重点颜色图例">
-  {% for item in highlight_legend %}
-  <span class="nde-highlight-chip" data-color="{{ item.color }}" style="background:rgba(88,166,255,.08)">{{ item.name }}</span>
+<div class="nde-filter-label">高级标签（可跨维度组合；普通点击单选，Ctrl/Command + 点击可多选）</div>
+<div class="nde-filter-bar nde-advanced-bar{% if selected_tags or selected_facets %} has-selection{% endif %}" aria-label="高级标签">
+  {% for item in advanced_tags %}
+  <a class="nde-filter-chip nde-advanced-chip{% if item.key in selected_facets %} active{% endif %}"
+     data-facet="{{ item.key }}" href="{{ tag_base_url }}?facet={{ item.key }}">{{ item.name }}</a>
   {% endfor %}
 </div>
+<div class="nde-filter-label">具体标签（网状节点；一个案例可以同时连接多个标签）</div>
+<div class="nde-filter-bar nde-concrete-tags{% if selected_tags or selected_facets %} has-selection{% endif %}" aria-label="具体标签">
+  {% for item in tag_options %}
+  <a class="nde-filter-chip{% if item.value in selected_tags %} active{% endif %}"
+     data-tag="{{ item.value }}" data-color="{{ item.color }}"
+     href="{{ tag_base_url }}?tag={{ item.value }}">{{ item.name }} <span>{{ item.count }}</span></a>
+  {% endfor %}
+</div>
+{% if selected_tags or selected_facets %}
+<p style="font-size:12px;margin-top:8px"><a href="{{ tag_base_url }}">清除标签筛选 ×</a></p>
 {% endif %}
+</div>
 
+<div class="nde-reader-results">
 {% for r in rows %}
-<div class="card" style="padding:12px 16px">
-  <div style="margin-bottom:4px">
-    <a href="/nde/experience/{{ r.slug }}" style="font-size:15px;font-weight:600">{{ r.title }}</a>
+<article class="card nde-case-card">
+  <div class="nde-case-title-row">
+    <a href="/nde/experience/{{ r.slug }}" style="font-size:15px;font-weight:600">{{ r.nde_meta.reporter }}</a>
     {% if r.classification %}<span class="badge badge-info">{{ r.classification }}</span>{% endif %}
+    <details class="nde-case-tags">
+      <summary>标签（{{ r.categories|length + r.concepts|length }}）</summary>
+      <div class="nde-case-tags-body">
+        {% for category_key, evidence in r.categories.items() %}
+        <a href="{{ tag_base_url }}?tag=category:{{ category_key }}" class="badge badge-a" title="{{ evidence }}">{{ phenomena[category_key].name }}</a>
+        {% endfor %}
+        {% for concept_key, evidence in r.concepts.items() if concept_key in concept_specs %}
+        <a href="{{ tag_base_url }}?tag=concept:{{ concept_key }}" class="badge badge-yin" title="{{ evidence }}">◈ {{ concept_specs[concept_key].name }}</a>
+        {% endfor %}
+      </div>
+    </details>
   </div>
-  <div style="font-size:13px;margin-bottom:4px">
-    <span class="muted">问卷证据：</span>{{ r.categories[key] }}
+  <div class="nde-case-meta" aria-label="案例登记信息">
+    <span>国家：{{ r.nde_meta.country }}</span>
+    <span>报告者：{{ r.nde_meta.reporter }}</span>
+    <span>时间：{{ r.nde_meta.date }}</span>
+    <span>性别：{{ r.nde_meta.gender }}</span>
+    <span>登记：{{ r.nde_meta.registration }}</span>
+    <span>编号：{{ r.nde_meta.id }}</span>
   </div>
-  <details class="canon-fold lang-switch" style="margin-top:4px">
-    <summary style="cursor:pointer;font-size:13px">全文（重点已着色）</summary>
-    <div style="padding:8px 0 0">
+  <div class="nde-case-content lang-switch">
       {% if r.translation_zh_html %}
       <div class="lang-tabs">
         <button type="button" class="lt-btn active" data-target="zh">中文</button>
@@ -41,18 +71,19 @@
       <p class="muted" style="font-size:12px;margin-top:6px">
         <a href="/nde/experience/{{ r.slug }}">查看完整问卷与标签 →</a>
       </p>
-    </div>
-  </details>
-</div>
+  </div>
+</article>
 {% else %}
-<div class="card muted">该类别下暂无案例（抓取或解析进行中）。</div>
+<div class="card muted">当前筛选下暂无案例（抓取或解析进行中）。</div>
 {% endfor %}
 
 {% if total_pages > 1 %}
 <div class="pagination">
-  {% if page > 1 %}<a href="/nde/category/{{ key }}?page={{ page - 1 }}">上一页</a>{% endif %}
+  {% if page > 1 %}<a href="{{ tag_base_url }}?page={{ page - 1 }}{% for facet in selected_facets %}&facet={{ facet }}{% endfor %}{% for tag in selected_tags %}&tag={{ tag }}{% endfor %}">上一页</a>{% endif %}
   <span class="active">{{ page }} / {{ total_pages }}</span>
-  {% if page < total_pages %}<a href="/nde/category/{{ key }}?page={{ page + 1 }}">下一页</a>{% endif %}
+  {% if page < total_pages %}<a href="{{ tag_base_url }}?page={{ page + 1 }}{% for facet in selected_facets %}&facet={{ facet }}{% endfor %}{% for tag in selected_tags %}&tag={{ tag }}{% endfor %}">下一页</a>{% endif %}
 </div>
 {% endif %}
+</div>
+</div>
 {% endblock %}

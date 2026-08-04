@@ -10,10 +10,10 @@
 
 <div style="margin-bottom:10px">
   {% for t in tags %}
-  <a href="/nde/category/{{ t.key }}" class="badge badge-a" title="{{ t.evidence }}" style="margin-right:6px">{{ t.name }}</a>
+  <a href="/nde?tag=category:{{ t.key }}" class="badge badge-a" title="{{ t.evidence }}" style="margin-right:6px">{{ t.name }}</a>
   {% endfor %}
   {% for t in concept_tags %}
-  <a href="/nde/concept/{{ t.key }}" class="badge badge-yin" title="{{ t.evidence }}" style="margin-right:6px">◈ {{ t.name }}</a>
+  <a href="/nde?tag=concept:{{ t.key }}" class="badge badge-yin" title="{{ t.evidence }}" style="margin-right:6px">◈ {{ t.name }}</a>
   {% endfor %}
 </div>
 {% if highlight_legend %}

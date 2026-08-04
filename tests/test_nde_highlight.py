@@ -1,6 +1,6 @@
 """叙述证据高亮与问卷行标记测试。"""
 
-from server import highlight_evidence, tag_qa_rows
+from server import build_nde_tag_groups, highlight_evidence, prepare_nde_rows, tag_qa_rows
 
 
 def test_highlight_wraps_exact_evidence():
@@ -39,3 +39,43 @@ def test_tag_qa_rows_marks_positive_rows():
     ]
     tagged = tag_qa_rows(qa, phenomena)
     assert tagged == {0: ["隧道"]}
+
+
+def test_selected_concepts_limit_body_highlights():
+    rows, _ = prepare_nde_rows([
+        {
+            "slug": "sample",
+            "description": "Time had no meaning. I knew everything at once.",
+            "translations": {"中文": "时间没有意义。我同时知道了一切。"},
+            "concepts": {
+                "time_illusion": "Time had no meaning.",
+                "direct_knowing": "I knew everything at once.",
+            },
+            "concepts_zh": {},
+        }
+    ], {
+        "time_illusion": {"name": "时间虚幻"},
+        "direct_knowing": {"name": "直接知识"},
+    }, ["time_illusion"])
+    assert 'data-concept="time_illusion"' in rows[0]["description_html"]
+    assert "data-concept=\"direct_knowing\"" not in rows[0]["description_html"]
+
+
+def test_nde_tag_groups_include_phenomenon_and_idea_tags():
+    groups = build_nde_tag_groups(
+        {
+            "bright_light": {"name": "强光/白光"},
+            "deceased": {"name": "已故亲友"},
+        },
+        {"time_illusion": {"name": "时间虚幻"}},
+        [
+            {
+                "categories": {"bright_light": "Yes", "deceased": "Yes"},
+                "concepts": {"time_illusion": "evidence"},
+            }
+        ],
+    )
+    assert [group["name"] for group in groups] == ["现象", "理念", "亡灵"]
+    assert groups[0]["tags"][0]["value"] == "category:bright_light"
+    assert groups[1]["tags"][0]["value"] == "concept:time_illusion"
+    assert groups[2]["tags"][0]["value"] == "category:deceased"
