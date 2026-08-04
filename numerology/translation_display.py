@@ -178,6 +178,13 @@ def score_translation(row: dict, original_text: str | None = None) -> float:
         score -= 20  # 几乎全补译，质量不稳
     if "项目生成" in source or "一原文单元" in method:
         score += 25
+    # 强制句对齐产物优先于旧的「模型仅对齐」漂移层
+    if row.get("prompt_version") == "force-align-v1" or "强制句对齐" in source:
+        score += 55
+    if "模型仅对齐" in source and "强制" not in source:
+        score -= 30
+    if row.get("pairs") and len(row.get("pairs") or []) >= 1:
+        score += 10
     if any(m in text for m in _MODERN_MARKERS):
         score += 15
     # 略惩罚纯繁简嫌疑的中等重叠
