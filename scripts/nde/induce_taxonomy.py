@@ -34,6 +34,7 @@ from pathlib import Path
 
 import yaml
 
+from numerology.api_usage import record as record_usage
 from numerology.nde.taxonomy import (
     agreement_report,
     audit_taxonomy,
@@ -57,17 +58,22 @@ TRACE = OUT_DIR / "merge_trace.jsonl"
 LABELS = OUT_DIR / "labels.jsonl"
 
 # 抽取阶段刻意不给清单，只给"什么算现象"的判据，避免锚定到已有体系
-EXTRACT_PROMPT = """这是一段濒死体验自述。列出其中**体验者报告的现象**。
+EXTRACT_PROMPT = """这是一段濒死体验自述。列出其中**体验者在濒死状态中亲历的现象**。
 
-什么算现象：体验中发生的知觉、感受、认知或遭遇（看到什么、感到什么、
-明白了什么、遇到了谁、身体或时间感如何变化、之后有何转变）。
-什么不算：医疗与事故背景（手术、车祸、抢救过程）、旁人行为、单纯的情节交代。
+算现象：体验中的知觉、感受、认知、遭遇与后效
+  （看到/听到什么、身体与时间感如何变化、遇到谁、忽然明白什么、事后有何持久转变）。
+不算（一律不报）：
+- 医疗与事故经过（发病、手术、抢救、用药、住院）；
+- 旁人的行为与言语，除非体验者在离体状态中感知到；
+- 叙述行为本身（决定讲出来、担心别人不信、写下这段经历）；
+- 纯情节交代（时间地点、谁陪着、后来做了什么工作）。
 
 要求：
-- 用简短的英文名词短语描述现象本身，去掉人称和具体人名地名
-  （写 "being pulled toward light" 而不是 "John pulled me toward the light"）；
+- **只报最显著的 1–6 个**，宁缺勿滥，不要把一句话拆成多条；
+- 用简短英文名词短语，去掉人称与具体人名地名
+  （写 "being pulled toward light" 而非 "John pulled me toward the light"）；
 - 每个现象附一句**逐字引用**的原文作证据；
-- 没有可报告的现象就返回空列表，不要硬凑。
+- 这段没有可报告的现象就返回空列表。
 
 只输出 JSON：{"phenomena": [{"phrase": "...", "evidence": "..."}]}"""
 
@@ -100,7 +106,8 @@ LABEL_PROMPT_TEMPLATE = """判断这段濒死体验叙述命中了下列哪些�
 def _client():
     from openai import OpenAI
 
-    return OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    # 不设超时会让个别挂起的请求永久占住 worker，整批静默停摆
+    return OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=90.0, max_retries=3)
 
 
 def _chat_json(client, model: str, effort: str, system: str, user: str) -> dict:
@@ -115,6 +122,7 @@ def _chat_json(client, model: str, effort: str, system: str, user: str) -> dict:
     if model.startswith("gpt-5"):
         kwargs["reasoning_effort"] = effort
     response = client.chat.completions.create(**kwargs)
+    record_usage(model, getattr(response, "usage", None), task="induce_taxonomy")
     return json.loads(response.choices[0].message.content)
 
 
