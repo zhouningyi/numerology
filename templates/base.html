@@ -171,6 +171,18 @@
   .sent-linked .sent.sent-ai {
     border-bottom: 1px dashed rgba(210, 153, 34, .8);
   }
+
+  /* 悬停原文句 → 该句译文直接浮现在句子下方 */
+  #sent-tip {
+    position: absolute; z-index: 60; display: none;
+    max-width: 680px; padding: 10px 14px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--accent); border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    font-size: 14px; line-height: 1.85; white-space: pre-wrap;
+  }
+  #sent-tip .tip-label { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
+  #sent-tip.pinned { border-color: var(--wood); }
   .canon-seg.yijing-seg .canon-original { cursor: default; }
   /* 《华严经》按原文小段逐段对照，原文与译文默认同时展开。 */
   .canon-seg.huayan-seg .seg-trans { display: block; }
@@ -280,6 +292,55 @@
     document.documentElement.dataset.theme = next;
     localStorage.setItem('theme', next);
   });
+
+  // 悬停原文句：在句子正下方浮现该句译文（点击句子固定/取消）
+  (() => {
+    const tip = document.createElement('div');
+    tip.id = 'sent-tip';
+    document.addEventListener('DOMContentLoaded', () => document.body.appendChild(tip));
+    let pinned = false;
+    const show = (sent) => {
+      const article = sent.closest('.canon-seg');
+      if (!article) return false;
+      const trans = article.querySelector(`.seg-trans .sent[data-si="${sent.dataset.si}"]`);
+      if (!trans || !trans.textContent.trim()) return false;
+      const isAi = trans.classList.contains('sent-ai');
+      tip.innerHTML = `<div class="tip-label">${isAi ? '模型补译（译本未覆盖）' : '译文'}${pinned ? ' · 已固定，点句取消' : ''}</div>`;
+      tip.appendChild(document.createTextNode(trans.textContent));
+      const rect = sent.getBoundingClientRect();
+      tip.style.left = Math.max(8, Math.min(window.scrollX + rect.left,
+        window.scrollX + document.documentElement.clientWidth - 700)) + 'px';
+      tip.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+      tip.style.display = 'block';
+      tip.classList.toggle('pinned', pinned);
+      return true;
+    };
+    document.addEventListener('mouseover', (event) => {
+      if (pinned) return;
+      const sent = event.target.closest('.canon-original .sent');
+      if (sent) show(sent);
+    });
+    document.addEventListener('mouseout', (event) => {
+      if (pinned) return;
+      if (event.target.closest('.canon-original .sent')
+          && !(event.relatedTarget && event.relatedTarget.closest('#sent-tip'))) {
+        tip.style.display = 'none';
+      }
+    });
+    document.addEventListener('click', (event) => {
+      const sent = event.target.closest('.canon-original .sent');
+      if (sent) {
+        pinned = !pinned;
+        if (!show(sent)) { pinned = false; tip.style.display = 'none'; }
+        event.stopPropagation();
+        return;
+      }
+      if (pinned && !event.target.closest('#sent-tip')) {
+        pinned = false;
+        tip.style.display = 'none';
+      }
+    }, true);
+  })();
 
   // 句级对照：悬停一句，同段内相同序号的原句/译句一起高亮
   document.addEventListener('mouseover', (event) => {
