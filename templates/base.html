@@ -150,6 +150,18 @@
   dialog { margin: auto; }
   dialog::backdrop { background: rgba(1, 4, 9, 0.6); backdrop-filter: blur(2px); }
 
+  /* 生效筛选条件：可逐个移除，避免"结果为何变少"无从判断 */
+  .nde-active-filters {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin: 0 0 8px; font-size: 12px;
+  }
+  .nde-active-chip {
+    background: rgba(88,166,255,.14); color: var(--accent);
+    border-radius: 11px; padding: 2px 9px; white-space: nowrap;
+  }
+  .nde-active-chip:hover { background: rgba(248,81,73,.16); color: var(--fire); text-decoration: none; }
+  .nde-active-clear { color: var(--text-muted); }
+
   /* 整段译文默认收起，点小图标展开 */
   .canon-seg .seg-trans {
     display: none; margin-top: 6px; padding: 5px 8px;

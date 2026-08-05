@@ -8,6 +8,7 @@ import os
 import re
 import sqlite3
 from pathlib import Path
+from urllib.parse import urlencode
 
 import markdown
 import yaml
@@ -1593,11 +1594,35 @@ def normalize_nde_date(value: str) -> str:
     return value if match else value
 
 
+def nde_event_era(record: dict) -> str:
+    """返回案例体验日期所属的年代；无法确定年份时返回空字符串。"""
+    value = record.get("nde_meta", {}).get("date", "")
+    match = re.search(r"\b((?:19|20)\d{2})\b", value)
+    if not match:
+        return ""
+    year = int(match.group(1))
+    return f"{year // 10 * 10}年代"
+
+
+def nde_fulltext(record: dict) -> str:
+    """汇总可阅读字段，供 NDE 列表的本地全文检索使用。"""
+    qa_text = "\n".join(
+        f"{pair.get('q', '')}\n{pair.get('a', '')}"
+        for pair in record.get("qa", [])
+    )
+    return "\n".join((
+        record.get("title", ""), record.get("description", ""),
+        (record.get("translations") or {}).get("中文", ""), qa_text,
+        record.get("nde_meta", {}).get("reporter", ""),
+        record.get("nde_meta", {}).get("country", ""),
+    )).casefold()
+
+
 def prepare_nde_rows(
     rows: list[dict], concept_specs: dict, focus_concepts: list[str] | None = None,
-    focus_only: bool | None = None,
+    focus_only: bool | None = None, search_query: str = "",
 ) -> tuple[list[dict], list[dict]]:
-    """为列表页准备原文证据高亮；不修改缓存中的原始记录。"""
+    """为列表页准备证据与全文检索高亮；不修改缓存中的原始记录。"""
     if focus_only is None:
         # 兼容调用方传入具体标签列表即表示“只高亮这些标签”。
         focus_only = focus_concepts is not None
@@ -1617,7 +1642,7 @@ def prepare_nde_rows(
             if key in concept_specs and evidence and (not focus_only or key in focus)
         ]
         record["description_html"] = highlight_evidence(
-            record.get("description", ""), concept_tags
+            record.get("description", ""), concept_tags, search_query
         )
         zh_text = (record.get("translations") or {}).get("中文", "")
         zh_tags = [
@@ -1631,8 +1656,15 @@ def prepare_nde_rows(
             if key in concept_specs and sentence and (not focus_only or key in focus)
         ]
         record["translation_zh_html"] = (
-            highlight_evidence(zh_text, zh_tags) if zh_text else ""
+            highlight_evidence(zh_text, zh_tags, search_query) if zh_text else ""
         )
+        record["qa_html"] = [
+            {
+                "q": highlight_evidence(pair.get("q", ""), [], search_query),
+                "a": highlight_evidence(pair.get("a", ""), [], search_query),
+            }
+            for pair in record.get("qa", [])
+        ]
         record["highlight_tags"] = concept_tags
         for tag in concept_tags + zh_tags:
             legend[tag["key"]] = {
@@ -1689,16 +1721,57 @@ def build_nde_tag_groups(
     return groups
 
 
+def build_nde_filter_chips(
+    base_url: str, search_query: str, country: str, era: str,
+    facets: list[str], tags: list[str], valid_tags: dict,
+) -> list[dict]:
+    """当前生效的筛选条件及各自的"移除后"链接。
+
+    只显示"筛选后 790/5671"而不说是什么在筛，用户无从判断结果为何变少；
+    分享出去的链接尤其容易带着旧参数。
+    """
+    facet_names = {d["key"]: d["name"] for d in NDE_ADVANCED_TAG_DEFS}
+    active = [
+        ("q", search_query, f"检索：{search_query}") if search_query else None,
+        ("country", country, f"国家：{country}") if country else None,
+        ("era", era, f"年代：{era}") if era else None,
+    ]
+    active = [item for item in active if item]
+    active += [("facet", f, f"分组：{facet_names.get(f, f)}") for f in facets]
+    active += [
+        ("tag", t, valid_tags.get(t, {}).get("name") or t) for t in tags
+    ]
+
+    def url_without(kind: str, value: str) -> str:
+        params = []
+        if search_query and not (kind == "q"):
+            params.append(("q", search_query))
+        if country and not (kind == "country"):
+            params.append(("country", country))
+        if era and not (kind == "era"):
+            params.append(("era", era))
+        params += [("facet", f) for f in facets if not (kind == "facet" and f == value)]
+        params += [("tag", t) for t in tags if not (kind == "tag" and t == value)]
+        return f"{base_url}?{urlencode(params)}" if params else base_url
+
+    return [
+        {"label": label, "remove_url": url_without(kind, value)}
+        for kind, value, label in active
+    ]
+
+
 def _render_nde_explorer():
-    """统一的濒死标签入口：全部案例、标签组与文章流在同一页。"""
+    """统一的濒死阅读入口：全文检索、筛选栏与文章流在同一页。"""
     phenomena = load_phenomena()
     page = max(request.args.get("page", 1, type=int), 1)
     per_page = NDE_PAGE_SIZE
-    all_matched = load_nde_experiences()
+    all_records = load_nde_experiences()
     concept_specs = load_nde_concepts()
-    tag_groups = build_nde_tag_groups(phenomena, concept_specs, all_matched)
+    tag_groups = build_nde_tag_groups(phenomena, concept_specs, all_records)
     tag_options = [item for group in tag_groups for item in group["tags"]]
     tag_options = list({item["value"]: item for item in tag_options}.values())
+    # 具体标签默认优先展示覆盖案例更多的项，数量相同时保持名称排序稳定。
+    tag_options.sort(key=lambda item: (-item["count"], item["name"]))
     valid_tags = {
         item["value"]: item
         for item in tag_options
@@ -1711,6 +1784,17 @@ def _render_nde_explorer():
         value for value in request.args.getlist("facet")
         if any(definition["key"] == value for definition in NDE_ADVANCED_TAG_DEFS)
     ]
+    tag_search = request.args.get("tag_search", "").strip()
+    tag_search_matches = [
+        item for item in tag_options
+        if tag_search and tag_search.casefold() in {
+            item["value"].casefold(), item["name"].casefold()
+        }
+    ]
+    if tag_search_matches:
+        value = tag_search_matches[0]["value"]
+        if value not in selected_tags:
+            selected_tags.append(value)
     # 兼容之前已经分享出去的 ?concept=... 链接。
     for concept in request.args.getlist("concept"):
         value = f"concept:{concept}"
@@ -1736,9 +1820,28 @@ def _render_nde_explorer():
                 for member in definition["members"]
                 if member.startswith("concept:")
             )
+    search_query = request.args.get("q", "").strip()
+    country_options = sorted({
+        record["nde_meta"]["country"] for record in all_records
+    })
+    selected_country = request.args.get("country", "").strip()
+    if selected_country not in country_options:
+        selected_country = ""
+    era_options = sorted({
+        era for record in all_records if (era := nde_event_era(record))
+    }, reverse=True)
+    selected_era = request.args.get("era", "").strip()
+    if selected_era not in era_options:
+        selected_era = ""
+    base_matched = [
+        record for record in all_records
+        if (not search_query or search_query.casefold() in nde_fulltext(record))
+        and (not selected_country or record["nde_meta"]["country"] == selected_country)
+        and (not selected_era or nde_event_era(record) == selected_era)
+    ]
     matched = (
         [
-            r for r in all_matched
+            r for r in base_matched
             if all(concept in r.get("concepts", {}) for concept in selected_concepts)
             and all(category in r.get("categories", {}) for category in selected_categories)
             and all(
@@ -1751,44 +1854,46 @@ def _render_nde_explorer():
                 if definition["key"] in selected_facets
             )
         ]
-        if selected_tags or selected_facets else all_matched
+        if selected_tags or selected_facets else base_matched
     )
     total = len(matched)
-    if selected_facets:
-        selected_members = {
-            member
-            for definition in NDE_ADVANCED_TAG_DEFS
-            if definition["key"] in selected_facets
-            and definition["members"] != "all"
-            for member in definition["members"]
-        }
-        visible_tag_options = [
-            item for item in tag_options
-            if item["value"] in selected_members
-            or item["value"] in selected_tags
-            or any(
-                definition["key"] in selected_facets and definition["members"] == "all"
-                for definition in NDE_ADVANCED_TAG_DEFS
-            )
-        ]
-    else:
-        visible_tag_options = tag_options
     total_pages = math.ceil(total / per_page) if total else 1
     rows, highlight_legend = prepare_nde_rows(
         matched[(page - 1) * per_page : page * per_page], concept_specs,
         sorted(focus_concepts), focus_only=bool(selected_tags or selected_facets),
+        search_query=search_query,
     )
+    pagination_params = []
+    if search_query:
+        pagination_params.append(("q", search_query))
+    if selected_country:
+        pagination_params.append(("country", selected_country))
+    if selected_era:
+        pagination_params.append(("era", selected_era))
+    pagination_params.extend(("facet", facet) for facet in selected_facets)
+    pagination_params.extend(("tag", tag) for tag in selected_tags)
+    pagination_query = urlencode(pagination_params)
     return render_template(
         "nde_category.html", scope_name="濒死探索",
         scope_description="NDERF 公开案例的统一标签阅读入口",
         scope_key=None, phenomena=phenomena, concept_specs=concept_specs,
         tag_base_url="/nde", rows=rows,
+        active_filters=build_nde_filter_chips(
+            "/nde", search_query, selected_country, selected_era,
+            selected_facets, selected_tags, valid_tags,
+        ),
         total=total, page=page, total_pages=total_pages,
-        all_total=len(all_matched), highlight_legend=highlight_legend,
-        page_size=per_page, tag_groups=tag_groups,
-        tag_options=visible_tag_options, advanced_tags=NDE_ADVANCED_TAG_DEFS,
+        all_total=len(all_records), highlight_legend=highlight_legend,
+        page_size=per_page, tag_options=tag_options,
+        advanced_tags=NDE_ADVANCED_TAG_DEFS,
         selected_tags=selected_tags, selected_facets=selected_facets,
         selected_concepts=selected_concepts,
+        search_query=search_query, country_options=country_options,
+        selected_country=selected_country, era_options=era_options,
+        selected_era=selected_era,
+        selected_tag_search=(tag_search or (valid_tags[selected_tags[0]]["name"] if len(selected_tags) == 1 else "")),
+        tag_search_unmatched=bool(tag_search and not tag_search_matches),
+        pagination_query=pagination_query,
     )
 
 
@@ -1860,22 +1965,24 @@ def nde_concept(key):
     return redirect(f"/nde?tag=concept:{key}")
 
 
-def highlight_evidence(text: str, evidences: list[dict]) -> str:
-    """在叙述原文中高亮概念证据句（尽力匹配：全句 → 归一化 → 前缀）。
+def highlight_evidence(
+    text: str, evidences: list[dict], search_query: str = ""
+) -> str:
+    """高亮概念证据句与全文检索的精确短语。
 
-    返回已转义的 HTML；匹配不到的证据句不高亮（模型摘句可能有轻微改写）。
+    返回已转义的 HTML；概念证据可退化为前缀匹配，检索词只做精确短语匹配。
     """
     from markupsafe import escape
 
-    spans = []  # (start, end, name, key, color)
-    lowered = text.lower()
+    spans = []  # (start, end, name, key, color, 类型)
+    lowered = text.casefold()
     for item in evidences:
         needle = (item.get("evidence") or "").strip().strip('"')
         if len(needle) < 8:
             continue
-        pos = lowered.find(needle.lower())
+        pos = lowered.find(needle.casefold())
         if pos < 0:  # 退化为前 40 字符前缀匹配
-            prefix = needle[:40].lower()
+            prefix = needle[:40].casefold()
             pos = lowered.find(prefix)
             needle_len = len(prefix) if pos >= 0 else 0
         else:
@@ -1883,17 +1990,36 @@ def highlight_evidence(text: str, evidences: list[dict]) -> str:
         if pos >= 0 and needle_len:
             spans.append((
                 pos, pos + needle_len, item["name"],
-                item.get("key", "default"), item.get("color", "default"),
+                item.get("key", "default"), item.get("color", "default"), "evidence",
             ))
-    spans.sort()
+    query = (search_query or "").strip()
+    if len(query) >= 2:
+        needle = query.casefold()
+        start = 0
+        while len(spans) < 500:
+            pos = lowered.find(needle, start)
+            if pos < 0:
+                break
+            spans.append((
+                pos, pos + len(query), "全文检索命中", "search", "yellow", "search",
+            ))
+            start = pos + len(query)
+    spans.sort(key=lambda span: (span[0], 0 if span[5] == "search" else 1, span[1]))
     merged, last_end = [], -1
-    for start, end, name, concept_key, color in spans:
+    for start, end, name, concept_key, color, kind in spans:
         if start >= last_end:  # 忽略重叠区间
-            merged.append((start, end, name, concept_key, color))
+            merged.append((start, end, name, concept_key, color, kind))
             last_end = end
     parts, cursor = [], 0
-    for start, end, name, concept_key, color in merged:
+    for start, end, name, concept_key, color, kind in merged:
         parts.append(str(escape(text[cursor:start])))
+        if kind == "search":
+            parts.append(
+                f'<mark class="search-mark" title="全文检索命中：{escape(query)}">'
+                f"{escape(text[start:end])}</mark>"
+            )
+            cursor = end
+            continue
         safe_key = re.sub(r"[^A-Za-z0-9_-]", "", str(concept_key)) or "default"
         color_attrs = (
             f' data-concept="{escape(safe_key)}" data-color="{escape(color)}"'

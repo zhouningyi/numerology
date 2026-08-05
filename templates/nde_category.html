@@ -3,34 +3,32 @@
 {% block content %}
 <div class="nde-reader">
 <div class="nde-reader-header">
-<h1 style="font-size:22px;margin-bottom:2px">{{ scope_name }}</h1>
-<p class="muted" style="font-size:13px;margin-bottom:12px">
-  {{ scope_description }} ·
-  {% if selected_tags or selected_facets %}筛选后 {{ total }} / {{ all_total }} 篇{% else %}共 {{ total }} 篇{% endif %} · 每页 {{ page_size }} 篇
-</p>
-<p class="muted" style="font-size:12px;margin-bottom:6px">
-  点击每篇的"全文"可展开/折叠；彩色标记是模型概念证据句，颜色只区分概念，不代表真实性或强度。
-</p>
-<div class="nde-filter-label">高级标签（可跨维度组合；普通点击单选，Ctrl/Command + 点击可多选）</div>
-<div class="nde-filter-bar nde-advanced-bar{% if selected_tags or selected_facets %} has-selection{% endif %}" aria-label="高级标签">
-  {% for item in advanced_tags %}
-  <a class="nde-filter-chip nde-advanced-chip{% if item.key in selected_facets %} active{% endif %}"
-     data-facet="{{ item.key }}" href="{{ tag_base_url }}?facet={{ item.key }}">{{ item.name }}</a>
-  {% endfor %}
+<div class="nde-reader-title-row">
+  <h1>{{ scope_name }}</h1>
+  <div class="nde-reader-summary muted">
+    {{ scope_description }} · {% if search_query or selected_country or selected_era or selected_tags or selected_facets %}筛选后 {{ total }} / {{ all_total }} 篇{% else %}共 {{ total }} 篇{% endif %} · 每页 {{ page_size }} 篇
+  </div>
 </div>
-<div class="nde-filter-label">具体标签（网状节点；一个案例可以同时连接多个标签）</div>
-<div class="nde-filter-bar nde-concrete-tags{% if selected_tags or selected_facets %} has-selection{% endif %}" aria-label="具体标签">
-  {% for item in tag_options %}
-  <a class="nde-filter-chip{% if item.value in selected_tags %} active{% endif %}"
-     data-tag="{{ item.value }}" data-color="{{ item.color }}"
-     href="{{ tag_base_url }}?tag={{ item.value }}">{{ item.name }} <span>{{ item.count }}</span></a>
+{% if active_filters %}
+<div class="nde-active-filters">
+  <span class="muted">生效筛选：</span>
+  {% for chip in active_filters %}
+  <a class="nde-active-chip" href="{{ chip.remove_url }}" title="移除此条件">{{ chip.label }} ×</a>
   {% endfor %}
+  <a class="nde-active-clear" href="{{ tag_base_url }}">全部清除</a>
 </div>
-{% if selected_tags or selected_facets %}
-<p style="font-size:12px;margin-top:8px"><a href="{{ tag_base_url }}">清除标签筛选 ×</a></p>
 {% endif %}
+<form class="nde-fulltext-search" method="get" action="{{ tag_base_url }}" role="search" data-nde-auto-form>
+  <input type="search" name="q" value="{{ search_query }}" placeholder="搜索体验叙述、中文译文与完整问卷">
+  {% if selected_country %}<input type="hidden" name="country" value="{{ selected_country }}">{% endif %}
+  {% if selected_era %}<input type="hidden" name="era" value="{{ selected_era }}">{% endif %}
+  {% for facet in selected_facets %}<input type="hidden" name="facet" value="{{ facet }}">{% endfor %}
+  {% for tag in selected_tags %}<input type="hidden" name="tag" value="{{ tag }}">{% endfor %}
+</form>
+<p class="muted nde-reader-hint">输入即全文检索；右侧筛选与标签点击后立即生效。{% if search_query %}黄色标记为当前检索短语的精确命中。{% endif %} 点击“标签（n）”可查看案例标签；“查看完整问卷”在弹窗中打开。</p>
 </div>
 
+<div class="nde-reader-main">
 <div class="nde-reader-results">
 {% for r in rows %}
 <article class="card nde-case-card">
@@ -69,21 +67,87 @@
       <div style="white-space:pre-wrap;font-size:13.5px;line-height:1.8">{{ r.description_html|safe }}</div>
       {% endif %}
       <p class="muted" style="font-size:12px;margin-top:6px">
-        <a href="/nde/experience/{{ r.slug }}">查看完整问卷与标签 →</a>
+        <button type="button" class="nde-questionnaire-open" data-open-nde-questionnaire="nde-questionnaire-{{ loop.index }}">{{ '查看完整问卷与标签' if r.qa else '查看标签与登记信息' }} →</button>
       </p>
   </div>
 </article>
+<dialog class="nde-questionnaire-modal" id="nde-questionnaire-{{ loop.index }}" aria-labelledby="nde-questionnaire-title-{{ loop.index }}">
+  <div class="nde-questionnaire-modal-head">
+    <div>
+      <h2 id="nde-questionnaire-title-{{ loop.index }}">{{ r.nde_meta.reporter }} · 完整问卷</h2>
+      <p class="muted">{{ r.nde_meta.date }} · {{ r.nde_meta.country }} · {{ r.nde_meta.registration }}</p>
+    </div>
+    <button type="button" class="nde-questionnaire-close" data-close-nde-questionnaire aria-label="关闭">×</button>
+  </div>
+  <div class="nde-questionnaire-modal-tags">
+    {% for category_key, evidence in r.categories.items() %}
+    <a href="{{ tag_base_url }}?tag=category:{{ category_key }}" class="badge badge-a" title="{{ evidence }}">{{ phenomena[category_key].name }}</a>
+    {% endfor %}
+    {% for concept_key, evidence in r.concepts.items() if concept_key in concept_specs %}
+    <a href="{{ tag_base_url }}?tag=concept:{{ concept_key }}" class="badge badge-yin" title="{{ evidence }}">◈ {{ concept_specs[concept_key].name }}</a>
+    {% endfor %}
+  </div>
+  {% if r.qa %}<table>
+    <tr><th style="width:43%">问题</th><th>回答</th></tr>
+    {% for pair in r.qa_html %}
+    <tr><td class="muted">{{ pair.q|safe }}</td><td style="white-space:pre-wrap">{{ pair.a|safe }}</td></tr>
+    {% endfor %}
+  </table>{% else %}<p class="muted">此案例没有可显示的标准化问卷；可在此查看已解析的标签与登记信息。</p>{% endif %}
+  <p class="muted" style="font-size:12px;margin-top:10px"><a href="/nde/experience/{{ r.slug }}">在独立页面查看体验叙述与原始来源 →</a></p>
+</dialog>
 {% else %}
-<div class="card muted">当前筛选下暂无案例（抓取或解析进行中）。</div>
+<div class="card muted">当前筛选下暂无案例。</div>
 {% endfor %}
 
 {% if total_pages > 1 %}
 <div class="pagination">
-  {% if page > 1 %}<a href="{{ tag_base_url }}?page={{ page - 1 }}{% for facet in selected_facets %}&facet={{ facet }}{% endfor %}{% for tag in selected_tags %}&tag={{ tag }}{% endfor %}">上一页</a>{% endif %}
+  {% if page > 1 %}<a href="{{ tag_base_url }}?page={{ page - 1 }}{% if pagination_query %}&{{ pagination_query }}{% endif %}">上一页</a>{% endif %}
   <span class="active">{{ page }} / {{ total_pages }}</span>
-  {% if page < total_pages %}<a href="{{ tag_base_url }}?page={{ page + 1 }}{% for facet in selected_facets %}&facet={{ facet }}{% endfor %}{% for tag in selected_tags %}&tag={{ tag }}{% endfor %}">下一页</a>{% endif %}
+  {% if page < total_pages %}<a href="{{ tag_base_url }}?page={{ page + 1 }}{% if pagination_query %}&{{ pagination_query }}{% endif %}">下一页</a>{% endif %}
 </div>
 {% endif %}
+</div>
+<aside class="nde-reader-filters" aria-label="案例筛选">
+  <form method="get" action="{{ tag_base_url }}" data-nde-auto-form>
+    {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+    {% for facet in selected_facets %}<input type="hidden" name="facet" value="{{ facet }}">{% endfor %}
+    {% for tag in selected_tags %}<input type="hidden" name="tag" value="{{ tag }}">{% endfor %}
+    <h2>筛选</h2>
+    <label>国家
+      <select name="country">
+        <option value="">不限</option>
+        {% for country in country_options %}<option value="{{ country }}"{% if country == selected_country %} selected{% endif %}>{{ country }}</option>{% endfor %}
+      </select>
+    </label>
+    {% if country_options == ['未登记'] %}<p class="muted">当前导入案例尚未记录国家。</p>{% endif %}
+    <label>体验年代
+      <select name="era">
+        <option value="">不限</option>
+        {% for era in era_options %}<option value="{{ era }}"{% if era == selected_era %} selected{% endif %}>{{ era }}</option>{% endfor %}
+      </select>
+    </label>
+  </form>
+  <div class="nde-filter-section">
+    <h3>大类标签</h3>
+    <div class="nde-filter-bar nde-sidebar-tags{% if selected_tags or selected_facets %} has-selection{% endif %}">
+      {% for item in advanced_tags %}
+      <a class="nde-filter-chip nde-advanced-chip{% if item.key in selected_facets %} active{% endif %}"
+         data-facet="{{ item.key }}" href="{{ tag_base_url }}?facet={{ item.key }}">{{ item.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="nde-filter-section">
+    <h3>小标签 <span>按案例数</span></h3>
+    <div class="nde-filter-bar nde-sidebar-tags{% if selected_tags or selected_facets %} has-selection{% endif %}">
+      {% for item in tag_options %}
+      <a class="nde-filter-chip{% if item.value in selected_tags %} active{% endif %}"
+         data-tag="{{ item.value }}" data-color="{{ item.color }}"
+         href="{{ tag_base_url }}?tag={{ item.value }}">{{ item.name }} <span>{{ item.count }}</span></a>
+      {% endfor %}
+    </div>
+  </div>
+  <p class="nde-filter-clear"><a href="{{ tag_base_url }}">清除全部筛选</a></p>
+</aside>
 </div>
 </div>
 {% endblock %}
