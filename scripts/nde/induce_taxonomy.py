@@ -78,17 +78,18 @@ EXTRACT_PROMPT = """这是一段濒死体验自述。列出其中**体验者在�
 只输出 JSON：{"phenomena": [{"phrase": "...", "evidence": "..."}]}"""
 
 # 归并阶段携带频次：高频项若被并入宽泛父类，统计上会损失分辨率
-MERGE_PROMPT = """下面是从濒死体验叙述中抽取的现象短语，格式为 `短语 (出现次数)`。
-把**说的是同一件事**的短语合并成标准项。
+MERGE_PROMPT = """下面是从濒死体验叙述中抽取的现象条目，每行格式 `#编号 短语 (出现次数)`。
+把**说的是同一件事**的条目合并成标准项。
 
 规则：
 - 表述不同但现象相同的合并（"being pulled" / "drawn toward" / "sucked into" → 同一项）；
 - 现象不同的不要合并，哪怕主题相近（"看到光"与"光有意识"是两件事）；
 - **保持具体，不要过度抽象**：不要合并成"感知体验""情绪变化"这种空壳；
-- 出现次数高的短语优先保留其粒度，不要并入宽泛父类；
-- 每个标准项：英文 key（snake_case）、中文名、一句判据、成员短语列表。
+- 出现次数高的条目优先保留其粒度，不要并入宽泛父类；
+- **每个输入编号都必须出现在某个标准项的 member_ids 里，不得遗漏**。
 
-只输出 JSON：{"items": [{"key": "...", "name": "...", "criterion": "...", "members": ["..."]}]}"""
+每个标准项给：英文 key（snake_case）、中文名、一句判据、member_ids（输入编号数组）。
+只输出 JSON：{"items": [{"key": "...", "name": "...", "criterion": "...", "member_ids": [1, 2]}]}"""
 
 LABEL_PROMPT_TEMPLATE = """判断这段濒死体验叙述命中了下列哪些现象。
 
@@ -263,12 +264,18 @@ def stage_merge(args) -> None:
     trace = TRACE.open("w", encoding="utf-8")
     # current：[(展示短语, 频次, 溯源成员)]
     current = [(p, n, [p]) for p, n in phrases]
-    for round_index in range(1, len(plan) + 1):
+    # 动态轮次：压到目标项数为止（预规划的轮数常低估实际压缩率）
+    round_index = 0
+    while len(current) > args.target and round_index < 6:
+        round_index += 1
         merged: list[tuple[str, int, list[str]]] = []
         batches = batched(current, args.batch_size)
 
         def make_job(batch, bi):
-            listing = "\n".join(f"- {p} ({n})" for p, n, _ in batch)
+            # 用编号而非长文本做溯源：模型不会逐字复制长串，文本匹配会大量丢失
+            listing = "\n".join(
+                f"#{j + 1} {p} ({n})" for j, (p, n, _) in enumerate(batch)
+            )
             def run():
                 return _chat_json(client, args.model, args.reasoning_effort, MERGE_PROMPT, listing)
             return run, bi
@@ -280,25 +287,43 @@ def stage_merge(args) -> None:
             f"归并第{round_index}轮",
         )
         for bi, result in sorted(results.items()):
-            lookup = {p: (n, members) for p, n, members in batches[bi]}
+            batch = batches[bi]
+            if not isinstance(result, dict):
+                continue
+            claimed: set[int] = set()
             for item in result.get("items", []) or []:
-                key = (item or {}).get("key") or ""
-                name = item.get("name") or key
-                members = [m for m in (item.get("members") or []) if isinstance(m, str)]
-                freq, lineage = 0, []
-                for m in members:
-                    hit = lookup.get(m)
-                    if hit:
-                        freq += hit[0]
-                        lineage.extend(hit[1])
-                if not key:
+                if not isinstance(item, dict):
                     continue
-                merged.append((f"{name}｜{item.get('criterion','')[:60]}", max(freq, 1), lineage or members))
+                key = str(item.get("key") or "").strip()
+                name = str(item.get("name") or key).strip()
+                ids = item.get("member_ids")
+                if isinstance(ids, int):
+                    ids = [ids]
+                positions = [
+                    int(i) - 1 for i in (ids or [])
+                    if isinstance(i, (int, str)) and str(i).lstrip("#").isdigit()
+                    and 1 <= int(str(i).lstrip("#")) <= len(batch)
+                ]
+                if not key or not positions:
+                    continue
+                freq, lineage = 0, []
+                for pos in positions:
+                    claimed.add(pos)
+                    _, n, members = batch[pos]
+                    freq += n
+                    lineage.extend(members)
+                merged.append((name, freq, lineage))
                 trace.write(json.dumps({
                     "round": round_index, "key": key, "name": name,
-                    "criterion": item.get("criterion", ""), "members": members,
+                    "criterion": item.get("criterion", ""),
+                    "member_count": len(positions),
                     "lineage_size": len(lineage), "freq": freq,
+                    "samples": lineage[:8],
                 }, ensure_ascii=False) + "\n")
+            # 模型漏认领的条目原样带入下一轮，避免静默丢数据
+            for pos, (text, n, members) in enumerate(batch):
+                if pos not in claimed:
+                    merged.append((text, n, members))
         trace.flush()
         logger.info(f"第{round_index}轮：{len(current)} → {len(merged)} 项")
         if not merged or len(merged) >= len(current):
