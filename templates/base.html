@@ -7,7 +7,7 @@
 <title>{% block title %}命理学统计研究{% endblock %}</title>
 <script>
   // 提前应用主题，避免刷新时闪烁
-  document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light';
 </script>
 <style>
   :root {
@@ -35,6 +35,8 @@
   a:hover { text-decoration: underline; }
 
   .container { max-width: 1320px; margin: 0 auto; padding: 0 14px; }
+  /* 濒死阅读器主要面向宽屏：扩大内容区，给右侧标签筛选留出可读宽度。 */
+  body:has(.nde-reader) .container { max-width: 1740px; }
 
   nav {
     background: var(--surface); border-bottom: 1px solid var(--border);
@@ -215,6 +217,7 @@
   mark.ev-mark[data-color="red"] { background: rgba(248, 81, 73, .25); border-color: #f85149; }
   mark.ev-mark[data-color="cyan"] { background: rgba(121, 192, 255, .25); border-color: #79c0ff; }
   mark.ev-mark[data-color="lime"] { background: rgba(166, 227, 161, .26); border-color: #a6e3a1; }
+  mark.search-mark { background:rgba(210,153,34,.42); color:inherit; border-radius:3px; padding:0 2px; border-bottom:1px solid #d29922; }
   .nde-highlight-legend { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 12px; }
   .nde-highlight-chip { border:1px solid var(--border); border-radius:999px; padding:2px 8px; font-size:12px; }
   .nde-highlight-chip[data-color="violet"] { background:rgba(188,140,255,.28); border-color:#bc8cff; }
@@ -234,6 +237,31 @@
   .nde-reader { height:calc(100vh - 78px); min-height:360px; display:flex; flex-direction:column; overflow:hidden; }
   .nde-reader-header { flex:0 0 auto; max-height:46vh; overflow-y:auto; padding:2px 6px 10px 0; border-bottom:1px solid var(--border); background:var(--bg); }
   .nde-reader-results { flex:1 1 auto; min-height:0; overflow-y:auto; padding:12px 6px 24px 0; overscroll-behavior:contain; }
+  .nde-reader-title-row { display:flex; align-items:baseline; gap:12px; }
+  .nde-reader-title-row h1 { flex:0 0 auto; margin:0; font-size:22px; }
+  .nde-reader-summary { min-width:0; overflow-x:auto; white-space:nowrap; font-size:12px; line-height:1.45; }
+  .nde-fulltext-search { display:flex; gap:7px; margin-top:8px; max-width:720px; }
+  .nde-fulltext-search input { flex:1 1 auto; min-width:0; }
+  .nde-reader-hint { margin:7px 0 0; font-size:12px; line-height:1.45; }
+  .nde-reader-main { flex:1 1 auto; min-height:0; display:grid; grid-template-columns:minmax(0, 1fr) 340px; gap:20px; }
+  .nde-reader-main .nde-reader-results { min-width:0; }
+  .nde-reader-filters { min-height:0; overflow-y:auto; border-left:1px solid var(--border); padding:12px 8px 16px 16px; }
+  .nde-reader-filters h2 { margin:0 0 10px; font-size:15px; }
+  .nde-reader-filters label { display:grid; gap:4px; margin:0 0 10px; color:var(--text-muted); font-size:12px; }
+  .nde-reader-filters select { width:calc(100% - 10px); margin-right:10px; font-size:13px; }
+  .nde-reader-filters input { width:100%; font-size:13px; }
+  .nde-reader-filters select[multiple] { min-height:132px; padding:3px; }
+  .nde-reader-filters p { margin:-3px 0 10px; font-size:11px; line-height:1.45; }
+  .nde-filter-actions { display:flex; align-items:center; gap:10px; }
+  .nde-filter-actions button { padding:5px 11px; font-size:13px; }
+  .nde-filter-actions a { font-size:13px; }
+  .nde-filter-error { color:var(--fire); }
+  .nde-filter-section { margin-top:13px; }
+  .nde-filter-section h3 { margin:0 0 6px; font-size:12px; color:var(--text-muted); }
+  .nde-filter-section h3 span { font-weight:400; font-size:10px; }
+  .nde-sidebar-tags { gap:4px; }
+  .nde-sidebar-tags .nde-filter-chip { gap:2px; padding:2px 5px; font-size:10px; line-height:1.25; }
+  .nde-filter-clear { margin:12px 0 0 !important; font-size:12px !important; }
   .nde-filter-label { font-size:12px; color:var(--text-muted); margin:8px 0 5px; }
   .nde-tag-groups { display:grid; gap:7px; }
   .nde-tag-group { display:flex; align-items:flex-start; gap:8px; }
@@ -267,11 +295,29 @@
   .nde-case-tags-body { display:flex; flex-wrap:wrap; gap:5px; padding:7px 0 2px; width:100%; }
   .nde-case-meta { display:flex; flex-wrap:wrap; gap:5px 14px; color:var(--text-muted); font-size:12px; margin:3px 0 6px; }
   .nde-case-content { padding-top:2px; }
+  .nde-questionnaire-open { padding:0; border:0; background:transparent; color:var(--accent); font-size:12px; }
+  .nde-questionnaire-open:hover { text-decoration:underline; opacity:1; }
+  dialog.nde-questionnaire-modal { width:min(94vw, 980px); max-width:none; max-height:88vh; overflow:auto; padding:18px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:10px; }
+  .nde-questionnaire-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid var(--border); padding-bottom:10px; }
+  .nde-questionnaire-modal-head h2 { margin:0 0 3px; font-size:18px; }
+  .nde-questionnaire-modal-head p { margin:0; font-size:12px; }
+  .nde-questionnaire-close { flex:0 0 auto; padding:0 8px; background:transparent; color:var(--text-muted); font-size:24px; line-height:1; }
+  .nde-questionnaire-close:hover { color:var(--text); opacity:1; }
+  .nde-questionnaire-modal-tags { display:flex; flex-wrap:wrap; gap:5px; margin:10px 0; }
+  .nde-questionnaire-modal table { font-size:13px; }
   .nde-advanced-bar { padding-bottom:2px; }
   .nde-advanced-chip { border-radius:6px; border-color:var(--accent); color:var(--accent); background:rgba(88,166,255,.08); }
   @media (max-width: 768px) {
     .nde-reader { height:calc(100vh - 70px); }
     .nde-reader-header { max-height:52vh; }
+    .nde-reader-title-row { align-items:flex-start; flex-wrap:wrap; gap:3px 8px; }
+    .nde-reader-summary { white-space:normal; }
+    .nde-reader-main { grid-template-columns:1fr; gap:0; overflow-y:auto; }
+    .nde-reader-main .nde-reader-results { order:2; overflow:visible; padding-right:0; }
+    .nde-reader-filters { order:1; min-height:auto; overflow:visible; border-left:0; border-bottom:1px solid var(--border); padding:10px 0; }
+    .nde-reader-filters form { display:grid; grid-template-columns:1fr 1fr; gap:0 8px; }
+    .nde-reader-filters h2, .nde-reader-filters p, .nde-filter-actions { grid-column:1 / -1; }
+    .nde-reader-filters select[multiple] { min-height:104px; }
   }
 </style>
 <script>
@@ -283,6 +329,18 @@
     const inside = event.clientX >= rect.left && event.clientX <= rect.right
       && event.clientY >= rect.top && event.clientY <= rect.bottom;
     if (!inside) dialog.close();
+  });
+
+  // NDE 列表中的完整问卷在当前页弹窗显示，避免打断筛选后的阅读位置。
+  document.addEventListener('click', (event) => {
+    const openButton = event.target.closest('[data-open-nde-questionnaire]');
+    if (openButton) {
+      document.getElementById(openButton.dataset.openNdeQuestionnaire)?.showModal();
+      return;
+    }
+    if (event.target.closest('[data-close-nde-questionnaire]')) {
+      event.target.closest('dialog')?.close();
+    }
   });
 
   // 亮/暗主题切换（localStorage 记忆）
@@ -493,8 +551,9 @@
     const chip = event.target.closest('.nde-filter-chip[data-tag], .nde-filter-chip[data-facet]');
     if (!chip) return;
     event.preventDefault();
-    const url = new URL(chip.href, window.location.href);
-    const current = new URL(window.location.href).searchParams;
+    const url = new URL(window.location.href);
+    url.pathname = new URL(chip.href, window.location.href).pathname;
+    const current = url.searchParams;
     const selected = [
       ...current.getAll('tag').map((value) => `tag:${value}`),
       ...current.getAll('facet').map((value) => `facet:${value}`),
@@ -514,15 +573,50 @@
     } else {
       selected.splice(0, selected.length, key);
     }
-    url.search = '';
     url.searchParams.delete('page');
+    url.searchParams.delete('tag');
+    url.searchParams.delete('facet');
+    url.searchParams.delete('concept');
     selected.forEach((item) => {
       const separator = item.indexOf(':');
       const kind = item.slice(0, separator);
       const value = item.slice(separator + 1);
       url.searchParams.append(kind, value);
     });
-    window.location.href = url.pathname + url.search;
+    showPage(url.pathname + url.search, true);
+  });
+
+  // NDE 查询控件即时生效：输入稍停即搜索，下拉选择立即更新结果。
+  let ndeSearchTimer;
+  const submitNdeFilters = (form) => {
+    const url = new URL(form.action, window.location.href);
+    const params = new URLSearchParams();
+    new FormData(form).forEach((value, key) => {
+      if (String(value).trim()) params.append(key, value);
+    });
+    url.search = params.toString();
+    showPage(url.pathname + url.search, true);
+  };
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.matches('[data-nde-auto-form]')) return;
+    event.preventDefault();
+    clearTimeout(ndeSearchTimer);
+    submitNdeFilters(form);
+  });
+  document.addEventListener('change', (event) => {
+    const form = event.target.closest('form[data-nde-auto-form]');
+    if (!form || event.target.name === 'q') return;
+    clearTimeout(ndeSearchTimer);
+    submitNdeFilters(form);
+  });
+  document.addEventListener('input', (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.name !== 'q') return;
+    const form = input.closest('form[data-nde-auto-form]');
+    if (!form) return;
+    clearTimeout(ndeSearchTimer);
+    ndeSearchTimer = setTimeout(() => submitNdeFilters(form), 360);
   });
 
   document.querySelectorAll('nav a[data-fast-nav]').forEach((link) => {
