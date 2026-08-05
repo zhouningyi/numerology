@@ -102,3 +102,75 @@ categories:
         positive_contains: ["yes", "acquire", "acquired", "developed", "psychic", "ability", "abilities", "gift"]
       - question_contains: special abilities
         positive_contains: ["yes", "acquire", "acquired", "developed", "psychic", "ability", "abilities", "gift"]
+
+  # ── 以下从高频未映射问卷自动候选中人工确认纳入（仍只走问卷，不走正文关键词）──
+  ineffable:
+    name: 难以言表
+    description: 体验难以用语言完整表达
+    match:
+      - question_contains: difficult to express in words
+  peace:
+    name: 平静/愉悦
+    description: 体验中感到平静、安宁或愉悦
+    match:
+      - question_contains: feeling of peace or pleasantness
+  joy:
+    name: 喜悦
+    description: 体验中感到喜悦
+    match:
+      - question_contains: feeling of joy
+  harmony_unity:
+    name: 和谐/与宇宙一体
+    description: 感到与宇宙和谐或一体
+    match:
+      - question_contains: harmony or unity with the universe
+  remote_awareness:
+    name: 远程觉知
+    description: 觉察到别处正在发生的事（如透视/遥视感）
+    match:
+      - question_contains: aware of things going on elsewhere
+  thoughts_speeded:
+    name: 思维加速
+    description: 思维比平时快得多
+    match:
+      - question_contains: thoughts speeded up
+  values_change:
+    name: 价值观改变
+    description: 体验后价值观或信念发生改变
+    match:
+      - question_contains: change in your values and beliefs
+  relationships_change:
+    name: 人际关系改变
+    description: 体验后人际关系因体验而改变
+    match:
+      - question_contains: relationships changed specifically because
+  info_love:
+    name: 关于爱的信息
+    description: 体验中获得关于爱的理解或信息
+    match:
+      - question_contains: gain information about love
+  info_god:
+    name: 关于神的信息
+    description: 体验中获得关于神/存在的信息（与“觉知到神”可并存）
+    match:
+      - question_contains: gain information about the existence of god
+  info_afterlife:
+    name: 关于死后的信息
+    description: 体验中获得关于死后世界/来生的信息
+    match:
+      - question_contains: gain information about an afterlife
+  info_oneness:
+    name: 关于一体/连接的信息
+    description: 体验中获得关于万物连接或一体的信息
+    match:
+      - question_contains: gain information about universal connection or oneness
+  info_meaning:
+    name: 关于生命意义的信息
+    description: 体验中获得关于生命意义的理解
+    match:
+      - question_contains: gain information about the meaning of life
+  earthly_lives_meaningful:
+    name: 尘世生活有意义（体验后）
+    description: 体验后更相信尘世生活有意义与价值
+    match:
+      - question_contains: earthly lives are meaningful and significant after your experience

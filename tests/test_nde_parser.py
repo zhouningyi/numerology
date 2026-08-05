@@ -49,6 +49,14 @@ def test_classification_uses_survey_answers():
     assert "other_world" not in cats  # Uncertain 为否定
 
 
+def test_tag_motifs_finds_white_light():
+    from numerology.nde.parser import tag_motifs
+    text = "I floated upward and saw a brilliant white light that loved me."
+    motifs = tag_motifs(text)
+    assert "white_light" in motifs
+    assert "white light" in motifs["white_light"].lower() or "brilliant white" in motifs["white_light"].lower()
+
+
 def test_negative_prefixes_are_rejected():
     qa = [{"q": "Did you pass into or through a tunnel", "a": "No tunnel at all"}]
     assert classify(qa) == {}

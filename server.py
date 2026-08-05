@@ -17,7 +17,7 @@ from flask import (
     send_from_directory,
 )
 
-from process_canon_layers import BOOKS as CANON_BOOKS
+from scripts.canon.process_canon_layers import BOOKS as CANON_BOOKS
 from numerology.corpus_quality import (
     STATUS_LABELS as CORPUS_STATUS_LABELS,
     apply_quality_fields,
@@ -33,9 +33,9 @@ from numerology.corpus_review import (
     load_reviews,
     unit_key_from_row,
 )
-from numerology.nde.parser import load_phenomena
+from numerology.nde.parser import load_motifs, load_phenomena
 from numerology.nde.search import EmbeddingIndex, MATRIX_PATH as NDE_MATRIX_PATH
-from translate_nderf import load_dotenv
+from scripts.nde.translate_nderf import load_dotenv
 
 load_dotenv()
 
@@ -1458,27 +1458,33 @@ NDE_ADVANCED_TAG_DEFS = (
     {"key": "experience", "name": "体验事件", "members": "all"},
     {"key": "sensory", "name": "感官环境", "members": {
         "category:bright_light", "category:tunnel", "category:heightened_senses",
-        "concept:light_conscious",
+        "category:thoughts_speeded", "concept:light_conscious",
     }},
     {"key": "entity", "name": "实体关系", "members": {
         "category:beings", "category:deceased", "category:religious_figure",
     }},
     {"key": "world", "name": "时空世界", "members": {
         "category:time_distortion", "category:other_world", "category:future_scenes",
-        "category:boundary", "concept:scale_illusion", "concept:time_illusion",
-        "concept:multiple_realms",
+        "category:boundary", "category:remote_awareness",
+        "concept:scale_illusion", "concept:time_illusion", "concept:multiple_realms",
     }},
     {"key": "mind", "name": "意识知识", "members": {
-        "category:obe", "category:special_knowledge", "concept:direct_knowing",
-        "concept:consciousness_independent", "concept:interpenetration",
+        "category:obe", "category:special_knowledge", "category:ineffable",
+        "category:info_meaning", "category:info_oneness", "category:info_god",
+        "category:info_afterlife", "category:info_love",
+        "concept:direct_knowing", "concept:consciousness_independent",
+        "concept:interpenetration",
     }},
     {"key": "affect", "name": "情绪价值", "members": {
-        "category:distressing", "category:life_review", "concept:oneness",
-        "concept:love_fundamental", "concept:no_judgment", "concept:more_real",
-        "concept:purpose_order",
+        "category:distressing", "category:life_review", "category:peace",
+        "category:joy", "category:harmony_unity",
+        "concept:oneness", "concept:love_fundamental", "concept:no_judgment",
+        "concept:more_real", "concept:purpose_order",
     }},
     {"key": "return", "name": "边界回返", "members": {
         "category:boundary", "category:aftereffects_gifts",
+        "category:values_change", "category:relationships_change",
+        "category:earthly_lives_meaningful",
     }},
 )
 NDE_CATEGORY_COLORS = {
@@ -1488,6 +1494,12 @@ NDE_CATEGORY_COLORS = {
     "boundary": "red", "time_distortion": "blue", "heightened_senses": "lime",
     "special_knowledge": "orange", "future_scenes": "pink", "distressing": "red",
     "aftereffects_gifts": "cyan",
+    "ineffable": "violet", "peace": "green", "joy": "yellow",
+    "harmony_unity": "teal", "remote_awareness": "blue", "thoughts_speeded": "lime",
+    "values_change": "cyan", "relationships_change": "pink",
+    "info_love": "pink", "info_god": "orange", "info_afterlife": "indigo",
+    "info_oneness": "teal", "info_meaning": "orange",
+    "earthly_lives_meaningful": "green",
 }
 
 
@@ -1932,6 +1944,13 @@ def nde_experience(slug):
         for key, evidence in record.get("categories", {}).items()
         if key in phenomena
     ]
+    motif_specs = load_motifs()
+    motif_tags = [
+        {"key": key, "name": motif_specs[key]["name"], "evidence": evidence,
+         "group": motif_specs[key].get("group")}
+        for key, evidence in record.get("motifs", {}).items()
+        if key in motif_specs
+    ]
     concept_specs = load_nde_concepts()
     concept_tags = [
         {"key": key, "name": concept_specs[key]["name"], "evidence": evidence,
@@ -1951,6 +1970,7 @@ def nde_experience(slug):
     qa_tags = tag_qa_rows(record.get("qa", []), phenomena)
     return render_template(
         "nde_experience.html", r=record, tags=tags, concept_tags=concept_tags,
+        motif_tags=motif_tags,
         description_html=description_html, translation_zh_html=translation_zh_html,
         highlight_legend=[
             {"key": key, "name": concept_specs[key]["name"],

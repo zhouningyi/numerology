@@ -12,10 +12,18 @@
   {% for t in tags %}
   <a href="/nde?tag=category:{{ t.key }}" class="badge badge-a" title="{{ t.evidence }}" style="margin-right:6px">{{ t.name }}</a>
   {% endfor %}
+  {% for t in motif_tags %}
+  <span class="badge badge-wood" title="正文母题 · {{ t.evidence }}" style="margin-right:6px">✦ {{ t.name }}</span>
+  {% endfor %}
   {% for t in concept_tags %}
   <a href="/nde?tag=concept:{{ t.key }}" class="badge badge-yin" title="{{ t.evidence }}" style="margin-right:6px">◈ {{ t.name }}</a>
   {% endfor %}
 </div>
+{% if motif_tags %}
+<p class="muted" style="font-size:12px;margin:-4px 0 10px">
+  ✦ 正文母题来自叙述关键词自动挖掘（candidate）；问卷现象与理念标签分层，互不替代。
+</p>
+{% endif %}
 {% if highlight_legend %}
 <div class="nde-highlight-legend" aria-label="概念证据颜色图例">
   {% for item in highlight_legend %}

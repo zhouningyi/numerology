@@ -15,6 +15,7 @@ import yaml
 
 NDE_DIR = Path(__file__).parent
 PHENOMENA_PATH = NDE_DIR / "phenomena.yaml"
+MOTIFS_PATH = NDE_DIR / "motifs.yaml"
 
 _TAG_RE = re.compile(r"<script.*?</script>|<style.*?</style>", re.S)
 # 词边界否定：no 后须是结束或标点/空白，且排除 "no longer"
@@ -34,6 +35,14 @@ _NEGATIVE_RE = re.compile(
 
 def load_phenomena() -> dict:
     return yaml.safe_load(PHENOMENA_PATH.read_text(encoding="utf-8"))["categories"]
+
+
+def load_motifs() -> dict:
+    """自由文本现象母题规则（与问卷现象分层）。"""
+    if not MOTIFS_PATH.exists():
+        return {}
+    data = yaml.safe_load(MOTIFS_PATH.read_text(encoding="utf-8")) or {}
+    return data.get("motifs") or {}
 
 
 def html_to_lines(raw_html: str) -> list[str]:
@@ -95,6 +104,7 @@ def parse_experience(url: str, raw_html: str) -> dict | None:
         "description": description,
         "qa": qa,
         "categories": classify(qa),
+        "motifs": tag_motifs(description),
     }
 
 
@@ -135,4 +145,39 @@ def classify(qa: list[dict], phenomena: dict | None = None) -> dict[str, str]:
                     break
             if key in result:
                 break
+    return result
+
+
+def tag_motifs(
+    description: str,
+    motifs: dict | None = None,
+    *,
+    context: int = 40,
+) -> dict[str, str]:
+    """叙述正文 → {母题key: 证据短句}。关键词/短语命中，保留上下文。"""
+    motifs = motifs if motifs is not None else load_motifs()
+    text = description or ""
+    if not text.strip() or not motifs:
+        return {}
+    lowered = text.lower()
+    result: dict[str, str] = {}
+    for key, spec in motifs.items():
+        patterns = spec.get("patterns") or []
+        hit_at = -1
+        hit_pat = ""
+        for pat in patterns:
+            idx = lowered.find(pat.lower())
+            if idx >= 0 and (hit_at < 0 or idx < hit_at):
+                hit_at = idx
+                hit_pat = pat
+        if hit_at < 0:
+            continue
+        start = max(0, hit_at - context)
+        end = min(len(text), hit_at + len(hit_pat) + context)
+        snippet = text[start:end].replace("\n", " ").strip()
+        if start > 0:
+            snippet = "…" + snippet
+        if end < len(text):
+            snippet = snippet + "…"
+        result[key] = snippet[:200]
     return result

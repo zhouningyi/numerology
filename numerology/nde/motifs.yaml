@@ -1,0 +1,184 @@
+# 叙述正文中的「现象母题」：从自由文本挖掘，与问卷现象（phenomena.yaml）分层。
+# - phenomena：NDERF 标准化问卷 → 高可复现、可统计
+# - motifs：叙述关键词/正则 → 可自动发现细粒度母题（如白光、音乐、光之城）
+# 母题命中保留证据短句，默认 status=candidate，人工确认后再升格为正式现象或概念。
+#
+# 用法：scripts/nde/mine_nde_phenomena.py 可提案新规则；
+#       tag_motifs() 写回 experiences.jsonl 的 motifs 字段。
+
+motifs:
+  white_light:
+    name: 白光/纯光
+    description: 叙述中明确出现白光、纯光、刺目光等（比问卷「强光」更细）
+    patterns:
+      - white light
+      - brilliant white
+      - pure light
+      - blinding light
+      - pure white
+    group: light
+
+  golden_light:
+    name: 金光/暖光
+    description: 金色、琥珀色、温暖的光
+    patterns:
+      - golden light
+      - amber light
+      - warm light
+      - yellow light
+    group: light
+
+  music:
+    name: 天乐/音乐
+    description: 听到音乐、合唱、圣歌或难以描述的旋律
+    patterns:
+      - heard music
+      - beautiful music
+      - choir
+      - singing
+      - melody
+      - hymn
+    group: sound
+
+  telepathy:
+    name: 心灵感应沟通
+    description: 不用口说话、意念交流
+    patterns:
+      - telepath
+      - without words
+      - mind to mind
+      - communication without
+      - spoke with (his|her|their) mind
+      - thoughts were
+    group: communication
+
+  voice:
+    name: 听到声音
+    description: 听到声音、内心声音或被告知某事
+    patterns:
+      - heard a voice
+      - a voice said
+      - a voice told
+      - inner voice
+      - voice in my
+    group: communication
+
+  life_decision:
+    name: 返回抉择
+    description: 被要求或自行决定是否回到身体/尘世
+    patterns:
+      - choice to return
+      - had to go back
+      - had to return
+      - decide to come back
+      - decide to go back
+      - not my time
+      - your time has not
+      - must go back
+    group: return
+
+  darkness_void:
+    name: 黑暗/虚空
+    description: 进入全黑、虚空或无底深渊
+    patterns:
+      - dark void
+      - total darkness
+      - pitch black
+      - the void
+      - blackness
+      - complete darkness
+    group: space
+
+  city_of_light:
+    name: 光之城
+    description: 看到光构成的城市、建筑或水晶城
+    patterns:
+      - city of light
+      - crystal city
+      - buildings of light
+      - golden city
+      - city made of
+    group: landscape
+
+  landscape:
+    name: 自然景观
+    description: 花园、草地、河流、山峦等场景
+    patterns:
+      - meadow
+      - garden
+      - flowers
+      - river
+      - lake
+      - mountains
+      - countryside
+    group: landscape
+
+  speed_travel:
+    name: 高速移动
+    description: 飞驰、穿越、被拉或高速移动的感觉
+    patterns:
+      - shot through
+      - rushing
+      - flying through
+      - speed of light
+      - traveling at
+      - pulled through
+      - zoomed
+    group: motion
+
+  unconditional_love:
+    name: 无条件的爱
+    description: 叙述中强调压倒性的、无条件的爱
+    patterns:
+      - unconditional love
+      - overwhelming love
+      - pure love
+      - love i had never
+      - felt love
+    group: emotion
+
+  hyperreal_colors:
+    name: 超常色彩
+    description: 从未见过的颜色、极度鲜艳的色彩
+    patterns:
+      - colors i had never
+      - colours i had never
+      - vibrant colors
+      - indescribable colors
+      - every color
+      - more vivid than
+    group: sense
+
+  presence_behind:
+    name: 背后/身旁临在
+    description: 感到有存在跟在旁边或身后，未必看见
+    patterns:
+      - presence behind
+      - someone behind me
+      - beside me
+      - accompanying me
+      - guide with me
+    group: being
+
+  barrier_door:
+    name: 门/墙/屏障
+    description: 遇到门、墙、栅栏等可感知的边界物（细于问卷 boundary）
+    patterns:
+      - a door
+      - a gate
+      - a wall
+      - a fence
+      - a barrier
+      - veil
+    group: boundary
+
+  library_knowledge:
+    name: 知识殿堂
+    description: 图书馆、大厅、下载知识的场所感
+    patterns:
+      - library
+      - hall of knowledge
+      - temple of
+      - downloaded
+      - all knowledge
+    group: knowledge
