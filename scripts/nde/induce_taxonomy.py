@@ -156,7 +156,14 @@ def _run_parallel(jobs, workers: int, on_result, desc: str = ""):
                 logger.warning(f"{meta} 失败: {str(exc)[:100]}")
                 continue
             with lock:
-                on_result(meta, result)
+                try:
+                    on_result(meta, result)
+                except Exception as exc:  # noqa: BLE001
+                    # 单条脏数据不能打断主循环：否则线程池还在消化队列，
+                    # 表现为"API 一直在调、结果不再写、进程不退出"的假死
+                    fail += 1
+                    logger.warning(f"{meta} 处理结果失败: {str(exc)[:100]}")
+                    continue
                 done += 1
                 if done % 100 == 0:
                     logger.info(f"{desc} 进度 {done}/{len(futures)}（失败 {fail}）")
@@ -200,15 +207,29 @@ def stage_extract(args) -> None:
             return _chat_json(client, args.model, args.reasoning_effort, EXTRACT_PROMPT, para)
         return run, (doc["slug"], index)
 
+    empty = {"n": 0}
+
     def on_result(meta, result):
         slug, index = meta
-        for item in result.get("phenomena", []) or []:
-            phrase = (item or {}).get("phrase", "").strip()
+        items = result.get("phenomena", []) or []
+        if not items:
+            empty["n"] += 1
+            if empty["n"] % 20 == 0:
+                logger.info(f"空结果累计 {empty['n']}（段落无可报现象属正常）")
+        for item in items:
+            # 模型有时把 phenomena 直接返回成字符串数组，容错处理
+            if isinstance(item, str):
+                phrase, evidence = item.strip(), ""
+            elif isinstance(item, dict):
+                phrase = str(item.get("phrase") or "").strip()
+                evidence = str(item.get("evidence") or "").strip()
+            else:
+                continue
             if not phrase:
                 continue
             out.write(json.dumps({
                 "slug": slug, "para": index,
-                "phrase": phrase, "evidence": (item.get("evidence") or "").strip(),
+                "phrase": phrase, "evidence": evidence,
             }, ensure_ascii=False) + "\n")
         out.flush()
 
