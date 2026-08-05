@@ -148,18 +148,19 @@
   dialog { margin: auto; }
   dialog::backdrop { background: rgba(1, 4, 9, 0.6); backdrop-filter: blur(2px); }
 
-  /* 原文段悬停出译文（点击固定/取消固定） */
+  /* 整段译文默认收起，点小图标展开 */
   .canon-seg .seg-trans {
-    display: none; margin-top: 8px; padding: 8px 12px;
-    border-left: 3px solid rgba(74, 163, 111, .5);
-    background: rgba(74, 163, 111, .06); border-radius: 0 6px 6px 0;
+    display: none; margin-top: 6px; padding: 5px 8px;
+    background: rgba(74, 163, 111, .06); border-radius: 5px;
   }
-  .canon-seg:hover .seg-trans, .canon-seg.pinned .seg-trans { display: block; }
-  .canon-seg.has-trans .canon-original { cursor: pointer; }
-  .canon-seg .seg-trans-hint { font-size: 10px; opacity: .7; margin-left: 6px; }
-  .canon-seg.pinned .seg-trans-hint { color: var(--wood); opacity: 1; }
-  /* 《周易》按卦辞/爻辞逐条对照，译文不依赖 hover，默认始终显示。 */
-  .canon-seg.yijing-seg .seg-trans { display: block; }
+  .canon-seg.pinned .seg-trans { display: block; }
+  .seg-toggle {
+    background: transparent; border: none; color: var(--text-muted);
+    font-size: 10px; padding: 0 4px; cursor: pointer; line-height: 1;
+    vertical-align: baseline;
+  }
+  .seg-toggle:hover { color: var(--accent); opacity: 1; }
+  .canon-seg.pinned .seg-toggle { color: var(--wood); }
 
   /* 句级对照：悬停原文/译文任一句，两侧对应句同步高亮 */
   .sent-linked .sent { border-radius: 3px; padding: 1px 1px; cursor: default; }
@@ -172,17 +173,16 @@
     border-bottom: 1px dashed rgba(210, 153, 34, .8);
   }
 
-  /* 悬停原文句 → 该句译文直接浮现在句子下方 */
+  /* 悬停原文句 0.5s → 该句译文浮现在句子下方（无边框、紧凑） */
   #sent-tip {
     position: absolute; z-index: 60; display: none;
-    max-width: 680px; padding: 10px 14px;
+    max-width: 640px; padding: 6px 10px;
     background: var(--surface); color: var(--text);
-    border: 1px solid var(--accent); border-radius: 8px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
-    font-size: 14px; line-height: 1.85; white-space: pre-wrap;
+    border: none; border-radius: 6px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, .4);
+    font-size: 13.5px; line-height: 1.8; white-space: pre-wrap;
   }
-  #sent-tip .tip-label { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
-  #sent-tip.pinned { border-color: var(--wood); }
+  #sent-tip.pinned { background: color-mix(in srgb, var(--surface) 92%, var(--wood)); }
   .canon-seg.yijing-seg .canon-original { cursor: default; }
   /* 《华严经》按原文小段逐段对照，原文与译文默认同时展开。 */
   .canon-seg.huayan-seg .seg-trans { display: block; }
@@ -293,24 +293,23 @@
     localStorage.setItem('theme', next);
   });
 
-  // 悬停原文句：在句子正下方浮现该句译文（点击句子固定/取消）
+  // 悬停原文句 0.5s：在句子正下方浮现该句译文（点击句子固定/取消）
   (() => {
     const tip = document.createElement('div');
     tip.id = 'sent-tip';
     document.addEventListener('DOMContentLoaded', () => document.body.appendChild(tip));
     let pinned = false;
+    let hoverTimer = null;
     const show = (sent) => {
       const article = sent.closest('.canon-seg');
       if (!article) return false;
       const trans = article.querySelector(`.seg-trans .sent[data-si="${sent.dataset.si}"]`);
       if (!trans || !trans.textContent.trim()) return false;
-      const isAi = trans.classList.contains('sent-ai');
-      tip.innerHTML = `<div class="tip-label">${isAi ? '模型补译（译本未覆盖）' : '译文'}${pinned ? ' · 已固定，点句取消' : ''}</div>`;
-      tip.appendChild(document.createTextNode(trans.textContent));
+      tip.textContent = trans.textContent;
       const rect = sent.getBoundingClientRect();
       tip.style.left = Math.max(8, Math.min(window.scrollX + rect.left,
-        window.scrollX + document.documentElement.clientWidth - 700)) + 'px';
-      tip.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+        window.scrollX + document.documentElement.clientWidth - 660)) + 'px';
+      tip.style.top = (window.scrollY + rect.bottom + 4) + 'px';
       tip.style.display = 'block';
       tip.classList.toggle('pinned', pinned);
       return true;
@@ -318,18 +317,23 @@
     document.addEventListener('mouseover', (event) => {
       if (pinned) return;
       const sent = event.target.closest('.canon-original .sent');
-      if (sent) show(sent);
+      if (!sent) return;
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(() => show(sent), 500);
     });
     document.addEventListener('mouseout', (event) => {
       if (pinned) return;
-      if (event.target.closest('.canon-original .sent')
-          && !(event.relatedTarget && event.relatedTarget.closest('#sent-tip'))) {
-        tip.style.display = 'none';
+      if (event.target.closest('.canon-original .sent')) {
+        clearTimeout(hoverTimer);
+        if (!(event.relatedTarget && event.relatedTarget.closest('#sent-tip'))) {
+          tip.style.display = 'none';
+        }
       }
     });
     document.addEventListener('click', (event) => {
       const sent = event.target.closest('.canon-original .sent');
       if (sent) {
+        clearTimeout(hoverTimer);
         pinned = !pinned;
         if (!show(sent)) { pinned = false; tip.style.display = 'none'; }
         event.stopPropagation();
@@ -359,6 +363,16 @@
     if (article && !article.contains(event.relatedTarget?.closest?.('.sent-linked .sent') || null)) {
       article.querySelectorAll('.sent.sent-hl').forEach(s => s.classList.remove('sent-hl'));
     }
+  });
+
+  // 小图标展开/收起整段译文
+  document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('.seg-toggle');
+    if (!toggle) return;
+    const article = toggle.closest('.canon-seg');
+    if (!article) return;
+    const open = article.classList.toggle('pinned');
+    toggle.textContent = open ? '▾' : '▸';
   });
 
   // 原文段点击固定/取消固定译文（避免悬停移开就消失）

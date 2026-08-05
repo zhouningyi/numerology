@@ -148,7 +148,7 @@
     <div class="muted" style="font-size:11px;margin-bottom:4px">
       原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}
       {% if inline_items %}
-      <span class="seg-trans-hint">{% if book in ('yijing', 'huayan_t0279') %}译文默认展开{% else %}悬停看译文 · 点击固定{% endif %}</span>
+      <button class="seg-toggle" type="button" title="展开/收起本段译文">▸</button>
       {% endif %}
     </div>
     {% set pair_aux = (inline_items | selectattr('pairs') | list | first) if inline_items else none %}
