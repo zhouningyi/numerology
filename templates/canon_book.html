@@ -148,7 +148,9 @@
     <div class="muted" style="font-size:11px;margin-bottom:4px">
       原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}
       {% if inline_items %}
-      <button class="seg-toggle" type="button" title="展开/收起本段译文">▸</button>{% if book == 'huayan_t0279' %}<span> 译文默认收起</span>{% endif %}
+      <button class="seg-toggle" type="button" title="展开/收起本段译文">
+        <span class="seg-toggle-icon">▸</span><span class="seg-toggle-label">展开本段译文</span>
+      </button>
       {% endif %}
     </div>
     {% set pair_aux = (inline_items | selectattr('pairs') | list | first) if inline_items else none %}
@@ -239,6 +241,7 @@
 </div>
 {% endif %}
 
+{% if has_secondary_auxiliary %}
 <div class="card">
   <h2>辅助材料 · 点击展开</h2>
   <p class="muted" style="font-size:12px;margin-bottom:8px">
@@ -265,7 +268,9 @@
   {% endif %}
   {% endfor %}
 </div>
+{% endif %}
 
+{% if alignment.editions %}
 <div class="card">
   <h2>版本与扫描辅助</h2>
   <p class="muted" style="font-size:12px;margin-bottom:10px">
@@ -301,10 +306,9 @@
       {% endfor %}
     </div>
   </div>
-  {% else %}
-  <p class="muted">没有找到该书对应的 PDF/OCR 版本。</p>
   {% endfor %}
 </div>
+{% endif %}
 <nav class="card" aria-label="章节导航" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px">
   <span>
     {% if previous_chapter is not none %}

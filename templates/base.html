@@ -170,9 +170,10 @@
   .canon-seg.pinned .seg-trans { display: block; }
   .seg-toggle {
     background: transparent; border: none; color: var(--text-muted);
-    font-size: 10px; padding: 0 4px; cursor: pointer; line-height: 1;
+    font-size: 11px; padding: 1px 5px; cursor: pointer; line-height: 1.35;
     vertical-align: baseline;
   }
+  .seg-toggle-label { margin-left: 3px; }
   .seg-toggle:hover { color: var(--accent); opacity: 1; }
   .canon-seg.pinned .seg-toggle { color: var(--wood); }
 
@@ -443,7 +444,11 @@
     const article = toggle.closest('.canon-seg');
     if (!article) return;
     const open = article.classList.toggle('pinned');
-    toggle.textContent = open ? '▾' : '▸';
+    const icon = toggle.querySelector('.seg-toggle-icon');
+    const label = toggle.querySelector('.seg-toggle-label');
+    if (icon) icon.textContent = open ? '▾' : '▸';
+    else toggle.textContent = open ? '▾' : '▸';
+    if (label) label.textContent = open ? '收起本段译文' : '展开本段译文';
   });
 
   // 原文段点击固定/取消固定译文（避免悬停移开就消失）

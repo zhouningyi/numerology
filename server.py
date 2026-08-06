@@ -1198,6 +1198,10 @@ def canon_book(book):
             and (not layer or layer == auxiliary_layer)
             and (not confidence or s["confidence"] == confidence)
         ]
+    has_secondary_auxiliary = any(
+        auxiliary_by_layer[name]
+        for name in ("原注", "评注", "相关著作", "站点内容")
+    )
     # 目录视图不渲染版本对照卡片，跳过对齐计算（全书级 difflib 会卡页面十几秒）
     if chapter is not None:
         alignment = canon_alignment(book, segments, chapter)
@@ -1215,6 +1219,7 @@ def canon_book(book):
         confidence=confidence, chapter_directory=chapter_directory,
         chapter_title=chapter_title, book_chapter_label=book_chapter_label,
         original_segments=original_segments, auxiliary_by_layer=auxiliary_by_layer,
+        has_secondary_auxiliary=has_secondary_auxiliary,
         inline_by_original=inline_by_original, unmatched_inline=unmatched_inline,
         corpus_group=CANON_BOOKS[book].get("corpus_group", "命理语料"),
         calculation_scope=CANON_BOOKS[book].get("calculation_scope", "可进入命理研究流程"),
