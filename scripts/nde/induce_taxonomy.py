@@ -365,11 +365,20 @@ def stage_merge(args) -> None:
     logger.info(f"标准词表 {len(catalog['phenomena'])} 项 -> {DRAFT}")
 
 
-def _catalog_text(draft: dict) -> str:
-    return "\n".join(
-        f"- {key}: {spec['name']} —— {spec.get('criterion','')}"
-        for key, spec in draft["phenomena"].items()
-    )
+def _catalog_text(draft: dict, tier: str | None = None) -> str:
+    """标注清单。tier 过滤用于只标可统计层——描述性标签信度不足，
+    标了也不能进统计，还会拉长 prompt 干扰判断。"""
+    lines = []
+    for key, spec in draft["phenomena"].items():
+        if tier and spec.get("tier") != tier:
+            continue
+        line = f"- {key}: {spec['name']} —— {spec.get('criterion','')}"
+        if spec.get("positive"):
+            line += f"\n    正例：{spec['positive']}"
+        if spec.get("negative"):
+            line += f"\n    反例（不算）：{spec['negative']}"
+        lines.append(line)
+    return "\n".join(lines)
 
 
 # ── 阶段三：双标注信度 ──────────────────────────────────────────
@@ -442,7 +451,11 @@ def stage_label(args) -> None:
 
     load_dotenv()
     client = _client()
-    prompt = LABEL_PROMPT_TEMPLATE.format(catalog=_catalog_text(draft))
+    prompt = LABEL_PROMPT_TEMPLATE.format(catalog=_catalog_text(draft, args.tier))
+    allowed = {
+        k for k, v in draft["phenomena"].items()
+        if not args.tier or v.get("tier") == args.tier
+    }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     out = LABELS.open("a", encoding="utf-8")
 
@@ -453,7 +466,7 @@ def stage_label(args) -> None:
         return run, doc["slug"]
 
     def on_result(slug, result):
-        hits = {k: v for k, v in (result.get("hits") or {}).items() if k in draft["phenomena"]}
+        hits = {k: v for k, v in (result.get("hits") or {}).items() if k in allowed}
         out.write(json.dumps({"slug": slug, "hits": hits}, ensure_ascii=False) + "\n")
         out.flush()
 
@@ -515,6 +528,8 @@ def main() -> None:
     parser.add_argument("--target", type=int, default=120)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--residual-input", default=None)
+    parser.add_argument("--tier", default=None,
+                        help="只标某一层（statistical=信度达标、可进统计）")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
