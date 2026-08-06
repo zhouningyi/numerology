@@ -1139,6 +1139,13 @@ def canon_book(book):
         s["chapter"] for s in segments
         if isinstance(s.get("chapter"), int)
     })
+    previous_chapter = next_chapter = None
+    if chapter in chapters:
+        chapter_position = chapters.index(chapter)
+        if chapter_position:
+            previous_chapter = chapters[chapter_position - 1]
+        if chapter_position + 1 < len(chapters):
+            next_chapter = chapters[chapter_position + 1]
     chapter_directory = []
     for number in chapters:
         chapter_segments = [s for s in segments if s["chapter"] == number]
@@ -1216,6 +1223,8 @@ def canon_book(book):
         pending_inline_alignment=bool(pending_unmapped),
         corpus_status_labels=CORPUS_STATUS_LABELS,
         inline_align_method=alignment_result.get("method"),
+        previous_chapter=previous_chapter,
+        next_chapter=next_chapter,
     )
 
 
@@ -1556,7 +1565,7 @@ def extract_nde_metadata(record: dict) -> dict:
             continue
         if question == "gender" and "gender" not in values:
             values["gender"] = answer.splitlines()[0].strip()
-        elif question == "date nde occurred" and "date" not in values:
+        elif question in {"date nde occurred", "date of nde"} and "date" not in values:
             values["date"] = answer.splitlines()[0].strip()
     raw_title = (record.get("title") or "").strip()
     slug = record.get("slug", "")
@@ -1581,13 +1590,17 @@ def extract_nde_metadata(record: dict) -> dict:
 
 
 def normalize_nde_date(value: str) -> str:
-    """把可确定的案例日期统一为 YYYY-MM-DD；只有年份时不虚构月日。"""
+    """把案例发生日期统一为 YYYY-MM；只有年份时不虚构月份。"""
     value = (value or "").strip()
     if not value:
         return "未登记"
-    for pattern in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d", "%d %B %Y", "%d %b %Y"):
+    value = re.sub(r"\b(\d{1,2})(st|nd|rd|th)\b", r"\1", value, flags=re.I)
+    for pattern in (
+        "%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d", "%d %B %Y", "%d %b %Y",
+        "%B %Y", "%b %Y",
+    ):
         try:
-            return datetime.strptime(value, pattern).strftime("%Y-%m-%d")
+            return datetime.strptime(value, pattern).strftime("%Y-%m")
         except ValueError:
             continue
     match = re.fullmatch(r"(19|20)\d{2}", value)

@@ -1,29 +1,13 @@
-#!/usr/bin/env python3
-"""生成标准化预测域观察结果。"""
-
-import argparse
-
-from numerology.analysis.prediction_domains import (
-    load_taxonomy,
-    standardize_prediction_domains,
-)
-from numerology.db.schema import init_db
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--db", default="data/numerology.db")
-    parser.add_argument("--taxonomy", default=None)
-    args = parser.parse_args()
-
-    conn = init_db(args.db)
-    counts = standardize_prediction_domains(
-        conn, load_taxonomy(args.taxonomy) if args.taxonomy else None
-    )
-    for domain, count in sorted(counts.items()):
-        print(f"{domain}\t{count}")
-    conn.close()
-
+"""兼容入口；实际实现位于 scripts.analysis.standardize_prediction_domains。"""
 
 if __name__ == "__main__":
-    main()
+    import runpy
+
+    runpy.run_module("scripts.analysis.standardize_prediction_domains", run_name="__main__")
+else:
+    import sys
+
+    from scripts.analysis import standardize_prediction_domains as _implementation
+
+    # 让旧模块名与新模块共享全局状态，兼容 monkeypatch 和旧导入。
+    sys.modules[__name__] = _implementation

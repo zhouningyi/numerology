@@ -1,6 +1,9 @@
 """叙述证据高亮与问卷行标记测试。"""
 
-from server import build_nde_tag_groups, highlight_evidence, prepare_nde_rows, tag_qa_rows
+from server import (
+    build_nde_tag_groups, highlight_evidence, normalize_nde_date,
+    prepare_nde_rows, tag_qa_rows,
+)
 
 
 def test_highlight_wraps_exact_evidence():
@@ -26,6 +29,19 @@ def test_highlight_unmatched_evidence_is_ignored():
     html = highlight_evidence("Nothing here.", [{"name": "x", "evidence": "completely different sentence"}])
     assert "ev-mark" not in html
     assert html == "Nothing here."
+
+
+def test_fulltext_query_is_highlighted_as_an_exact_phrase():
+    html = highlight_evidence("Bright light, then a bright light.", [], "bright light")
+    assert html.count('class="search-mark"') == 2
+    assert "Bright light" in html
+    assert "bright light" in html
+
+
+def test_nde_date_display_is_normalized_to_year_month():
+    assert normalize_nde_date("03/11/2001") == "2001-03"
+    assert normalize_nde_date("1st August 2015") == "2015-08"
+    assert normalize_nde_date("2026") == "2026"
 
 
 def test_tag_qa_rows_marks_positive_rows():

@@ -198,8 +198,9 @@
   }
   #sent-tip.pinned { background: color-mix(in srgb, var(--surface) 92%, var(--wood)); }
   .canon-seg.yijing-seg .canon-original { cursor: default; }
-  /* 《华严经》按原文小段逐段对照，原文与译文默认同时展开。 */
-  .canon-seg.huayan-seg .seg-trans { display: block; }
+  /* 《华严经》逐段译文默认收起，按需用小三角展开。 */
+  .canon-seg.huayan-seg .seg-trans { display: none; }
+  .canon-seg.huayan-seg.pinned .seg-trans { display: block; }
   .canon-seg.huayan-seg .canon-original { cursor: default; }
 
   /* [原文 | 中文] 切换 */

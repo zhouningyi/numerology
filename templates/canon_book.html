@@ -148,7 +148,7 @@
     <div class="muted" style="font-size:11px;margin-bottom:4px">
       原文 · 段 {{ s.segment_index }}{% if s.confidence == 'low' %} · 待校勘{% endif %}
       {% if inline_items %}
-      <button class="seg-toggle" type="button" title="展开/收起本段译文">▸</button>
+      <button class="seg-toggle" type="button" title="展开/收起本段译文">▸</button>{% if book == 'huayan_t0279' %}<span> 译文默认收起</span>{% endif %}
       {% endif %}
     </div>
     {% set pair_aux = (inline_items | selectattr('pairs') | list | first) if inline_items else none %}
@@ -188,6 +188,14 @@
       {% else %}
       <div style="white-space:pre-wrap;font-size:14px;line-height:1.9">{{ aux.text }}</div>
       {% endif %}
+      {% if aux.annotations %}
+      <div class="muted" style="margin-top:7px;font-size:11px;line-height:1.7">
+        <span>主题标注（候选）：</span>
+        {% for annotation in aux.annotations %}
+        <span class="badge badge-info" title="原文证据：{{ annotation.evidence }}{% if annotation.note %}；{{ annotation.note }}{% endif %}">{{ annotation.tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
       {% if aux.unit_key and aux.layer in ('现代白话', '现代释译') %}
       <form class="review-form" method="post" action="/canon/{{ book }}/review"
             style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
@@ -220,7 +228,7 @@
     {% endif %}
   </p>
   {% for s in unmatched_inline %}
-  <details class="canon-fold" open>
+  <details class="canon-fold"{% if book != 'huayan_t0279' %} open{% endif %}>
     <summary><span class="badge {{ layer_badges[s.layer] }}">{% if s.layer == '现代白话' and s.translation_source %}白话（{{ s.translation_source }}）{% elif s.layer == '现代释译' and s.translation_source %}现代释译（{{ s.translation_source }}）{% else %}{{ layer_labels[s.layer] }}{% endif %}</span>{% if s.marker %} · {{ s.marker }}{% endif %} · 本章范围</summary>
     <div class="canon-fold-body">
       {% if s.alignment_status %}<div class="muted" style="font-size:11px;margin-bottom:5px">{{ s.alignment_status }} · {{ s.alignment_method }}</div>{% endif %}
@@ -297,5 +305,22 @@
   <p class="muted">没有找到该书对应的 PDF/OCR 版本。</p>
   {% endfor %}
 </div>
+<nav class="card" aria-label="章节导航" style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px">
+  <span>
+    {% if previous_chapter is not none %}
+    <a href="/canon/{{ book }}?chapter={{ previous_chapter }}">← 上一章（第 {{ previous_chapter }} 章）</a>
+    {% else %}
+    <span class="muted">← 已是第一章</span>
+    {% endif %}
+  </span>
+  <a href="/canon/{{ book }}">目录</a>
+  <span style="text-align:right">
+    {% if next_chapter is not none %}
+    <a href="/canon/{{ book }}?chapter={{ next_chapter }}">下一章（第 {{ next_chapter }} 章）→</a>
+    {% else %}
+    <span class="muted">已是最后一章 →</span>
+    {% endif %}
+  </span>
+</nav>
 {% endif %}
 {% endblock %}

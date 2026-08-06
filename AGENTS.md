@@ -22,10 +22,16 @@ numerology/
 │   │   ├── schema.py       # SQLite schema + 连接管理
 │   │   └── pipeline.py     # 采集→计算→入库 pipeline
 │   └── analysis/           # 统计分析 (待开发)
+├── scripts/                # 按职责分层的可执行脚本
+│   ├── collectors/         # 数据源下载与导入
+│   ├── canon/              # 古籍、OCR、版本对齐与翻译
+│   ├── nde/                # 濒死体验资料处理
+│   ├── person/             # 人物生平处理
+│   ├── analysis/           # 事件、预测域与质量画像
+│   └── quality/            # 数据和语料审计
 ├── tests/                  # 测试
 ├── data/                   # 数据文件 (git ignored)
-├── collect_adb.py          # ADB 采集脚本
-├── collect_wikidata.py     # Wikidata 采集脚本
+├── server.py               # Web 应用入口
 └── requirements.txt
 ```
 
@@ -36,9 +42,12 @@ numerology/
 ## 使用方法
 ```bash
 pip install -r requirements.txt
-python collect_adb.py --limit 1000     # 采集 ADB 数据
-python collect_wikidata.py --start-year 1900 --end-year 1950  # 采集 Wikidata
+python -m scripts.collectors.collect_adb --limit 1000     # 采集 ADB 数据
+python -m scripts.collectors.collect_wikidata --start-year 1900 --end-year 1950  # 采集 Wikidata
 ```
+
+脚本必须从项目根目录运行。根目录下同名 `.py` 文件目前是兼容旧命令和旧测试的薄入口；新脚本
+统一放入 `scripts/`，具体映射见 `scripts/README.md`。
 
 ## 代码规范
 - 全部使用中文注释和文档
