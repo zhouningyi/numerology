@@ -328,18 +328,24 @@ def stage_merge(args) -> None:
         logger.info(f"第{round_index}轮：{len(current)} → {len(merged)} 项")
         if not merged or len(merged) >= len(current):
             break
+        # 单轮压缩超过 4 倍即为过度合并（实测末轮曾把 106 项并成 5 个空壳），
+        # 这一轮结果不采用，停在上一轮的收敛点
+        if len(merged) * 4 < len(current):
+            logger.warning(
+                f"第{round_index}轮压缩过度（{len(current)}→{len(merged)}），丢弃该轮并停止"
+            )
+            round_index -= 1
+            break
         current = merged
     trace.close()
 
     # 终版词表：末轮 trace 即为标准项
-    last_round = 0
-    items = []
-    for line in TRACE.open(encoding="utf-8"):
-        row = json.loads(line)
-        if row["round"] > last_round:
-            last_round, items = row["round"], []
-        if row["round"] == last_round:
-            items.append(row)
+    # 取被采纳的最后一轮（round_index 已在过度压缩时回退），而非文件里的末轮
+    last_round = max(1, round_index)
+    items = [
+        row for row in (json.loads(l) for l in TRACE.open(encoding="utf-8"))
+        if row["round"] == last_round
+    ]
     catalog = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source_phrases": len(phrases),
